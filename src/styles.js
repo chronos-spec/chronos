@@ -11,7 +11,7 @@ export const css = {
     background:"#efede7",
     color:INK,
     fontFamily:"'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
-    overflow:"hidden"
+    overflowY:"auto"
   },
   shell:{
     display:"grid",
@@ -146,7 +146,7 @@ export const css = {
     flexDirection:"column",
     minHeight:0,
     flex:1,
-    overflow:"hidden",
+    overflowY:"auto",
     borderRadius:8,
     border:`1px solid ${LINE}`,
     background:PANEL,
@@ -210,7 +210,7 @@ export const css = {
   exploreTitle:{fontFamily:"Georgia,serif",fontSize:21,lineHeight:1.08,color:INK},
   exploreText:{fontSize:11,lineHeight:1.45,color:MUTED},
 
-  wrap:{flex:1,position:"relative",overflow:"hidden",cursor:"grab",minHeight:360,background:"#faf7f2"},
+  wrap:{flex:1,position:"relative",overflowY:"auto",cursor:"grab",minHeight:360,background:"#faf7f2"},
   cnv:{position:"absolute",top:0,left:0,width:"100%",height:"100%"},
   zoomBtns:{position:"absolute",right:14,top:14,display:"flex",gap:6,zIndex:20},
   zoomBtn:{
@@ -228,9 +228,9 @@ export const css = {
     color:INK,
     boxShadow:"0 4px 14px rgba(23,20,18,.10)"
   },
-  mini:{position:"absolute",bottom:14,right:14,width:176,height:34,background:"#eee8dc",border:`1px solid ${LINE}`,borderRadius:5,overflow:"hidden",zIndex:20},
+  mini:{position:"absolute",bottom:14,right:14,width:176,height:34,background:"#eee8dc",border:`1px solid ${LINE}`,borderRadius:5,overflowY:"auto",zIndex:20},
   statusbar:{height:36,display:"flex",alignItems:"center",gap:14,flexShrink:0,color:MUTED},
-  statusEpoch:{fontFamily:"Georgia,serif",fontSize:13,fontStyle:"italic",color:INK,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"},
+  statusEpoch:{fontFamily:"Georgia,serif",fontSize:13,fontStyle:"italic",color:INK,flex:1,minWidth:0,overflowY:"auto",textOverflow:"ellipsis",whiteSpace:"nowrap"},
   aiBadge:(v)=>({display:"flex",alignItems:"center",gap:6,padding:"4px 9px",borderRadius:999,background:"#fff7e8",border:"1px solid rgba(185,130,47,.24)",fontSize:10,letterSpacing:".06em",opacity:v?1:0,transition:"opacity .3s"}),
   aiDot:{width:6,height:6,borderRadius:"50%",background:GOLD,animation:"dp 1.2s ease-in-out infinite"},
   statusR:{fontSize:11,color:MUTED},
@@ -251,7 +251,7 @@ export const css = {
   },
   searchIcon:{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"rgba(23,20,18,.38)",pointerEvents:"none"},
   searchClear:{position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",fontSize:12,color:"rgba(23,20,18,.45)",cursor:"pointer",background:"none",border:"none",padding:0,lineHeight:1},
-  searchDropdown:{position:"absolute",top:"calc(100% + 8px)",left:0,right:0,background:PANEL,border:`1px solid ${LINE}`,borderRadius:8,boxShadow:"0 18px 42px rgba(23,20,18,.18)",zIndex:100,overflow:"hidden"},
+  searchDropdown:{position:"absolute",top:"calc(100% + 8px)",left:0,right:0,background:PANEL,border:`1px solid ${LINE}`,borderRadius:8,boxShadow:"0 18px 42px rgba(23,20,18,.18)",zIndex:100,overflowY:"auto"},
   searchHeader:{padding:"9px 12px 7px",borderBottom:`1px solid ${LINE}`,display:"flex",alignItems:"center",gap:6},
   searchHeaderTxt:{fontSize:10,color:"rgba(23,20,18,.45)",letterSpacing:".08em",textTransform:"uppercase",flex:1},
   searchSpinner:{width:11,height:11,borderRadius:"50%",border:"1.5px solid rgba(23,20,18,.15)",borderTop:`1.5px solid ${GOLD}`,animation:"spin .7s linear infinite"},
@@ -260,7 +260,7 @@ export const css = {
   searchItemInfo:{flex:1,minWidth:0},
   searchItemTitle:{display:"block",fontSize:15,fontWeight:500,color:INK,marginBottom:3,fontFamily:"Georgia,serif"},
   searchItemDate:{display:"block",fontSize:11,color:GOLD,marginBottom:3},
-  searchItemDesc:{fontSize:12,color:MUTED,lineHeight:1.55,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"},
+  searchItemDesc:{fontSize:12,color:MUTED,lineHeight:1.55,overflowY:"auto",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"},
   searchItemRel:{display:"block",fontSize:10,color:"rgba(23,20,18,.44)",fontStyle:"italic",marginTop:3},
   searchItemNav:{fontSize:12,color:"rgba(23,20,18,.32)",flexShrink:0,marginTop:3},
   searchEmpty:{padding:"20px 12px",textAlign:"center",fontSize:12,color:MUTED},
