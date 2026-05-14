@@ -1,7 +1,3 @@
-// Fichier fusionné automatiquement :
-// - Design principal repris de App.jsx
-// - Gestion des clics / panneaux / interactions reprise de App_8.jsx
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ALL_EVENTS, EPOCHS, PERIODS, PERIOD_DESCRIPTIONS, STATIC_CONTENT, UA, cc } from "./data/timelineData.js";
 import { buildPrompt, epochAt, fmt, L, makeCoord, zoomLvl } from "./utils/time.js";
@@ -106,7 +102,7 @@ export default function Chronos() {
       return next;
     });
   },[saveTags,saveBookmarks]);
-  const [ui,setUi]=useState({epochLabel:"Vue globale",range:"",aiVisible:false,aiLabel:"",legendOpen:false,panelOpen:false,panelCat:"",panelCatColor:"#555",panelDate:"",panelTitle:"",panelContent:null,tooltip:null,searchOpen:false,searchQuery:"",searchResults:[],searchLoading:false,searchDone:false,panelEventId:null,bookmarkTag:null,showBookmarkMenu:false,showBookmarksView:false});
+  const [ui,setUi]=useState({epochLabel:"Vue globale",range:"",aiVisible:false,aiLabel:"",legendOpen:false,panelOpen:false,panelCat:"",panelCatColor:"#555",panelDate:"",panelTitle:"",panelContent:null,panelError:null,tooltip:null,searchOpen:false,searchQuery:"",searchResults:[],searchLoading:false,searchDone:false,searchError:null,panelEventId:null,bookmarkTag:null,showBookmarkMenu:false,showBookmarksView:false});
   const [bookmarks,setBookmarks]=useState({});       // {eventId: {tag, title, date_label, cat, yearsAgo}}
   const [customTags,setCustomTags]=useState(["Favori","À revoir","Intéressant"]); // editable list
   const [addingTag,setAddingTag]=useState(false);
@@ -151,7 +147,7 @@ export default function Chronos() {
     s.fetching=true;s.fetchedZones.add(key);
     setUi(u=>({...u,aiVisible:true,aiLabel:`${fmt(startYa)} → ${fmt(Math.max(endYa,0.1))}`}));
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:900,messages:[{role:"user",content:buildPrompt(startYa,endYa)}]})});
       if(!res.ok)throw new Error(res.status);
       const data=await res.json();
@@ -190,7 +186,7 @@ export default function Chronos() {
     // 3. Generate via API then persist
     setUi(u=>({...u,panelContent:"loading",panelError:null,panelEventId:ev.id}));
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:900,messages:[{role:"user",content:`Rédige une fiche encyclopédique engageante sur :
 Événement : ${ev.title}
 Date : ${ev.date_label}
@@ -245,7 +241,7 @@ En HTML simple (<p>,<h3>,<strong> uniquement). Sections : intro immersive (1§),
 
     // 2. Universal AI search — any event in all of history
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:1000,
           messages:[{role:"user",content:`Tu es un historien et scientifique expert de toute l'histoire de l'univers, de la Terre, de la vie et de l'humanité.
 
@@ -347,62 +343,68 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
     triggerFetch();
   },[scheduleRedraw,triggerFetch,zoomAround]);
 
+  // ── REFS STABLES — le useEffect s'enregistre une seule fois ────────────
+  const _openPanel=useRef(null);       _openPanel.current=openPanel;
+  const _openPeriod=useRef(null);      _openPeriod.current=openPeriodPanel;
+  const _closePanel=useRef(null);      _closePanel.current=closePanel;
+  const _redraw=useRef(null);          _redraw.current=scheduleRedraw;
+  const _fetch=useRef(null);           _fetch.current=triggerFetch;
+  const _zoom=useRef(null);            _zoom.current=zoomAround;
+
   useEffect(()=>{
     const wrap=wrapRef.current,cnv=canvasRef.current;if(!wrap||!cnv)return;
-    const onWheel=(e)=>{e.preventDefault();const rect=cnv.getBoundingClientRect();zoomAround(makeCoord(S.current.vs,S.current.ve,cnv.width).toYa(e.clientX-rect.left),e.deltaY>0?1.13:.88);scheduleRedraw();triggerFetch();};
+    const onWheel=(e)=>{e.preventDefault();const rect=cnv.getBoundingClientRect();_zoom.current(makeCoord(S.current.vs,S.current.ve,cnv.width).toYa(e.clientX-rect.left),e.deltaY>0?1.13:.88);_redraw.current();_fetch.current();};
     let dragging=false;
-    const onMD=(e)=>{dragging=true;wrap.style.cursor="grabbing";};
+    const onMD=()=>{dragging=true;wrap.style.cursor="grabbing";};
     const onMU=()=>{dragging=false;wrap.style.cursor="grab";};
     const onMM=(e)=>{
       const rect=cnv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;
       if(dragging){
         const s=S.current,lr=L(s.vs)-L(s.ve),sh=-(e.movementX/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;
-        if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);scheduleRedraw();triggerFetch();return;
+        if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);_redraw.current();_fetch.current();return;
       }
       const s=S.current;let found=null;
-      for(const p of s.placed)if(Math.abs(p.x-mx)<16&&Math.abs(s.lineY-my)<80){found=p.ev;break;}
+      for(const p of s.placed)if(Math.abs(p.x-mx)<18&&Math.abs(s.lineY-my)<100){found=p.ev;break;}
       const nid=found?found.id:null;
       if(nid!==s.hoveredId){
-        s.hoveredId=nid;wrap.style.cursor=found?"pointer":"grab";scheduleRedraw();
+        s.hoveredId=nid;wrap.style.cursor=found?"pointer":"grab";_redraw.current();
         if(found){let tx=mx+16,ty=my-68;if(tx+220>cnv.width)tx=mx-226;if(ty<10)ty=my+20;setUi(u=>({...u,tooltip:{x:tx,y:ty,date:found.date_label,title:found.title}}));}
         else setUi(u=>({...u,tooltip:null}));
       }
     };
     const onClick=(e)=>{
       const rect=cnv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top,s=S.current;
-      // 1. Event dots
-      for(const p of s.placed)if(Math.abs(p.x-mx)<16&&Math.abs(s.lineY-my)<80){openPanel(p.ev);return;}
-      // 2. Period band click
-      if(s.periodY&&my>=s.periodY&&my<=s.periodY+s.periodH){
-        const coord=makeCoord(s.vs,s.ve,cnv.width);
-        const ya=coord.toYa(mx);
+      // 1. Événements
+      for(const p of s.placed)if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){_openPanel.current(p.ev);return;}
+      // 2. Bande périodes
+      if(s.periodY!=null&&my>=s.periodY&&my<=s.periodY+(s.periodH||20)){
+        const ya=makeCoord(s.vs,s.ve,cnv.width).toYa(mx);
         const per=PERIODS.find(p=>ya<=p.from&&ya>=p.to);
-        if(per){openPeriodPanel(per);return;}
+        if(per){_openPeriod.current(per);return;}
       }
-      // 3. Epoch band click (above period band)
-      if(s.periodY&&my<s.periodY&&my>56){
-        const coord=makeCoord(s.vs,s.ve,cnv.width);
-        const ya=coord.toYa(mx);
+      // 3. Bandes époques
+      if(s.periodY!=null&&my<s.periodY&&my>44){
+        const ya=makeCoord(s.vs,s.ve,cnv.width).toYa(mx);
         const ep=EPOCHS.find(p=>ya<=p.from&&ya>=p.to);
-        if(ep){openPeriodPanel(ep);return;}
+        if(ep){_openPeriod.current(ep);return;}
       }
-      closePanel();
+      _closePanel.current();
     };
     let lt=null,ld=null;
     const onTS=(e)=>{if(e.touches.length===1)lt=e.touches[0].clientX;else if(e.touches.length===2)ld=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);};
     const onTM=(e)=>{
       e.preventDefault();const rect=cnv.getBoundingClientRect(),s=S.current;
-      if(e.touches.length===1&&lt!==null){const dx=e.touches[0].clientX-lt;lt=e.touches[0].clientX;const lr=L(s.vs)-L(s.ve),sh=-(dx/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);scheduleRedraw();triggerFetch();}
-      else if(e.touches.length===2&&ld!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const mx=(e.touches[0].clientX+e.touches[1].clientX)/2-rect.left;zoomAround(makeCoord(s.vs,s.ve,cnv.width).toYa(mx),ld/d);ld=d;scheduleRedraw();triggerFetch();}
+      if(e.touches.length===1&&lt!==null){const dx=e.touches[0].clientX-lt;lt=e.touches[0].clientX;const lr=L(s.vs)-L(s.ve),sh=-(dx/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);_redraw.current();_fetch.current();}
+      else if(e.touches.length===2&&ld!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const mx=(e.touches[0].clientX+e.touches[1].clientX)/2-rect.left;_zoom.current(makeCoord(s.vs,s.ve,cnv.width).toYa(mx),ld/d);ld=d;_redraw.current();_fetch.current();}
     };
     const onTE=()=>{lt=null;ld=null;};
-    const onResize=()=>scheduleRedraw();
+    const onResize=()=>_redraw.current();
     cnv.addEventListener("wheel",onWheel,{passive:false});cnv.addEventListener("mousedown",onMD);cnv.addEventListener("click",onClick);
     cnv.addEventListener("touchstart",onTS,{passive:false});cnv.addEventListener("touchmove",onTM,{passive:false});cnv.addEventListener("touchend",onTE);
     window.addEventListener("mousemove",onMM);window.addEventListener("mouseup",onMU);window.addEventListener("resize",onResize);
-    scheduleRedraw();triggerFetch();
+    _redraw.current();_fetch.current();
     return()=>{cnv.removeEventListener("wheel",onWheel);cnv.removeEventListener("mousedown",onMD);cnv.removeEventListener("click",onClick);cnv.removeEventListener("touchstart",onTS);cnv.removeEventListener("touchmove",onTM);cnv.removeEventListener("touchend",onTE);window.removeEventListener("mousemove",onMM);window.removeEventListener("mouseup",onMU);window.removeEventListener("resize",onResize);};
-  },[scheduleRedraw,triggerFetch,zoomAround,openPanel,openPeriodPanel,closePanel]);
+  },[]);// ← VIDE : s'enregistre une seule fois, utilise les refs ci-dessus
 
   return (
     <div style={css.app}>
