@@ -14,88 +14,69 @@ const EPOCHS = [
   { label:"Préhistoire",   from:2.6e6, to:12e3,   bg:"#160204", stripe:"#c02828", text:"#e06060", pillBg:"rgba(192,40,40,.12)",  pillText:"#c02828" },
   { label:"Histoire",      from:12e3,  to:0,      bg:"#02081c", stripe:"#1850cc", text:"#6090f0", pillBg:"rgba(24,80,204,.12)",  pillText:"#1850cc" },
 ];
-
 const CAT_COL = { cosmique:"#5a3db8", geologique:"#0868a8", biologique:"#0a7848", prehistoire:"#b03010", histoire:"#8a6000" };
 const cc = (cat) => CAT_COL[cat] || "#555";
-
-// ── ARBRE DE LA VIE ──────────────────────────────────────────────────────────
-// Chaque nœud : id, label, from (Ma), to (Ma, 0=vivant), color, parent, row, children (expandable)
 const LIFE_TREE = [
-  // Niveau 0 — Racines
-  { id:"lt00", label:"Bactéries",      from:3500e6, to:0,     color:"#64748b", row:0, depth:0 },
-  { id:"lt01", label:"Eucaryotes",     from:2000e6, to:0,     color:"#6366f1", row:1, depth:0 },
-  { id:"lt02", label:"Champignons",    from:1000e6, to:0,     color:"#a78bfa", row:2, depth:1 },
-  { id:"lt03", label:"Plantes",        from:470e6,  to:0,     color:"#16a34a", row:3, depth:1 },
-  { id:"lt04", label:"Invertébrés",    from:541e6,  to:0,     color:"#f59e0b", row:4, depth:1 },
-  // Vertébrés
-  { id:"lt05", label:"Poissons",       from:520e6,  to:0,     color:"#0ea5e9", row:5, depth:1 },
-  { id:"lt06", label:"Amphibiens",     from:375e6,  to:0,     color:"#0f766e", row:6, depth:2 },
-  { id:"lt07", label:"Amniotes",       from:320e6,  to:0,     color:"#b45309", row:7, depth:2 },
-  // Branche Mammifères
-  { id:"lt08", label:"Mammifères",     from:225e6,  to:0,     color:"#be185d", row:8, depth:3 },
-  { id:"lt09", label:"Primates",       from:55e6,   to:0,     color:"#9333ea", row:9, depth:4 },
-  { id:"lt10", label:"Hominidés",      from:7e6,    to:0,     color:"#c2410c", row:10,depth:5 },
-  { id:"lt11", label:"Homo Sapiens",   from:300e3,  to:0,     color:"#92400e", row:11,depth:6 },
-  // Branche Reptiles / Sauropsida
-  { id:"lt12", label:"Tortues",        from:230e6,  to:0,     color:"#65a30d", row:8, depth:3 },
-  { id:"lt13", label:"Squamates",      from:200e6,  to:0,     color:"#ca8a04", row:9, depth:4 },
-  { id:"lt14", label:"Archosaures",    from:250e6,  to:0,     color:"#dc2626", row:10,depth:4 },
-  { id:"lt15", label:"Crocodiliens",   from:230e6,  to:0,     color:"#166534", row:11,depth:5 },
-  { id:"lt16", label:"Ptérosaures 🦅", from:228e6,  to:66e6,  color:"#7c3aed", row:12,depth:5 },
-  { id:"lt17", label:"Dinosaures 🦖",  from:230e6,  to:66e6,  color:"#b91c1c", row:13,depth:5 },
-  { id:"lt18", label:"Sauropodes",     from:210e6,  to:66e6,  color:"#c2410c", row:14,depth:6 },
-  { id:"lt19", label:"Théropodes",     from:230e6,  to:0,     color:"#991b1b", row:15,depth:6 },
-  { id:"lt20", label:"Oiseaux 🐦",     from:150e6,  to:0,     color:"#0369a1", row:16,depth:7 },
-  { id:"lt21", label:"Mosasaures 🌊",  from:98e6,   to:66e6,  color:"#0c4a6e", row:14,depth:5 },
+  { id:"lt00", label:"Bactéries",   from:3500e6, to:0,    color:"#64748b", row:0,  depth:0 },
+  { id:"lt01", label:"Eucaryotes",  from:2000e6, to:0,    color:"#6366f1", row:1,  depth:0 },
+  { id:"lt02", label:"Champignons", from:1000e6, to:0,    color:"#a78bfa", row:2,  depth:1 },
+  { id:"lt03", label:"Plantes",     from:470e6,  to:0,    color:"#16a34a", row:3,  depth:1 },
+  { id:"lt04", label:"Invertébrés", from:541e6,  to:0,    color:"#f59e0b", row:4,  depth:1 },
+  { id:"lt05", label:"Poissons",    from:520e6,  to:0,    color:"#0ea5e9", row:5,  depth:1 },
+  { id:"lt06", label:"Amphibiens",  from:375e6,  to:0,    color:"#0f766e", row:6,  depth:2 },
+  { id:"lt07", label:"Amniotes",    from:320e6,  to:0,    color:"#b45309", row:7,  depth:2 },
+  { id:"lt08", label:"Mammifères",  from:225e6,  to:0,    color:"#be185d", row:8,  depth:3 },
+  { id:"lt09", label:"Primates",    from:55e6,   to:0,    color:"#9333ea", row:9,  depth:4 },
+  { id:"lt10", label:"Hominidés",   from:7e6,    to:0,    color:"#c2410c", row:10, depth:5 },
+  { id:"lt11", label:"Homo Sapiens",from:300e3,  to:0,    color:"#92400e", row:11, depth:6 },
+  { id:"lt12", label:"Tortues",     from:230e6,  to:0,    color:"#65a30d", row:8,  depth:3 },
+  { id:"lt13", label:"Squamates",   from:200e6,  to:0,    color:"#ca8a04", row:9,  depth:4 },
+  { id:"lt14", label:"Archosaures", from:250e6,  to:0,    color:"#dc2626", row:10, depth:4 },
+  { id:"lt15", label:"Crocodiliens",from:230e6,  to:0,    color:"#166534", row:11, depth:5 },
+  { id:"lt16", label:"Ptérosaures 🦅",from:228e6,to:66e6, color:"#7c3aed", row:12, depth:5 },
+  { id:"lt17", label:"Dinosaures 🦖",from:230e6, to:66e6, color:"#b91c1c", row:13, depth:5 },
+  { id:"lt18", label:"Sauropodes",  from:210e6,  to:66e6, color:"#c2410c", row:14, depth:6 },
+  { id:"lt19", label:"Théropodes",  from:230e6,  to:0,    color:"#991b1b", row:15, depth:6 },
+  { id:"lt20", label:"Oiseaux 🐦",  from:150e6,  to:0,    color:"#0369a1", row:16, depth:7 },
+  { id:"lt21", label:"Mosasaures 🌊",from:98e6,  to:66e6, color:"#0c4a6e", row:14, depth:5 },
 ];
-
-// Fiches des périodes et ères — affichées au clic
 const PERIOD_DESCRIPTIONS = {
-  "Cosmique": { summary:"13,8 à 4,6 Ga : naissance de l'espace, du temps, des étoiles et des galaxies. Le Big Bang, les premières supernovæ, la Voie Lactée.", highlights:["Big Bang −13,8 Ga","Premières étoiles −13,6 Ga","Voie Lactée −10 Ga","Nébuleuse solaire −4,6 Ga"] },
-  "Hadéen":   { summary:"4,6 à 4,0 Ga : formation de la Terre en fusion, bombardement intense, formation de la Lune. Aucune vie possible.", highlights:["Formation de la Terre","Impact Théia → Lune","Grand Bombardement Tardif","Premiers océans en formation"] },
-  "Archéen":  { summary:"4,0 à 2,5 Ga : premières traces de vie (stromatolites), premiers continents. Atmosphère sans oxygène.", highlights:["Premiers continents","Stromatolites −3,5 Ga","Premières bactéries","Tectonique des plaques naissante"] },
-  "Protérozoïque": { summary:"2,5 Ga à 541 Ma : la Grande Oxydation transforme l'atmosphère. Apparition des cellules eucaryotes et de la reproduction sexuée.", highlights:["Grande Oxydation −2,4 Ga","Cellules eucaryotes −2 Ga","Reproduction sexuée −1,2 Ga","Faune d'Ediacara −600 Ma"] },
-  "Paléozoïque": { summary:"541 à 252 Ma : explosion de la vie animale, colonisation des terres, premiers vertébrés, forêts géantes. Se termine par la plus grande extinction de l'histoire.", highlights:["Explosion cambrienne −541 Ma","Premiers vertébrés −520 Ma","Plantes terrestres −475 Ma","Extinction Permien −252 Ma"] },
-  "Mésozoïque": { summary:"252 à 66 Ma : ère des dinosaures. Trias, Jurassique, Crétacé. Apparition des mammifères, des oiseaux et des fleurs.", highlights:["Premiers dinosaures −230 Ma","Premiers mammifères −225 Ma","Archaeopteryx −150 Ma","Premières fleurs −130 Ma","Astéroïde Chicxulub −66 Ma"] },
-  "Cénozoïque": { summary:"66 Ma à aujourd'hui : ère des mammifères. Diversification explosive après les dinosaures. Apparition des primates, des hominidés, et d'Homo Sapiens.", highlights:["Radiation des mammifères","Primates −55 Ma","Séparation Homo/Chimp −7 Ma","Homo Sapiens −300 000 ans"] },
-  "Cambrien":   { summary:"541 à 485 Ma : explosion de la diversité animale. Quasi tous les grands plans d'organisation apparaissent en quelques millions d'années.", highlights:["Premiers arthropodes","Premiers mollusques","Premiers cordés","Anomalocaris"] },
-  "Ordovicien": { summary:"485 à 444 Ma : diversification marine intense. La vie reste aquatique. Se termine par une glaciation massive et la 2e plus grande extinction.", highlights:["Diversification marine","Premiers vertébrés sans mâchoire","Glaciation Gondwana","Extinction −444 Ma : 86% des espèces"] },
-  "Silurien":   { summary:"444 à 419 Ma : la vie commence à coloniser les terres. Premiers poissons à mâchoires, premières plantes vasculaires.", highlights:["Premières plantes vasculaires","Premiers insectes","Poissons à mâchoires","Coraux et récifs"] },
-  "Dévonien":   { summary:"419 à 359 Ma : âge des poissons. Premiers vertébrés terrestres (Tiktaalik). Grandes forêts primitives. Extinction majeure.", highlights:["Tiktaalik −375 Ma","Premiers amphibiens","Forêts primitives","Extinction −359 Ma"] },
-  "Carbonifère":{ summary:"359 à 299 Ma : forêts tropicales gigantesques qui deviendront le charbon. Premiers reptiles. Insectes géants dans une atmosphère riche en O₂.", highlights:["Forêts de fougères géantes","Premiers reptiles −312 Ma","Insectes géants (libellules 70cm)","Charbon formé ici"] },
-  "Permien":    { summary:"299 à 252 Ma : supercontinant Pangée. Reptiles mammaliens dominants. Fin catastrophique : 96% des espèces marines disparaissent.", highlights:["Pangée assemblée","Reptiles mammaliens","Trapps sibériens","Grande Extinction −252 Ma"] },
-  "Trias":      { summary:"252 à 201 Ma : renaissance après la grande extinction. Les dinosaures et les mammifères apparaissent. Premiers ptérosaures.", highlights:["Premiers dinosaures −230 Ma","Premiers mammifères −225 Ma","Premiers ptérosaures","Fragmentation de la Pangée"] },
-  "Jurassique": { summary:"201 à 145 Ma : âge d'or des dinosaures. Sauropodes géants, premiers oiseaux. Les continents se séparent.", highlights:["Sauropodes géants (Diplodocus)","Stégosaure","Archaeopteryx −150 Ma","Mers chaudes et tropicales"] },
-  "Crétacé":    { summary:"145 à 66 Ma : apogée des dinosaures. Apparition des plantes à fleurs. Mosasaures dans les mers. Impact de Chicxulub.", highlights:["T-Rex, Triceratops","Premières fleurs −130 Ma","Mosasaures marins","Astéroïde Chicxulub −66 Ma"] },
-  "Paléogène":  { summary:"66 à 23 Ma : radiation explosive des mammifères. Apparition des primates, cétacés, chauves-souris. Climat chaud puis refroidissement.", highlights:["Radiation des mammifères","Primates −55 Ma","Premiers cétacés","Glaciation de l'Antarctique"] },
-  "Néogène":    { summary:"23 à 2,6 Ma : les continents prennent leur forme actuelle. Apparition des grands singes puis des hominidés. Prairies et herbivores.", highlights:["Grands singes −23 Ma","Séparation Homo/Chimp −7 Ma","Australopithèques −4 Ma","Soulèvement de l'Himalaya"] },
-  "Quaternaire":{ summary:"2,6 Ma à aujourd'hui : grandes glaciations cycliques. Homo Sapiens. Civilisation. L'Anthropocène.", highlights:["Glaciations cycliques","Homo Sapiens −300 Ka","Sortie d'Afrique −70 Ka","Agriculture −10 Ka","Civilisations","IA générative 2022"] },
-  "Préhistoire":{ summary:"De l'apparition d'Homo Sapiens jusqu'à l'invention de l'écriture. Maîtrise du feu, art rupestre, agriculture.", highlights:["Homo Sapiens −300 Ka","Art de Chauvet −40 Ka","Révolution néolithique −10 Ka","Premières villes"] },
-  "Histoire":   { summary:"De l'écriture sumérienne à aujourd'hui. Civilisations, empires, révolutions scientifiques et industrielles.", highlights:["Écriture −3 200 av.J.-C.","Grèce classique −500 av.J.-C.","Révolution française 1789","Révolution industrielle","IA 2022"] },
+  "Cosmique":{"summary":"13,8 à 4,6 Ga : naissance de l'espace, du temps, des étoiles et des galaxies.","highlights":["Big Bang −13,8 Ga","Premières étoiles −13,6 Ga","Voie Lactée −10 Ga","Nébuleuse solaire −4,6 Ga"]},
+  "Hadéen":{"summary":"4,6 à 4,0 Ga : formation de la Terre en fusion, bombardement intense, formation de la Lune.","highlights":["Formation de la Terre","Impact Théia → Lune","Grand Bombardement Tardif","Premiers océans"]},
+  "Archéen":{"summary":"4,0 à 2,5 Ga : premières traces de vie (stromatolites), premiers continents.","highlights":["Premiers continents","Stromatolites −3,5 Ga","Premières bactéries"]},
+  "Protérozoïque":{"summary":"2,5 Ga à 541 Ma : Grande Oxydation, cellules eucaryotes, reproduction sexuée.","highlights":["Grande Oxydation −2,4 Ga","Cellules eucaryotes −2 Ga","Faune d'Ediacara −600 Ma"]},
+  "Paléozoïque":{"summary":"541 à 252 Ma : explosion de la vie animale, premiers vertébrés, forêts géantes.","highlights":["Explosion cambrienne −541 Ma","Premiers vertébrés −520 Ma","Extinction Permien −252 Ma"]},
+  "Mésozoïque":{"summary":"252 à 66 Ma : ère des dinosaures. Mammifères, oiseaux et fleurs apparaissent.","highlights":["Premiers dinosaures −230 Ma","Archaeopteryx −150 Ma","Astéroïde Chicxulub −66 Ma"]},
+  "Cénozoïque":{"summary":"66 Ma à aujourd'hui : ère des mammifères, primates, hominidés, Homo Sapiens.","highlights":["Radiation des mammifères","Primates −55 Ma","Homo Sapiens −300 000 ans"]},
+  "Préhistoire":{"summary":"De Homo Sapiens jusqu'à l'écriture. Feu, art rupestre, agriculture.","highlights":["Homo Sapiens −300 Ka","Art de Chauvet −40 Ka","Agriculture −10 Ka"]},
+  "Histoire":{"summary":"De l'écriture sumérienne à aujourd'hui.","highlights":["Écriture −3 200 av.J.-C.","Révolution française 1789","IA 2022"]},
+  "Cambrien":{"summary":"541 à 485 Ma : explosion de la diversité animale.","highlights":["Premiers arthropodes","Premiers mollusques","Anomalocaris"]},
+  "Ordovicien":{"summary":"485 à 444 Ma : diversification marine intense, extinction massive.","highlights":["Diversification marine","Extinction −444 Ma : 86% des espèces"]},
+  "Silurien":{"summary":"444 à 419 Ma : premières plantes vasculaires, poissons à mâchoires.","highlights":["Premières plantes vasculaires","Premiers insectes"]},
+  "Dévonien":{"summary":"419 à 359 Ma : âge des poissons, premiers vertébrés terrestres.","highlights":["Tiktaalik −375 Ma","Premiers amphibiens"]},
+  "Carbonifère":{"summary":"359 à 299 Ma : forêts gigantesques, premiers reptiles, insectes géants.","highlights":["Forêts de fougères géantes","Premiers reptiles −312 Ma"]},
+  "Permien":{"summary":"299 à 252 Ma : Pangée. Extinction : 96% des espèces marines.","highlights":["Pangée assemblée","Grande Extinction −252 Ma"]},
+  "Trias":{"summary":"252 à 201 Ma : renaissance. Dinosaures et mammifères apparaissent.","highlights":["Premiers dinosaures −230 Ma","Premiers mammifères −225 Ma"]},
+  "Jurassique":{"summary":"201 à 145 Ma : âge d'or des dinosaures. Sauropodes géants.","highlights":["Sauropodes géants","Archaeopteryx −150 Ma"]},
+  "Crétacé":{"summary":"145 à 66 Ma : apogée des dinosaures. Plantes à fleurs. Impact Chicxulub.","highlights":["T-Rex, Triceratops","Astéroïde −66 Ma"]},
+  "Paléogène":{"summary":"66 à 23 Ma : explosion des mammifères. Primates, cétacés.","highlights":["Radiation des mammifères","Primates −55 Ma"]},
+  "Néogène":{"summary":"23 à 2,6 Ma : grands singes, hominidés, prairies.","highlights":["Grands singes −23 Ma","Australopithèques −4 Ma"]},
+  "Quaternaire":{"summary":"2,6 Ma à aujourd'hui : glaciations. Homo Sapiens. Civilisation.","highlights":["Homo Sapiens −300 Ka","Agriculture −10 Ka","IA générative 2022"]},
 };
-
-
-
-// Geological periods (ICS color scheme) — shown as a sub-band on the timeline
 const PERIODS = [
-  // Paléozoïque
-  { label:"Cambrien",     from:541e6,  to:485.4e6, color:"#7fa056", textColor:"#fff" },
-  { label:"Ordovicien",   from:485.4e6,to:443.8e6, color:"#009270", textColor:"#fff" },
-  { label:"Silurien",     from:443.8e6,to:419.2e6, color:"#b3e1b6", textColor:"#333" },
-  { label:"Dévonien",     from:419.2e6,to:358.9e6, color:"#cb8c37", textColor:"#fff" },
-  { label:"Carbonifère",  from:358.9e6,to:298.9e6, color:"#67a599", textColor:"#fff" },
-  { label:"Permien",      from:298.9e6,to:251.9e6, color:"#f04028", textColor:"#fff" },
-  // Mésozoïque
-  { label:"Trias",        from:251.9e6,to:201.4e6, color:"#812b92", textColor:"#fff" },
-  { label:"Jurassique",   from:201.4e6,to:145e6,   color:"#34b2c9", textColor:"#fff" },
-  { label:"Crétacé",      from:145e6,  to:66e6,    color:"#7fc64e", textColor:"#333" },
-  // Cénozoïque
-  { label:"Paléogène",    from:66e6,   to:23.03e6, color:"#fd9a52", textColor:"#333" },
-  { label:"Néogène",      from:23.03e6,to:2.58e6,  color:"#ffff00", textColor:"#333" },
-  { label:"Quaternaire",  from:2.58e6, to:0,       color:"#f9f97f", textColor:"#333" },
+  {label:"Cambrien",    from:541e6,   to:485.4e6, color:"#7fa056", textColor:"#fff"},
+  {label:"Ordovicien",  from:485.4e6, to:443.8e6, color:"#009270", textColor:"#fff"},
+  {label:"Silurien",    from:443.8e6, to:419.2e6, color:"#b3e1b6", textColor:"#333"},
+  {label:"Dévonien",    from:419.2e6, to:358.9e6, color:"#cb8c37", textColor:"#fff"},
+  {label:"Carbonifère", from:358.9e6, to:298.9e6, color:"#67a599", textColor:"#fff"},
+  {label:"Permien",     from:298.9e6, to:251.9e6, color:"#f04028", textColor:"#fff"},
+  {label:"Trias",       from:251.9e6, to:201.4e6, color:"#812b92", textColor:"#fff"},
+  {label:"Jurassique",  from:201.4e6, to:145e6,   color:"#34b2c9", textColor:"#fff"},
+  {label:"Crétacé",     from:145e6,   to:66e6,    color:"#7fc64e", textColor:"#333"},
+  {label:"Paléogène",   from:66e6,    to:23.03e6, color:"#fd9a52", textColor:"#333"},
+  {label:"Néogène",     from:23.03e6, to:2.58e6,  color:"#ffff00", textColor:"#333"},
+  {label:"Quaternaire", from:2.58e6,  to:0,       color:"#f9f97f", textColor:"#333"},
 ];
-
-
 const ALL_EVENTS = [
   // COSMIQUE
   {id:"c01",yearsAgo:13.8e9, title:"Big Bang",                  date_label:"−13,8 Ga",         desc:"Naissance de l'espace, du temps et de la matière en une singularité infiniment dense.",                       cat:"cosmique",    importance:1,minZoom:0},
@@ -647,7 +628,7 @@ export default function Chronos() {
     s.fetching=true;s.fetchedZones.add(key);
     setUi(u=>({...u,aiVisible:true,aiLabel:`${fmt(startYa)} → ${fmt(Math.max(endYa,0.1))}`}));
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:900,messages:[{role:"user",content:buildPrompt(startYa,endYa)}]})});
       if(!res.ok)throw new Error(res.status);
       const data=await res.json();
@@ -686,7 +667,7 @@ export default function Chronos() {
     // 3. Generate via API then persist
     setUi(u=>({...u,panelContent:"loading",panelEventId:ev.id}));
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:900,messages:[{role:"user",content:`Rédige une fiche encyclopédique engageante sur :
 Événement : ${ev.title}
 Date : ${ev.date_label}
@@ -740,7 +721,7 @@ En HTML simple (<p>,<h3>,<strong> uniquement). Sections : intro immersive (1§),
 
     // 2. Universal AI search — any event in all of history
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:1000,
           messages:[{role:"user",content:`Tu es un historien et scientifique expert de toute l'histoire de l'univers, de la Terre, de la vie et de l'humanité.
 
@@ -884,331 +865,424 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
     return()=>{cnv.removeEventListener("wheel",onWheel);cnv.removeEventListener("mousedown",onMD);cnv.removeEventListener("click",onClick);cnv.removeEventListener("touchstart",onTS);cnv.removeEventListener("touchmove",onTM);cnv.removeEventListener("touchend",onTE);window.removeEventListener("mousemove",onMM);window.removeEventListener("mouseup",onMU);window.removeEventListener("resize",onResize);};
   },[scheduleRedraw,triggerFetch,zoomAround,openPanel,closePanel]);
 
-  const css={
-    app:{display:"flex",flexDirection:"column",height:"100vh",background:"#faf7f2",fontFamily:"'DM Mono',monospace",overflow:"hidden"},
-    topbar:{height:72,background:"#faf7f2",borderBottom:"1px solid rgba(18,16,14,.09)",display:"flex",flexDirection:"column",padding:"8px 18px",gap:6,flexShrink:0,boxShadow:"0 1px 6px rgba(18,16,14,.04)",zIndex:30},
-    topbarRow:{display:"flex",alignItems:"center",gap:10,height:28},
-    brand:{fontFamily:"Georgia,serif",fontSize:18,fontWeight:700,color:"#12100e",flexShrink:0},
+  // ── CSS — DESIGN ATLAS avec sidebar ─────────────────────────────────────
+  const EXPLORE_CARDS = [
+    {title:"Univers",   kicker:"13,8 GA", text:"Big Bang, étoiles, galaxies",     color:"#7c5cf0", bg:"#f0edff", from:UA,    to:4.6e9},
+    {title:"Terre",     kicker:"4,6 GA",  text:"Océans, continents, atmosphère",  color:"#0878c8", bg:"#eaf6ff", from:4.6e9, to:541e6},
+    {title:"Vie",       kicker:"3,5 GA",  text:"Cellules, plantes, animaux",      color:"#16a34a", bg:"#eaf8ee", from:3.8e9, to:252e6},
+    {title:"Dinosaures",kicker:"230 MA",  text:"Mésozoïque et extinctions",       color:"#c86010", bg:"#fff1e4", from:252e6, to:66e6},
+    {title:"Humanité",  kicker:"300 KA",  text:"Homo sapiens, art, agriculture",  color:"#c02828", bg:"#fff0f0", from:2.6e6, to:12e3},
+    {title:"Civilisations",kicker:"12 KA",text:"Écriture, empires, sciences",    color:"#1850cc", bg:"#edf3ff", from:12e3,  to:0},
+  ];
+
+  const css = {
+    // ── LAYOUT ──────────────────────────────────────────────────────────────
+    app:    {display:"flex",height:"100vh",background:"#f5f2ec",fontFamily:"'DM Mono',monospace",overflow:"hidden"},
+    sidebar:{width:280,flexShrink:0,display:"flex",flexDirection:"column",background:"#faf7f2",borderRight:"1px solid rgba(18,16,14,.10)",overflowY:"auto",height:"100vh"},
+    main:   {flex:1,display:"flex",flexDirection:"column",overflow:"hidden"},
+
+    // ── SIDEBAR ─────────────────────────────────────────────────────────────
+    sbHeader:{padding:"22px 20px 16px",borderBottom:"1px solid rgba(18,16,14,.07)"},
+    sbTop:   {display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:6},
+    brand:   {fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,color:"#12100e"},
     brandSub:{fontFamily:"'DM Mono',monospace",fontSize:8,color:"#c8963c",letterSpacing:".1em",marginLeft:4},
-    pills:{display:"flex",gap:4,overflowX:"auto",flex:1,scrollbarWidth:"none"},
-    pill:(ep)=>({flexShrink:0,padding:"3px 9px",borderRadius:14,fontSize:9,letterSpacing:".07em",textTransform:"uppercase",fontWeight:500,cursor:"pointer",border:`1.5px solid ${ep.stripe}55`,background:ep.pillBg,color:ep.pillText,whiteSpace:"nowrap",transition:"all .15s"}),
-    topR:{display:"flex",gap:5,flexShrink:0},
-    iconBtn:{width:28,height:28,borderRadius:6,border:"1px solid rgba(18,16,14,.12)",background:"#faf7f2",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#12100e"},
-    wrap:{flex:1,position:"relative",overflow:"hidden",cursor:"grab"},
+    brandLine:{fontSize:11,color:"rgba(18,16,14,.45)",lineHeight:1.4,marginTop:4},
+    resetBtn:{padding:"5px 12px",borderRadius:6,border:"1px solid rgba(18,16,14,.15)",background:"transparent",fontFamily:"'DM Mono',monospace",fontSize:10,cursor:"pointer",color:"rgba(18,16,14,.6)",flexShrink:0},
+    sbSection:{padding:"14px 20px 10px",borderBottom:"1px solid rgba(18,16,14,.06)"},
+    sbLabel: {fontSize:10,letterSpacing:".13em",textTransform:"uppercase",color:"rgba(18,16,14,.35)",fontWeight:500,marginBottom:10},
+    // Epoch grid 2 cols
+    epochGrid:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5},
+    epochPill:(ep)=>({display:"flex",alignItems:"center",gap:6,padding:"6px 10px",borderRadius:8,border:`1px solid ${ep.stripe}33`,background:ep.pillBg,color:ep.pillText,fontSize:11,cursor:"pointer",transition:"all .15s",whiteSpace:"nowrap",overflow:"hidden"}),
+    epochDot:(c)=>({width:7,height:7,borderRadius:"50%",background:c,flexShrink:0}),
+    // Period pills wrap
+    periodWrap:{display:"flex",flexWrap:"wrap",gap:5},
+    periodPill:(per)=>({padding:"3px 9px",borderRadius:12,fontSize:10,fontWeight:500,cursor:"pointer",border:`1px solid ${per.color}77`,background:per.color+"22",color:per.textColor==="#fff"?"#333":per.textColor||"#333",whiteSpace:"nowrap",transition:"all .15s",fontFamily:"'DM Mono',monospace"}),
+    // Search
+    searchWrap:{position:"relative"},
+    searchInput:{height:34,width:"100%",borderRadius:8,border:"1px solid rgba(18,16,14,.18)",background:"#fffaf3",padding:"0 32px 0 30px",fontSize:12,fontFamily:"'DM Mono',monospace",color:"#12100e",outline:"none",boxSizing:"border-box"},
+    searchIcon:{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",fontSize:12,color:"rgba(18,16,14,.35)",pointerEvents:"none"},
+    searchClear:{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",fontSize:11,color:"rgba(18,16,14,.4)",cursor:"pointer",background:"none",border:"none",padding:0},
+    searchDropdown:{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#faf7f2",border:"1px solid rgba(18,16,14,.14)",borderRadius:8,boxShadow:"0 8px 28px rgba(18,16,14,.14)",zIndex:100,overflow:"hidden"},
+    searchHeader:{padding:"7px 12px 5px",borderBottom:"1px solid rgba(18,16,14,.07)",display:"flex",alignItems:"center",gap:6},
+    searchHeaderTxt:{fontSize:9,color:"rgba(18,16,14,.35)",letterSpacing:".1em",textTransform:"uppercase",flex:1},
+    searchSpinner:{width:10,height:10,borderRadius:"50%",border:"1.5px solid rgba(18,16,14,.15)",borderTop:"1.5px solid #c8963c",animation:"spin .7s linear infinite"},
+    searchAiBadge:{padding:"2px 7px",borderRadius:10,background:"rgba(200,150,60,.1)",border:"1px solid rgba(200,150,60,.2)",fontSize:8,color:"#c8963c"},
+    searchItem:{display:"flex",alignItems:"flex-start",gap:9,padding:"9px 12px",cursor:"pointer",borderBottom:"1px solid rgba(18,16,14,.05)",transition:"background .12s"},
+    searchDot:(c)=>({width:7,height:7,borderRadius:"50%",background:c,flexShrink:0,marginTop:4}),
+    searchItemInfo:{flex:1,minWidth:0},
+    searchItemTitle:{fontSize:13,fontWeight:500,color:"#12100e",marginBottom:2,fontFamily:"Georgia,serif"},
+    searchItemDate:{fontSize:10,color:"#b17a25",marginBottom:2},
+    searchItemDesc:{fontSize:11,color:"rgba(18,16,14,.6)",lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"},
+    searchItemRel:{fontSize:9,color:"rgba(18,16,14,.35)",fontStyle:"italic",marginTop:2},
+    searchItemNav:{fontSize:9,color:"rgba(18,16,14,.3)",flexShrink:0},
+    searchEmpty:{padding:"18px 12px",textAlign:"center",fontSize:11,color:"rgba(18,16,14,.4)"},
+    // Sidebar footer
+    sbFooter:{padding:"12px 20px",display:"flex",gap:8,marginTop:"auto",borderTop:"1px solid rgba(18,16,14,.07)"},
+    sbAction:{flex:1,padding:"8px 0",borderRadius:8,background:"#f0ebe0",color:"#12100e",border:"1px solid rgba(18,16,14,.12)",fontFamily:"'DM Mono',monospace",fontSize:11,cursor:"pointer"},
+
+    // ── MAIN AREA ───────────────────────────────────────────────────────────
+    mainHeader:{padding:"24px 32px 16px",borderBottom:"1px solid rgba(18,16,14,.08)",background:"#faf7f2",flexShrink:0},
+    eyebrow:{fontSize:10,letterSpacing:".16em",textTransform:"uppercase",color:"#c8963c",marginBottom:6},
+    pageTitle:{fontFamily:"Georgia,serif",fontSize:42,fontWeight:400,color:"#12100e",lineHeight:1.1,margin:"0 0 8px"},
+    pageSubtitle:{fontSize:13,color:"rgba(18,16,14,.5)"},
+    headerRight:{display:"flex",gap:8},
+    headerBtn:(active)=>({padding:"8px 16px",borderRadius:8,border:`1px solid ${active?"#c8963c":"rgba(18,16,14,.15)"}`,background:active?"rgba(200,150,60,.08)":"transparent",fontFamily:"'DM Mono',monospace",fontSize:12,cursor:"pointer",color:active?"#c8963c":"#12100e",transition:"all .2s"}),
+
+    // ── EXPLORE CARDS ───────────────────────────────────────────────────────
+    cardsRow:{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:10,padding:"16px 32px",flexShrink:0},
+    card:(c)=>({display:"flex",flexDirection:"column",padding:"14px 16px",borderRadius:12,background:c.bg,border:`1px solid ${c.color}18`,cursor:"pointer",transition:"all .18s",fontFamily:"'DM Mono',monospace"}),
+    cardIcon:(c)=>({width:36,height:36,borderRadius:9,background:c,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontFamily:"Georgia,serif",fontSize:17,fontWeight:700,marginBottom:10}),
+    cardKicker:{fontSize:9,color:"rgba(18,16,14,.4)",letterSpacing:".06em",marginBottom:3},
+    cardTitle:{fontFamily:"Georgia,serif",fontSize:15,fontWeight:600,color:"#12100e",marginBottom:4},
+    cardText:{fontSize:10,color:"rgba(18,16,14,.55)",lineHeight:1.4},
+
+    // ── TIMELINE CARD ───────────────────────────────────────────────────────
+    timelineCard:{flex:1,margin:"0 32px 16px",background:"#faf7f2",borderRadius:12,border:"1px solid rgba(18,16,14,.10)",overflow:"hidden",display:"flex",flexDirection:"column",minHeight:0},
+    timelineBar:{padding:"8px 16px",background:"#faf7f2",borderBottom:"1px solid rgba(18,16,14,.07)",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0},
+    timelineBarL:{display:"flex",alignItems:"center",gap:12},
+    navLabel:{fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:"rgba(18,16,14,.35)"},
+    navValue:{fontSize:12,fontWeight:600,color:"#12100e",marginLeft:6},
+    navHint:{fontSize:11,color:"rgba(18,16,14,.38)",fontStyle:"italic"},
+
+    // ── CANVAS WRAP ─────────────────────────────────────────────────────────
+    wrap:{flex:1,position:"relative",overflow:"hidden",cursor:"grab",minHeight:0},
     cnv:{position:"absolute",top:0,left:0},
-    zoomBtns:{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",display:"flex",flexDirection:"column",gap:5,zIndex:20},
-    zoomBtn:{width:30,height:30,borderRadius:7,background:"#faf7f2",border:"1px solid rgba(18,16,14,.15)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:300,color:"#12100e",boxShadow:"0 1px 5px rgba(18,16,14,.08)"},
-    mini:{position:"absolute",bottom:42,right:10,width:160,height:28,background:"#f0ebe0",border:"1px solid rgba(18,16,14,.1)",borderRadius:4,overflow:"hidden",zIndex:20},
-    statusbar:{height:32,background:"#faf7f2",borderTop:"1px solid rgba(18,16,14,.09)",display:"flex",alignItems:"center",padding:"0 14px",gap:14,flexShrink:0},
+    zoomBtns:{position:"absolute",right:10,top:16,display:"flex",gap:6,zIndex:20},
+    zoomBtn:{width:32,height:32,borderRadius:8,background:"#faf7f2",border:"1px solid rgba(18,16,14,.15)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:300,color:"#12100e",boxShadow:"0 1px 5px rgba(18,16,14,.08)"},
+    mini:{position:"absolute",bottom:38,right:10,width:160,height:28,background:"#f0ebe0",border:"1px solid rgba(18,16,14,.1)",borderRadius:4,overflow:"hidden",zIndex:20},
+
+    // ── STATUS BAR ──────────────────────────────────────────────────────────
+    statusbar:{height:32,background:"#faf7f2",borderTop:"1px solid rgba(18,16,14,.09)",display:"flex",alignItems:"center",padding:"0 16px",gap:14,flexShrink:0},
     statusEpoch:{fontFamily:"Georgia,serif",fontSize:11,fontStyle:"italic",color:"#12100e",flex:1},
-    aiBadge:(v)=>({display:"flex",alignItems:"center",gap:5,padding:"2px 8px",borderRadius:10,background:"#f0ebe0",border:"1px solid rgba(18,16,14,.1)",fontSize:9,letterSpacing:".1em",opacity:v?1:0,transition:"opacity .3s"}),
+    aiBadge:(v)=>({display:"flex",alignItems:"center",gap:5,padding:"2px 8px",borderRadius:10,background:"#f0ebe0",border:"1px solid rgba(18,16,14,.1)",fontSize:9,opacity:v?1:0,transition:"opacity .3s"}),
     aiDot:{width:5,height:5,borderRadius:"50%",background:"#c8963c",animation:"dp 1.2s ease-in-out infinite"},
     statusR:{fontSize:9,color:"rgba(18,16,14,.3)"},
-    tt:(t)=>({position:"absolute",left:t.x,top:t.y,pointerEvents:"none",zIndex:50,background:"#12100e",color:"#faf7f2",borderRadius:7,padding:"8px 12px",maxWidth:210,boxShadow:"0 4px 18px rgba(0,0,0,.25)"}),
+
+    // ── TOOLTIP ─────────────────────────────────────────────────────────────
+    tt:(t)=>({position:"absolute",left:t.x,top:t.y,pointerEvents:"none",zIndex:50,background:"#12100e",color:"#faf7f2",borderRadius:8,padding:"9px 13px",maxWidth:220,boxShadow:"0 4px 18px rgba(0,0,0,.28)"}),
     ttDate:{fontSize:8,color:"#c8963c",letterSpacing:".1em",marginBottom:3},
     ttTitle:{fontFamily:"Georgia,serif",fontSize:13,lineHeight:1.3},
-    ttHint:{fontSize:8,color:"rgba(250,247,242,.3)",marginTop:4},
-    panel:(o)=>({position:"absolute",right:0,top:0,bottom:0,width:"min(460px, 92vw)",background:"#faf7f2",borderLeft:"1px solid rgba(18,16,14,.1)",transform:o?"translateX(0)":"translateX(100%)",transition:"transform .34s cubic-bezier(.16,1,.3,1)",display:"flex",flexDirection:"column",zIndex:40,boxShadow:"-4px 0 18px rgba(18,16,14,.07)"}),
+    ttHint:{fontSize:8,color:"rgba(250,247,242,.3)",marginTop:5},
+
+    // ── PANEL ───────────────────────────────────────────────────────────────
+    panel:(o)=>({position:"absolute",right:0,top:0,bottom:0,width:"min(480px,92vw)",background:"#faf7f2",borderLeft:"1px solid rgba(18,16,14,.1)",transform:o?"translateX(0)":"translateX(100%)",transition:"transform .34s cubic-bezier(.16,1,.3,1)",display:"flex",flexDirection:"column",zIndex:40,boxShadow:"-6px 0 24px rgba(18,16,14,.09)"}),
     panelStripe:(c)=>({height:4,flexShrink:0,background:c}),
-    panelHdr:{padding:"20px 24px 16px",borderBottom:"1px solid rgba(18,16,14,.07)",flexShrink:0,position:"relative"},
-    panelClose:{position:"absolute",top:10,right:12,width:24,height:24,borderRadius:"50%",background:"#f0ebe0",border:"1px solid rgba(18,16,14,.1)",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",color:"#12100e"},
-    panelCat:{fontSize:8,letterSpacing:".18em",textTransform:"uppercase",fontWeight:500,marginBottom:3,opacity:.7},
-    panelDate:{fontSize:9,color:"#c8963c",marginBottom:6},
+    panelHdr:{padding:"22px 26px 18px",borderBottom:"1px solid rgba(18,16,14,.07)",flexShrink:0,position:"relative"},
+    panelClose:{position:"absolute",top:12,right:14,width:26,height:26,borderRadius:"50%",background:"#f0ebe0",border:"1px solid rgba(18,16,14,.1)",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",color:"#12100e"},
+    panelCat:{fontSize:8,letterSpacing:".18em",textTransform:"uppercase",fontWeight:500,marginBottom:4,opacity:.7},
+    panelDate:{fontSize:10,color:"#c8963c",marginBottom:7},
     panelTitle:{fontFamily:"Georgia,serif",fontSize:26,lineHeight:1.2,color:"#12100e"},
-    panelBody:{flex:1,overflowY:"auto",padding:"22px 26px",scrollbarWidth:"thin",scrollbarColor:"#e0d9cc transparent"},
+    panelBody:{flex:1,overflowY:"auto",padding:"24px 28px",scrollbarWidth:"thin",scrollbarColor:"#e0d9cc transparent"},
     panelContent:{fontFamily:"Georgia,serif",fontSize:17,lineHeight:1.75,color:"#12100e"},
+    panelError:{padding:"10px 18px",background:"#fff0f0",color:"#c02828",fontSize:12,borderBottom:"1px solid #fcc"},
     loading:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:160,gap:12},
     bars:{display:"flex",gap:4,alignItems:"flex-end",height:20},
     barsLbl:{fontSize:9,letterSpacing:".14em",color:"rgba(18,16,14,.35)",textTransform:"uppercase"},
+
+    // ── LEGEND ──────────────────────────────────────────────────────────────
     legend:(o)=>({position:"absolute",left:0,top:0,bottom:0,width:240,background:"#faf7f2",borderRight:"1px solid rgba(18,16,14,.09)",transform:o?"translateX(0)":"translateX(-100%)",transition:"transform .3s cubic-bezier(.16,1,.3,1)",overflowY:"auto",padding:18,zIndex:35,boxShadow:"4px 0 14px rgba(18,16,14,.05)"}),
     legHead:{fontSize:10,letterSpacing:".14em",textTransform:"uppercase",color:"rgba(18,16,14,.38)",fontWeight:500,marginBottom:9},
     legItem:{display:"flex",alignItems:"center",gap:7,marginBottom:5},
     legDot:(c)=>({width:8,height:8,borderRadius:"50%",background:c,flexShrink:0}),
     legBar:(c)=>({width:12,height:5,borderRadius:2,background:c,flexShrink:0}),
-    searchWrap:{position:"relative",flexShrink:0},
-    searchInput:{height:34,width:260,borderRadius:7,border:"1px solid rgba(18,16,14,.18)",background:"#fffaf3",padding:"0 34px 0 30px",fontSize:13,fontFamily:"'DM Mono',monospace",color:"#12100e",outline:"none",transition:"all .2s"},
-    searchIcon:{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",fontSize:12,color:"rgba(18,16,14,.35)",pointerEvents:"none"},
-    searchClear:{position:"absolute",right:7,top:"50%",transform:"translateY(-50%)",fontSize:11,color:"rgba(18,16,14,.4)",cursor:"pointer",background:"none",border:"none",padding:0,lineHeight:1},
-    searchDropdown:{position:"absolute",top:"calc(100% + 6px)",left:0,width:360,background:"#faf7f2",border:"1px solid rgba(18,16,14,.14)",borderRadius:8,boxShadow:"0 8px 32px rgba(18,16,14,.12)",zIndex:100,overflow:"hidden"},
-    searchHeader:{padding:"8px 12px 6px",borderBottom:"1px solid rgba(18,16,14,.07)",display:"flex",alignItems:"center",gap:6},
-    searchHeaderTxt:{fontSize:9,color:"rgba(18,16,14,.35)",letterSpacing:".1em",textTransform:"uppercase",flex:1},
-    searchSpinner:{width:10,height:10,borderRadius:"50%",border:"1.5px solid rgba(18,16,14,.15)",borderTop:"1.5px solid #c8963c",animation:"spin .7s linear infinite"},
-    searchItem:{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 12px",cursor:"pointer",borderBottom:"1px solid rgba(18,16,14,.05)",transition:"background .12s"},
-    searchDot:(c)=>({width:8,height:8,borderRadius:"50%",background:c,flexShrink:0,marginTop:3}),
-    searchItemInfo:{flex:1,minWidth:0},
-    searchItemTitle:{fontSize:14,fontWeight:500,color:"#12100e",marginBottom:3,fontFamily:"Georgia,serif"},
-    searchItemDate:{fontSize:11,color:"#b17a25",marginBottom:3},
-    searchItemDesc:{fontSize:12,color:"rgba(18,16,14,.62)",lineHeight:1.55,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"},
-    searchItemRel:{fontSize:8,color:"rgba(18,16,14,.35)",fontStyle:"italic",marginTop:2},
-    searchItemNav:{fontSize:9,color:"rgba(18,16,14,.3)",flexShrink:0,marginTop:2},
-    searchEmpty:{padding:"20px 12px",textAlign:"center",fontSize:10,color:"rgba(18,16,14,.35)"},
-    bmBar:{display:"flex",alignItems:"center",gap:6,padding:"8px 18px 6px",borderBottom:"1px solid rgba(18,16,14,.06)",flexShrink:0,flexWrap:"wrap"},
-    bmBtn:(active,col)=>({display:"inline-flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:12,fontSize:9,letterSpacing:".08em",fontWeight:500,cursor:"pointer",border:`1.5px solid ${col||"rgba(18,16,14,.2)"}`,background:active?`${col||"#c8963c"}18`:"transparent",color:active?(col||"#c8963c"):"rgba(18,16,14,.5)",transition:"all .15s",whiteSpace:"nowrap"}),
-    bmMenu:{position:"absolute",bottom:"calc(100% + 4px)",left:0,background:"#faf7f2",border:"1px solid rgba(18,16,14,.14)",borderRadius:8,boxShadow:"0 6px 24px rgba(18,16,14,.12)",zIndex:60,minWidth:160,overflow:"hidden"},
-    bmMenuItem:(active)=>({padding:"8px 14px",cursor:"pointer",fontSize:10,color:active?"#c8963c":"#12100e",background:active?"rgba(200,150,60,.07)":"transparent",display:"flex",alignItems:"center",gap:8,transition:"background .12s"}),
-    bmSection:{padding:"6px 14px 4px",fontSize:8,letterSpacing:".15em",textTransform:"uppercase",color:"rgba(18,16,14,.3)"},
-    bmViewPanel:{position:"absolute",left:0,top:0,bottom:0,width:300,background:"#faf7f2",borderRight:"1px solid rgba(18,16,14,.1)",transform:"translateX(0)",display:"flex",flexDirection:"column",zIndex:38,boxShadow:"4px 0 16px rgba(18,16,14,.06)"},
-    bmViewItem:{display:"flex",alignItems:"flex-start",gap:8,padding:"9px 14px",borderBottom:"1px solid rgba(18,16,14,.05)",cursor:"pointer",transition:"background .12s"},
-    bmTag:(col)=>({display:"inline-flex",alignItems:"center",padding:"1px 6px",borderRadius:8,fontSize:8,letterSpacing:".08em",border:`1px solid ${col}44`,background:`${col}12`,color:col,flexShrink:0,marginTop:1}),
-    searchAiBadge:{display:"inline-flex",alignItems:"center",gap:4,padding:"2px 7px",borderRadius:10,background:"rgba(200,150,60,.1)",border:"1px solid rgba(200,150,60,.2)",fontSize:8,color:"#c8963c",letterSpacing:".08em"},
     legLbl:{fontSize:12,color:"#12100e"},
+
+    // ── BOOKMARKS ───────────────────────────────────────────────────────────
+    bmBar:{display:"flex",alignItems:"center",gap:6,padding:"10px 22px 8px",borderBottom:"1px solid rgba(18,16,14,.06)",flexShrink:0,flexWrap:"wrap"},
+    bmBtn:(active,col)=>({display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:12,fontSize:10,letterSpacing:".08em",fontWeight:500,cursor:"pointer",border:`1.5px solid ${col||"rgba(18,16,14,.2)"}`,background:active?`${col||"#c8963c"}18`:"transparent",color:active?(col||"#c8963c"):"rgba(18,16,14,.5)",transition:"all .15s",whiteSpace:"nowrap"}),
+    bmViewPanel:{position:"absolute",left:0,top:0,bottom:0,width:310,background:"#faf7f2",borderRight:"1px solid rgba(18,16,14,.1)",display:"flex",flexDirection:"column",zIndex:38,boxShadow:"4px 0 16px rgba(18,16,14,.06)"},
+    bmViewItem:{display:"flex",alignItems:"flex-start",gap:9,padding:"10px 16px",borderBottom:"1px solid rgba(18,16,14,.05)",cursor:"pointer",transition:"background .12s"},
+    bmTag:(col)=>({display:"inline-flex",alignItems:"center",padding:"2px 7px",borderRadius:8,fontSize:9,letterSpacing:".08em",border:`1px solid ${col}44`,background:`${col}12`,color:col,flexShrink:0,marginTop:1}),
   };
 
   const barH=[7,14,20,14,7];
+  const TAG_COLORS=["#c8963c","#0868a8","#0a7848","#b03010","#7a5fa5"];
+
   return (
     <div style={css.app}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap');@keyframes dp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.5)}}@keyframes bw{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}@keyframes spin{to{transform:rotate(360deg)}}::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#e0d9cc}.srch-item:hover{background:#f5f0e8!important}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap');
+        @keyframes dp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.5)}}
+        @keyframes bw{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#d8d0c3;border-radius:999px}
+        .srch-item:hover{background:#f5f0e8!important}
+        .epoch-pill:hover{opacity:.85;transform:translateY(-1px)}
+        .period-pill:hover{transform:translateY(-1px)}
+        .card-hover:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(18,16,14,.09)}
+        button{transition:all .15s}`}
+      </style>
 
-      <div style={css.topbar}>
-        {/* Row 1: brand + epochs + controls */}
-        <div style={css.topbarRow}>
-          <div style={css.brand}>Chronos<span style={css.brandSub}>IA</span></div>
-          <div style={css.pills}>
-            {EPOCHS.map(ep=>(
-              <div key={ep.label} style={css.pill(ep)} onClick={()=>navigateToEpoch(ep)}
-                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"}
-                onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-                {ep.label}
-              </div>
-            ))}
+      {/* ── SIDEBAR ── */}
+      <aside style={css.sidebar}>
+        {/* Header */}
+        <div style={css.sbHeader}>
+          <div style={css.sbTop}>
+            <div>
+              <div style={css.brand}>Chronos<span style={css.brandSub}>IA</span></div>
+              <div style={css.brandLine}>Histoire de l'univers, de la<br/>Terre et du vivant.</div>
+            </div>
+            <button style={css.resetBtn} onClick={()=>{S.current.vs=UA*1.04;S.current.ve=20;scheduleRedraw();triggerFetch();}}>Reset</button>
           </div>
-          <div style={css.topR}>
-            {/* SEARCH */}
-            <div style={css.searchWrap}>
-              <span style={css.searchIcon}>⌕</span>
-              <input
-                style={css.searchInput}
-                placeholder="Rechercher un événement…"
-                value={ui.searchQuery}
-                onChange={e=>handleSearch(e.target.value)}
-                onFocus={()=>setUi(u=>({...u,searchOpen:true}))}
-                onBlur={()=>setTimeout(()=>setUi(u=>({...u,searchOpen:false})),200)}
-              />
-              {ui.searchQuery&&(
-                <button style={css.searchClear} onMouseDown={e=>{e.preventDefault();handleSearch("");}}>✕</button>
-              )}
-              {ui.searchOpen&&ui.searchQuery&&(
-                <div style={css.searchDropdown}>
-                  <div style={css.searchHeader}>
-                    <span style={css.searchHeaderTxt}>
-                      {ui.searchLoading?"Recherche IA en cours…":ui.searchDone?`${ui.searchResults.length} résultat${ui.searchResults.length!==1?"s":""}`:ui.searchResults.length>0?"Résultats locaux…":""}
-                    </span>
-                    {ui.searchLoading&&<div style={css.searchSpinner}/>}
-                    {ui.searchDone&&<span style={css.searchAiBadge}>✦ IA</span>}
-                  </div>
-                  {ui.searchResults.length===0&&!ui.searchLoading&&ui.searchDone&&(
-                    <div style={css.searchEmpty}>Aucun événement trouvé pour « {ui.searchQuery} »</div>
-                  )}
-                  {ui.searchResults.length===0&&!ui.searchLoading&&!ui.searchDone&&(
-                    <div style={css.searchEmpty}>Recherche en cours…</div>
-                  )}
-                  {ui.searchResults.map((ev,i)=>(
-                    <div key={ev.id||i} className="srch-item" style={css.searchItem}
-                      onMouseDown={e=>{e.preventDefault();goToResult(ev);}}>
-                      <div style={css.searchDot(cc(ev.cat))}/>
-                      <div style={css.searchItemInfo}>
-                        <div style={css.searchItemTitle}>{ev.title}</div>
-                        <div style={css.searchItemDate}>{ev.date_label}</div>
-                        <div style={css.searchItemDesc}>{ev.desc}</div>
-                        {ev.relevance&&<div style={css.searchItemRel}>↳ {ev.relevance}</div>}
-                      </div>
-                      <div style={css.searchItemNav}>→</div>
-                    </div>
-                  ))}
+        </div>
+
+        {/* Recherche */}
+        <div style={css.sbSection}>
+          <div style={css.sbLabel}>Recherche</div>
+          <div style={css.searchWrap}>
+            <span style={css.searchIcon}>⌕</span>
+            <input style={css.searchInput} placeholder="Rechercher : Lune, Rome, di..."
+              value={ui.searchQuery}
+              onChange={e=>handleSearch(e.target.value)}
+              onFocus={()=>setUi(u=>({...u,searchOpen:true}))}
+              onBlur={()=>setTimeout(()=>setUi(u=>({...u,searchOpen:false})),200)}/>
+            {ui.searchQuery&&<button style={css.searchClear} onMouseDown={e=>{e.preventDefault();handleSearch("");}}>✕</button>}
+            {ui.searchOpen&&ui.searchQuery&&(
+              <div style={css.searchDropdown}>
+                <div style={css.searchHeader}>
+                  <span style={css.searchHeaderTxt}>{ui.searchLoading?"IA en cours…":ui.searchDone?`${ui.searchResults.length} résultat(s)`:""}</span>
+                  {ui.searchLoading&&<div style={css.searchSpinner}/>}
+                  {ui.searchDone&&<span style={css.searchAiBadge}>✦ IA</span>}
                 </div>
-              )}
-            </div>
-            <button style={css.iconBtn} onClick={()=>setUi(u=>({...u,showBookmarksView:!u.showBookmarksView,legendOpen:false}))} title="Signets">🔖</button>
-            <button style={css.iconBtn} onClick={()=>setUi(u=>({...u,legendOpen:!u.legendOpen,showBookmarksView:false}))}>◫</button>
-            <button style={css.iconBtn} onClick={()=>{S.current.vs=UA*1.04;S.current.ve=20;scheduleRedraw();triggerFetch();}}>⌂</button>
-          </div>
-        </div>
-        {/* Row 2: geological periods */}
-        <div style={{...css.topbarRow,gap:3,paddingBottom:2}}>
-          <span style={{fontSize:9,letterSpacing:".12em",color:"rgba(18,16,14,.3)",textTransform:"uppercase",flexShrink:0,marginRight:4}}>Périodes</span>
-          <div style={{...css.pills,gap:3}}>
-            {PERIODS.map(per=>(
-              <div key={per.label}
-                style={{flexShrink:0,padding:"3px 9px",borderRadius:10,fontSize:10,letterSpacing:".04em",fontWeight:500,cursor:"pointer",
-                  border:`1px solid ${per.color}99`,background:per.color+"33",
-                  color:per.textColor==="#fff"?"#222":per.textColor||"#222",
-                  whiteSpace:"nowrap",transition:"all .15s"}}
-                onClick={()=>navigateToEpoch({from:per.from,to:per.to})}
-                onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"}
-                onMouseLeave={e=>e.currentTarget.style.transform="none"}>
-                {per.label}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div ref={wrapRef} style={css.wrap}>
-        <canvas ref={canvasRef} style={css.cnv}/>
-
-        <div style={css.legend(ui.legendOpen)}>
-          <div style={{...css.legHead,marginBottom:9}}>Importance</div>
-          {[["●●","Majeur — tige pleine, gros point"],["●·","Notable — pointillé fin"],["·","Contextuel — pointillé léger"]].map(([s,l])=>(
-            <div key={l} style={{...css.legItem,marginBottom:5,alignItems:"flex-start"}}>
-              <span style={{fontSize:12,color:"#8a6000",flexShrink:0,marginTop:1}}>{s[0]}</span>
-              <span style={{fontSize:9,color:"rgba(18,16,14,.5)",lineHeight:1.4}}>{l}</span>
-            </div>
-          ))}
-          <div style={{...css.legHead,marginTop:13}}>Catégories</div>
-          {Object.entries(CAT_COL).map(([k,v])=>(
-            <div key={k} style={css.legItem}><div style={css.legDot(v)}/><span style={css.legLbl}>{k.charAt(0).toUpperCase()+k.slice(1)}</span></div>
-          ))}
-          <div style={{...css.legHead,marginTop:13}}>Espèces</div>
-          {LIFE_TREE.slice(0,8).map(s=>(
-            <div key={s.label||s.label} style={css.legItem}><div style={css.legBar(s.color)}/><span style={css.legLbl}>{s.label||s.label}</span></div>
-          ))}
-          <div style={{...css.legHead,marginTop:13}}>Navigation</div>
-          {["🖱 Molette → zoom","↔ Drag → déplacer","◎ Clic → fiche IA","Pilules → époque animée","⌂ → vue complète"].map(t=>(
-            <div key={t} style={{fontSize:9.5,color:"rgba(18,16,14,.45)",marginBottom:4,lineHeight:1.6}}>{t}</div>
-          ))}
-        </div>
-
-        <div style={css.zoomBtns}>
-          {["+","−"].map((lbl,i)=>(
-            <button key={lbl} style={css.zoomBtn}
-              onMouseEnter={e=>e.currentTarget.style.background="#f0ebe0"}
-              onMouseLeave={e=>e.currentTarget.style.background="#faf7f2"}
-              onClick={()=>{const s=S.current,W=canvasRef.current?.width||800,c=makeCoord(s.vs,s.ve,W).toYa(W/2);zoomAround(c,i===0?.72:1.38);scheduleRedraw();triggerFetch();}}>
-              {lbl}
-            </button>
-          ))}
-        </div>
-        <div style={css.mini}><canvas ref={miniRef}/></div>
-
-        {ui.tooltip&&(
-          <div style={css.tt(ui.tooltip)}>
-            <div style={css.ttDate}>{ui.tooltip.date}</div>
-            <div style={css.ttTitle}>{ui.tooltip.title}</div>
-            <div style={css.ttHint}>Cliquer pour la fiche complète</div>
-          </div>
-        )}
-
-        {/* BOOKMARKS VIEW */}
-        {ui.showBookmarksView&&(
-          <div style={css.bmViewPanel}>
-            <div style={{padding:"12px 14px 8px",borderBottom:"1px solid rgba(18,16,14,.08)",display:"flex",alignItems:"center",gap:8}}>
-              <div style={{fontFamily:"Georgia,serif",fontSize:14,fontWeight:400,color:"#12100e",flex:1}}>Signets</div>
-              <span style={{fontSize:10,color:"rgba(18,16,14,.35)"}}>{Object.keys(bookmarks).length}</span>
-              <button style={{...css.panelClose,position:"static"}} onClick={()=>setUi(u=>({...u,showBookmarksView:false}))}>✕</button>
-            </div>
-            {/* Tags management */}
-            <div style={{padding:"8px 14px 6px",borderBottom:"1px solid rgba(18,16,14,.06)"}}>
-              <div style={{fontSize:8,letterSpacing:".15em",textTransform:"uppercase",color:"rgba(18,16,14,.3)",marginBottom:6}}>Catégories</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                {customTags.map(tag=>(
-                  <div key={tag} style={{display:"flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:10,background:"rgba(18,16,14,.05)",border:"1px solid rgba(18,16,14,.1)",fontSize:9}}>
-                    <span style={{color:"#12100e"}}>{tag}</span>
-                    <span style={{cursor:"pointer",color:"rgba(18,16,14,.3)",fontSize:11,lineHeight:1}} onClick={()=>removeCustomTag(tag)}>×</span>
+                {ui.searchResults.length===0&&!ui.searchLoading&&ui.searchDone&&<div style={css.searchEmpty}>Aucun résultat pour «&nbsp;{ui.searchQuery}&nbsp;»</div>}
+                {ui.searchResults.map((ev,i)=>(
+                  <div key={ev.id||i} className="srch-item" style={css.searchItem} onMouseDown={e=>{e.preventDefault();goToResult(ev);}}>
+                    <div style={css.searchDot(cc(ev.cat))}/>
+                    <div style={css.searchItemInfo}>
+                      <div style={css.searchItemTitle}>{ev.title}</div>
+                      <div style={css.searchItemDate}>{ev.date_label}</div>
+                      <div style={css.searchItemDesc}>{ev.desc}</div>
+                      {ev.relevance&&<div style={css.searchItemRel}>↳ {ev.relevance}</div>}
+                    </div>
+                    <div style={css.searchItemNav}>→</div>
                   </div>
                 ))}
-                {addingTag?(
-                  <div style={{display:"flex",gap:4}}>
-                    <input autoFocus value={newTagInput} onChange={e=>setNewTagInput(e.target.value)}
-                      onKeyDown={e=>{if(e.key==="Enter")addCustomTag(newTagInput);if(e.key==="Escape"){setAddingTag(false);setNewTagInput("");}}}
-                      style={{width:80,height:20,border:"1px solid rgba(18,16,14,.2)",borderRadius:4,padding:"0 6px",fontSize:9,fontFamily:"'DM Mono',monospace",outline:"none"}}
-                      placeholder="Nouvelle…"/>
-                    <button onClick={()=>addCustomTag(newTagInput)} style={{...css.panelClose,position:"static",width:20,height:20,fontSize:10}}>✓</button>
-                  </div>
-                ):(
-                  <div style={{padding:"2px 8px",borderRadius:10,border:"1px dashed rgba(18,16,14,.2)",fontSize:9,color:"rgba(18,16,14,.4)",cursor:"pointer"}}
-                    onClick={()=>setAddingTag(true)}>+ Ajouter</div>
-                )}
               </div>
-            </div>
-            {/* Bookmarked events */}
-            <div style={{flex:1,overflowY:"auto"}}>
-              {Object.keys(bookmarks).length===0&&(
-                <div style={{padding:"24px 14px",textAlign:"center",fontSize:10,color:"rgba(18,16,14,.3)"}}>
-                  Aucun signet pour l'instant.<br/>
-                  <span style={{fontSize:9}}>Ouvrez un événement et cliquez 🔖</span>
-                </div>
-              )}
-              {Object.entries(bookmarks).map(([evId,bm])=>{
-                const tagColor=["#c8963c","#0868a8","#0a7848","#b03010","#7a5fa5"][customTags.indexOf(bm.tag)%5]||"#888";
-                return(
-                  <div key={evId} className="srch-item" style={css.bmViewItem}
-                    onClick={()=>{
-                      // Navigate to event
-                      const ev=ALL_EVENTS.find(e=>e.id===evId)||S.current.aiEvents.find(e=>e.id===evId)||{id:evId,...bm,importance:2,minZoom:0};
-                      goToResult(ev);
-                    }}>
-                    <div style={css.legDot(cc(bm.cat))}/>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:11,fontFamily:"Georgia,serif",color:"#12100e",marginBottom:2}}>{bm.title}</div>
-                      <div style={{fontSize:9,color:"#c8963c",marginBottom:3}}>{bm.date_label}</div>
-                      <div style={css.bmTag(tagColor)}>{bm.tag}</div>
-                    </div>
-                    <span style={{fontSize:10,color:"rgba(18,16,14,.25)",cursor:"pointer",flexShrink:0,marginLeft:4}}
-                      onClick={e=>{e.stopPropagation();removeBookmark(evId);}}>×</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* EVENT PANEL */}
-        <div style={css.panel(ui.panelOpen)}>
-          <div style={css.panelStripe(ui.panelCatColor)}/>
-          <div style={css.panelHdr}>
-            <button style={css.panelClose} onClick={closePanel}>✕</button>
-            <div style={{...css.panelCat,color:ui.panelCatColor}}>{ui.panelCat}</div>
-            <div style={css.panelDate}>{ui.panelDate}</div>
-            <div style={css.panelTitle}>{ui.panelTitle}</div>
-          </div>
-          {/* Bookmark bar */}
-          {ui.panelEventId&&(
-            <div style={{...css.bmBar,position:"relative"}}>
-              <span style={{fontSize:9,color:"rgba(18,16,14,.35)",marginRight:2}}>Signet :</span>
-              {customTags.map((tag,i)=>{
-                const col=["#c8963c","#0868a8","#0a7848","#b03010","#7a5fa5"][i%5];
-                const ev=S.current._currentPanelEv;
-                const active=ev&&bookmarks[ev.id]?.tag===tag;
-                return(
-                  <div key={tag} style={css.bmBtn(active,col)}
-                    onClick={()=>{const ev2=S.current._currentPanelEv;if(ev2)toggleBookmark(ev2,tag);}}>
-                    {active?"✓ ":""}{tag}
-                  </div>
-                );
-              })}
-              {addingTag?(
-                <div style={{display:"flex",gap:3,alignItems:"center"}}>
-                  <input autoFocus value={newTagInput} onChange={e=>setNewTagInput(e.target.value)}
-                    onKeyDown={e=>{if(e.key==="Enter")addCustomTag(newTagInput);if(e.key==="Escape"){setAddingTag(false);setNewTagInput("");}}}
-                    style={{width:70,height:18,border:"1px solid rgba(18,16,14,.2)",borderRadius:4,padding:"0 5px",fontSize:9,fontFamily:"'DM Mono',monospace",outline:"none"}}
-                    placeholder="Nom…"/>
-                  <span style={{cursor:"pointer",fontSize:10,color:"#0a7848"}} onClick={()=>addCustomTag(newTagInput)}>✓</span>
-                </div>
-              ):(
-                <div style={{...css.bmBtn(false,"rgba(18,16,14,.3)"),borderStyle:"dashed"}}
-                  onClick={()=>setAddingTag(true)}>+ Tag</div>
-              )}
-            </div>
-          )}
-          <div style={css.panelBody}>
-            {ui.panelContent==="loading"?(
-              <div style={css.loading}>
-                <div style={css.bars}>{barH.map((h,i)=>(
-                  <span key={i} style={{width:3,height:h,borderRadius:2,background:"#c8963c",animation:`bw 1s ${i*.15}s ease-in-out infinite`,display:"inline-block"}}/>
-                ))}</div>
-                <div style={css.barsLbl}>Claude rédige la fiche…</div>
-              </div>
-            ):(
-              <div style={css.panelContent} dangerouslySetInnerHTML={{__html:ui.panelContent||""}}/>
             )}
           </div>
         </div>
-      </div>
 
-      <div style={css.statusbar}>
-        <div style={css.statusEpoch}>{ui.epochLabel}</div>
-        <div style={css.aiBadge(ui.aiVisible)}><div style={css.aiDot}/><span>{ui.aiLabel}</span></div>
-        <div style={css.statusR}>{ui.range}</div>
+        {/* Grandes ères */}
+        <div style={css.sbSection}>
+          <div style={css.sbLabel}>Grandes ères</div>
+          <div style={css.epochGrid}>
+            {EPOCHS.map(ep=>(
+              <button key={ep.label} className="epoch-pill" style={css.epochPill(ep)} onClick={()=>navigateToEpoch(ep)}>
+                <span style={css.epochDot(ep.stripe)}/>
+                <span style={{fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ep.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Périodes géologiques */}
+        <div style={css.sbSection}>
+          <div style={css.sbLabel}>Périodes géologiques</div>
+          <div style={css.periodWrap}>
+            {PERIODS.map(per=>(
+              <button key={per.label} className="period-pill" style={css.periodPill(per)} onClick={()=>navigateToEpoch({from:per.from,to:per.to})}>
+                {per.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer actions */}
+        <div style={css.sbFooter}>
+          <button style={css.sbAction} onClick={()=>setUi(u=>({...u,showBookmarksView:!u.showBookmarksView,legendOpen:false}))}>Signets</button>
+          <button style={css.sbAction} onClick={()=>setUi(u=>({...u,legendOpen:!u.legendOpen,showBookmarksView:false}))}>Légende</button>
+        </div>
+      </aside>
+
+      {/* ── MAIN ── */}
+      <div style={css.main}>
+        {/* Header */}
+        <div style={{...css.mainHeader,display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+          <div>
+            <div style={css.eyebrow}>Chronos Atlas</div>
+            <h1 style={css.pageTitle}>Explore toute l'histoire,<br/>simplement.</h1>
+            <p style={css.pageSubtitle}>{ui.epochLabel||"Vue globale"}</p>
+          </div>
+          <div style={css.headerRight}>
+            <button style={css.headerBtn(false)} onClick={()=>{S.current.vs=UA*1.04;S.current.ve=20;scheduleRedraw();triggerFetch();}}>Vue globale</button>
+            <button style={css.headerBtn(ui.legendOpen)} onClick={()=>setUi(u=>({...u,legendOpen:!u.legendOpen,showBookmarksView:false}))}>Légende</button>
+            <button style={css.headerBtn(ui.showBookmarksView)} onClick={()=>setUi(u=>({...u,showBookmarksView:!u.showBookmarksView,legendOpen:false}))}>Signets</button>
+          </div>
+        </div>
+
+        {/* Explore cards */}
+        <div style={css.cardsRow}>
+          {EXPLORE_CARDS.map(c=>(
+            <button key={c.title} className="card-hover" style={css.card(c)} onClick={()=>navigateToEpoch({from:c.from,to:c.to})}>
+              <div style={css.cardIcon(c.color)}>{c.title[0]}</div>
+              <div style={css.cardKicker}>{c.kicker}</div>
+              <div style={css.cardTitle}>{c.title}</div>
+              <div style={css.cardText}>{c.text}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Timeline card */}
+        <div style={css.timelineCard}>
+          <div style={css.timelineBar}>
+            <div style={css.timelineBarL}>
+              <span style={css.navLabel}>Navigation</span>
+              <span style={css.navValue}>{ui.range||"zoom ×1"}</span>
+            </div>
+            <span style={css.navHint}>Molette pour zoomer, glisser pour se déplacer, clic pour ouvrir une fiche.</span>
+          </div>
+
+          <div ref={wrapRef} style={css.wrap}>
+            <canvas ref={canvasRef} style={css.cnv}/>
+
+            {/* Legend */}
+            <div style={css.legend(ui.legendOpen)}>
+              <div style={{...css.legHead,marginBottom:9}}>Importance</div>
+              {[["●","Majeur — toujours visible"],["◦","Notable — zoom ×2+"],["·","Contextuel — zoom ×5+"]].map(([s,l])=>(
+                <div key={l} style={{...css.legItem,marginBottom:5}}>
+                  <span style={{fontSize:14,color:"#8a6000",flexShrink:0}}>{s}</span>
+                  <span style={{fontSize:11,color:"rgba(18,16,14,.55)",lineHeight:1.4}}>{l}</span>
+                </div>
+              ))}
+              <div style={{...css.legHead,marginTop:13}}>Catégories</div>
+              {Object.entries(CAT_COL).map(([k,v])=>(
+                <div key={k} style={css.legItem}><div style={css.legDot(v)}/><span style={css.legLbl}>{k.charAt(0).toUpperCase()+k.slice(1)}</span></div>
+              ))}
+              <div style={{...css.legHead,marginTop:13}}>Navigation</div>
+              {["🖱 Molette → zoom","↔ Drag → déplacer","◎ Clic → fiche IA","Pilules → époque","⌂ → vue globale"].map(t=>(
+                <div key={t} style={{fontSize:11,color:"rgba(18,16,14,.45)",marginBottom:5,lineHeight:1.5}}>{t}</div>
+              ))}
+            </div>
+
+            {/* Zoom buttons */}
+            <div style={css.zoomBtns}>
+              {["+","−"].map((lbl,i)=>(
+                <button key={lbl} style={css.zoomBtn}
+                  onMouseEnter={e=>e.currentTarget.style.background="#f0ebe0"}
+                  onMouseLeave={e=>e.currentTarget.style.background="#faf7f2"}
+                  onClick={()=>{const s=S.current,W=canvasRef.current?.width||800,c=makeCoord(s.vs,s.ve,W).toYa(W/2);zoomAround(c,i===0?.72:1.38);scheduleRedraw();triggerFetch();}}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+
+            <div style={css.mini}><canvas ref={miniRef}/></div>
+
+            {/* Tooltip */}
+            {ui.tooltip&&(
+              <div style={css.tt(ui.tooltip)}>
+                <div style={css.ttDate}>{ui.tooltip.date}</div>
+                <div style={css.ttTitle}>{ui.tooltip.title}</div>
+                <div style={css.ttHint}>Cliquer pour la fiche complète</div>
+              </div>
+            )}
+
+            {/* Bookmarks panel */}
+            {ui.showBookmarksView&&(
+              <div style={css.bmViewPanel}>
+                <div style={{padding:"12px 16px 8px",borderBottom:"1px solid rgba(18,16,14,.08)",display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{fontFamily:"Georgia,serif",fontSize:15,color:"#12100e",flex:1}}>Signets</div>
+                  <span style={{fontSize:11,color:"rgba(18,16,14,.4)"}}>{Object.keys(bookmarks).length}</span>
+                  <button style={{...css.panelClose,position:"static"}} onClick={()=>setUi(u=>({...u,showBookmarksView:false}))}>✕</button>
+                </div>
+                <div style={{padding:"8px 16px 6px",borderBottom:"1px solid rgba(18,16,14,.06)"}}>
+                  <div style={{fontSize:9,letterSpacing:".12em",textTransform:"uppercase",color:"rgba(18,16,14,.4)",marginBottom:8}}>Catégories</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                    {customTags.map(tag=>(
+                      <div key={tag} style={{display:"flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:10,background:"rgba(18,16,14,.05)",border:"1px solid rgba(18,16,14,.1)",fontSize:11}}>
+                        <span style={{color:"#12100e"}}>{tag}</span>
+                        <button style={{...css.panelClose,position:"static",width:14,height:14,fontSize:9}} onClick={()=>removeCustomTag(tag)}>✕</button>
+                      </div>
+                    ))}
+                    {addingTag?(
+                      <div style={{display:"flex",gap:4}}>
+                        <input autoFocus value={newTagInput} onChange={e=>setNewTagInput(e.target.value)}
+                          onKeyDown={e=>{if(e.key==="Enter")addCustomTag(newTagInput);if(e.key==="Escape"){setAddingTag(false);setNewTagInput("");}}}
+                          style={{width:90,height:24,border:"1px solid rgba(18,16,14,.2)",borderRadius:5,padding:"0 7px",fontSize:11,fontFamily:"'DM Mono',monospace",outline:"none"}} placeholder="Nom..."/>
+                        <button style={{...css.panelClose,position:"static"}} onClick={()=>addCustomTag(newTagInput)}>✓</button>
+                      </div>
+                    ):(
+                      <button style={{padding:"3px 9px",borderRadius:10,border:"1px dashed rgba(18,16,14,.22)",fontSize:11,color:"rgba(18,16,14,.5)",cursor:"pointer",background:"transparent",fontFamily:"'DM Mono',monospace"}} onClick={()=>setAddingTag(true)}>+ Ajouter</button>
+                    )}
+                  </div>
+                </div>
+                <div style={{flex:1,overflowY:"auto"}}>
+                  {Object.keys(bookmarks).length===0&&<div style={{padding:"24px 16px",textAlign:"center",fontSize:12,color:"rgba(18,16,14,.4)",lineHeight:1.6}}>Aucun signet.<br/><span style={{fontSize:11}}>Ouvrez un événement et cliquez 🔖</span></div>}
+                  {Object.entries(bookmarks).map(([evId,bm])=>{
+                    const tagColor=TAG_COLORS[customTags.indexOf(bm.tag)%5]||"#888";
+                    const ev=ALL_EVENTS.find(e=>e.id===evId)||S.current.aiEvents.find(e=>e.id===evId)||{id:evId,...bm,importance:2,minZoom:0};
+                    return(
+                      <div key={evId} className="srch-item" style={css.bmViewItem} onClick={()=>goToResult(ev)}>
+                        <div style={css.legDot(cc(bm.cat))}/>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:13,fontFamily:"Georgia,serif",color:"#12100e",marginBottom:2}}>{bm.title}</div>
+                          <div style={{fontSize:10,color:"#b17a25",marginBottom:4}}>{bm.date_label}</div>
+                          <div style={css.bmTag(tagColor)}>{bm.tag}</div>
+                        </div>
+                        <span style={{fontSize:13,color:"rgba(18,16,14,.3)",cursor:"pointer"}} onClick={e=>{e.stopPropagation();removeBookmark(evId);}}>✕</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Event panel */}
+            <aside style={css.panel(ui.panelOpen)}>
+              <div style={css.panelStripe(ui.panelCatColor)}/>
+              <div style={css.panelHdr}>
+                <button style={css.panelClose} onClick={closePanel}>✕</button>
+                <div style={{...css.panelCat,color:ui.panelCatColor}}>{ui.panelCat}</div>
+                <div style={css.panelDate}>{ui.panelDate}</div>
+                <div style={css.panelTitle}>{ui.panelTitle}</div>
+              </div>
+              {ui.panelError&&<div style={css.panelError}>{ui.panelError}</div>}
+              {ui.panelEventId&&(
+                <div style={css.bmBar}>
+                  <span style={{fontSize:11,color:"rgba(18,16,14,.45)",marginRight:2}}>Signet :</span>
+                  {customTags.map((tag,i)=>{
+                    const col=TAG_COLORS[i%5];
+                    const currentEv=S.current._currentPanelEv;
+                    const active=currentEv&&bookmarks[currentEv.id]?.tag===tag;
+                    return(
+                      <button key={tag} style={css.bmBtn(active,col)} onClick={()=>{if(currentEv)toggleBookmark(currentEv,tag);}}>
+                        {active?"✓ ":""}{tag}
+                      </button>
+                    );
+                  })}
+                  {addingTag?(
+                    <div style={{display:"flex",gap:3,alignItems:"center"}}>
+                      <input autoFocus value={newTagInput} onChange={e=>setNewTagInput(e.target.value)}
+                        onKeyDown={e=>{if(e.key==="Enter")addCustomTag(newTagInput);if(e.key==="Escape"){setAddingTag(false);setNewTagInput("");}}}
+                        style={{width:80,height:24,border:"1px solid rgba(18,16,14,.2)",borderRadius:5,padding:"0 6px",fontSize:11,outline:"none"}} placeholder="Nom..."/>
+                      <button style={{...css.panelClose,position:"static"}} onClick={()=>addCustomTag(newTagInput)}>✓</button>
+                    </div>
+                  ):(
+                    <button style={{...css.bmBtn(false,"rgba(18,16,14,.3)"),borderStyle:"dashed"}} onClick={()=>setAddingTag(true)}>+ Tag</button>
+                  )}
+                </div>
+              )}
+              <div style={css.panelBody}>
+                {ui.panelContent==="loading"?(
+                  <div style={css.loading}>
+                    <div style={css.bars}>{barH.map((h,i)=>(
+                      <span key={i} style={{width:3,height:h,borderRadius:2,background:"#c8963c",animation:`bw 1s ${i*.15}s ease-in-out infinite`,display:"inline-block"}}/>
+                    ))}</div>
+                    <div style={css.barsLbl}>Génération de la fiche…</div>
+                  </div>
+                ):(
+                  <div style={css.panelContent} dangerouslySetInnerHTML={{__html:ui.panelContent||""}}/>
+                )}
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        {/* Status bar */}
+        <div style={css.statusbar}>
+          <div style={css.statusEpoch}>{ui.epochLabel}</div>
+          <div style={css.aiBadge(ui.aiVisible)}><div style={css.aiDot}/><span style={{fontSize:9,letterSpacing:".1em"}}>{ui.aiLabel}</span></div>
+          <div style={css.statusR}>{ui.range}</div>
+        </div>
       </div>
     </div>
   );
