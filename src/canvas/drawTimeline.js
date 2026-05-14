@@ -1,5 +1,5 @@
-import { EPOCHS, PERIODS, ALL_EVENTS, LIFE_TREE, CAT_COL, cc } from '../data/timelineData.js';
-import { L, fmt, makeCoord, zoomLvl } from '../utils/time.js';
+import { ALL_EVENTS, EPOCHS, LIFE_TREE, PERIODS, cc } from "../data/timelineData.js";
+import { L, fmt, makeCoord, zoomLvl } from "../utils/time.js";
 
 export function drawAll(canvas, miniCanvas, params) {
   const {vs,ve,aiEvents,selectedId,hoveredId} = params;
@@ -237,4 +237,3 @@ export function drawAll(canvas, miniCanvas, params) {
   }
   return {placed,LINE_Y,PERIOD_Y,PERIOD_H,TREE_TOP};
 }
-
