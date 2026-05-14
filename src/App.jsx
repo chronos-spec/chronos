@@ -305,4 +305,4 @@ En HTML simple (<p>,<h3>,<strong> uniquement). Sections : intro immersive (1§),
       </div>
     </div>
   );
-}
+},[]);// ← dépendances vides
