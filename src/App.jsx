@@ -1,3 +1,4 @@
+import { LifeTree } from "./components/LifeTree.jsx";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ALL_EVENTS, EPOCHS, PERIODS, PERIOD_DESCRIPTIONS, STATIC_CONTENT, UA, cc } from "./data/timelineData.js";
 import { buildPrompt, epochAt, fmt, L, makeCoord, zoomLvl } from "./utils/time.js";
