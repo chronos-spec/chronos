@@ -1,41 +1,28 @@
 import { useState } from "react";
 
 // ── DONNÉES ──────────────────────────────────────────────────────────────────
+// from/to en années (0 = aujourd'hui, null = encore vivant)
 const TREE = [
-  {
-    id:"vert", label:"🐟 Vertébrés", period:"~525 Ma",
-    desc:"Ancêtres communs de tous les animaux à colonne vertébrale.",
-    color:"#0ea5e9", vivant:true,
+  { id:"vert", label:"🐟 Vertébrés", period:"~525 Ma", from:525e6, to:null, color:"#0ea5e9", vivant:true,
+    desc:"Ancêtres communs de tous les animaux à colonne vertébrale. Apparus dans les mers cambriennes.",
     children:[
-      {
-        id:"amphi", label:"🐸 Amphibiens", period:"~375 Ma",
-        desc:"Premiers vertébrés à coloniser la terre, mais dépendants de l'eau pour se reproduire.",
-        color:"#0f766e", vivant:true,
+      { id:"amphi", label:"🐸 Amphibiens", period:"~375 Ma", from:375e6, to:null, color:"#0f766e", vivant:true,
+        desc:"Premiers vertébrés à coloniser la terre ferme. Grenouilles, salamandres, cécilies. Dépendants de l'eau pour se reproduire.",
       },
-      {
-        id:"amnio", label:"🥚 Amniotes", period:"~320 Ma",
-        desc:"L'œuf amniotique libère les vertébrés de l'eau. Donnent mammifères + reptiles.",
-        color:"#b45309", vivant:true,
+      { id:"amnio", label:"🥚 Amniotes", period:"~320 Ma", from:320e6, to:null, color:"#b45309", vivant:true,
+        desc:"L'œuf amniotique libère les vertébrés de l'eau. Tous les mammifères et reptiles (y compris oiseaux) en descendent.",
         children:[
-          {
-            id:"mamm", label:"🦁 Mammifères", period:"~225 Ma",
-            desc:"Poils, lait, sang chaud. Discrets sous les dinosaures, explosifs après −66 Ma.",
-            color:"#be185d", vivant:true,
+          { id:"mamm", label:"🦁 Mammifères", period:"~225 Ma", from:225e6, to:null, color:"#be185d", vivant:true,
+            desc:"Poils, lait, sang chaud. Discrets sous les dinosaures, explosifs après −66 Ma. Cétacés, chauves-souris, primates...",
             children:[
-              {
-                id:"primate", label:"🐒 Primates", period:"~55 Ma",
-                desc:"Vision en relief, mains préhensiles, cerveau développé.",
-                color:"#9333ea", vivant:true,
+              { id:"primate", label:"🐒 Primates", period:"~55 Ma", from:55e6, to:null, color:"#9333ea", vivant:true,
+                desc:"Vision en relief, mains préhensiles, cerveau développé. Apparaissent au début du Cénozoïque.",
                 children:[
-                  {
-                    id:"homini", label:"🦍 Hominidés", period:"~7 Ma",
-                    desc:"Séparation avec les chimpanzés. Bipédie progressive, fabrication d'outils.",
-                    color:"#c2410c", vivant:true,
+                  { id:"homini", label:"🦍 Hominidés", period:"~7 Ma", from:7e6, to:null, color:"#c2410c", vivant:true,
+                    desc:"Séparation avec les chimpanzés ~7 Ma. Bipédie progressive, outils, cerveau en expansion.",
                     children:[
-                      {
-                        id:"sapiens", label:"🧠 Homo sapiens", period:"~300 Ka",
-                        desc:"Notre espèce. Langage articulé, art, écriture, civilisations, IA.",
-                        color:"#92400e", vivant:true,
+                      { id:"sapiens", label:"🧠 Homo sapiens", period:"~300 Ka", from:300e3, to:null, color:"#92400e", vivant:true,
+                        desc:"Notre espèce. Maroc, ~300 000 ans. Langage articulé, art rupestre, agriculture, écriture, IA générative.",
                       }
                     ]
                   }
@@ -43,113 +30,73 @@ const TREE = [
               }
             ]
           },
-          {
-            id:"repti", label:"🦎 Reptiles (sens évolutif)", period:"~315 Ma",
-            desc:"Inclut tortues, squamates, archosaures et oiseaux. Pas un groupe naturel sans les oiseaux.",
-            color:"#0f6e56", vivant:true,
+          { id:"repti", label:"🦎 Reptiles (sens évolutif)", period:"~315 Ma", from:315e6, to:null, color:"#0f6e56", vivant:true,
+            desc:"Inclut tortues, squamates, archosaures ET les oiseaux biologiquement. Pas un groupe naturel sans eux.",
             children:[
-              {
-                id:"synap", label:"💀 Synapsida", period:"~310 Ma",
-                desc:"Les «reptiles mammaliens». Dominaient avant les dinosaures. Ancêtres directs des mammifères.",
-                color:"#6b7280", vivant:false, eteint:true,
+              { id:"synap", label:"💀 Synapsida", period:"~310–252 Ma", from:310e6, to:252e6, color:"#6b7280", vivant:false, eteint:true,
+                desc:"Les «reptiles mammaliens». Ont dominé avant les dinosaures. Ancêtres directs des mammifères. Éteints au Permien.",
               },
-              {
-                id:"tortu", label:"🐢 Tortues", period:"~230 Ma",
-                desc:"Carapace formée de côtes et vertèbres soudées. Quasi inchangées depuis 220 Ma. ~360 espèces.",
-                color:"#65a30d", vivant:true,
+              { id:"tortu", label:"🐢 Tortues", period:"~230 Ma", from:230e6, to:null, color:"#65a30d", vivant:true,
+                desc:"Carapace formée de côtes et vertèbres soudées. Quasi inchangées depuis 220 Ma. ~360 espèces actuelles.",
               },
-              {
-                id:"squa", label:"🐍 Squamates", period:"~200 Ma",
-                desc:"Le groupe le plus diversifié : ~10 000 espèces. Lézards, serpents, et mosasaures (éteints).",
-                color:"#ca8a04", vivant:true,
+              { id:"squa", label:"🐍 Squamates", period:"~200 Ma", from:200e6, to:null, color:"#ca8a04", vivant:true,
+                desc:"~10 000 espèces — le groupe le plus diversifié de reptiles. Lézards, serpents et mosasaures marins (éteints).",
                 children:[
-                  {
-                    id:"lezer", label:"🦎 Lézards", period:"~200 Ma",
-                    desc:"Iguanes, geckos, caméléons, varans… ~6 000 espèces.",
-                    color:"#84cc16", vivant:true,
+                  { id:"lezer", label:"🦎 Lézards", period:"~200 Ma", from:200e6, to:null, color:"#84cc16", vivant:true,
+                    desc:"Iguanes, geckos, caméléons, varans... ~6 000 espèces.",
                   },
-                  {
-                    id:"serp", label:"🐍 Serpents", period:"~150 Ma",
+                  { id:"serp", label:"🐍 Serpents", period:"~150 Ma", from:150e6, to:null, color:"#a3e635", vivant:true,
                     desc:"Dérivés de lézards fouisseurs ayant perdu les membres. ~3 700 espèces.",
-                    color:"#a3e635", vivant:true,
                   },
-                  {
-                    id:"mosa", label:"🌊 Mosasaures", period:"~98–66 Ma",
-                    desc:"Géants marins du Crétacé, apparentés aux varans. Jusqu'à 17 m. Éteints −66 Ma.",
-                    color:"#6b7280", vivant:false, eteint:true,
+                  { id:"mosa", label:"🌊 Mosasaures", period:"~98–66 Ma", from:98e6, to:66e6, color:"#6b7280", vivant:false, eteint:true,
+                    desc:"Géants marins du Crétacé, apparentés aux varans modernes. Jusqu'à 17 m. Éteints lors de l'impact −66 Ma.",
                   }
                 ]
               },
-              {
-                id:"archo", label:"🦖 Archosaures", period:"~250 Ma",
-                desc:"Le groupe le plus dominant : crocodiliens, ptérosaures, dinosaures (dont oiseaux).",
-                color:"#dc2626", vivant:true,
+              { id:"archo", label:"🦖 Archosaures", period:"~250 Ma", from:250e6, to:null, color:"#dc2626", vivant:true,
+                desc:"Groupe dominant depuis le Trias : crocodiliens, ptérosaures, dinosaures (dont oiseaux).",
                 children:[
-                  {
-                    id:"croco", label:"🐊 Crocodyliens", period:"~230 Ma",
+                  { id:"croco", label:"🐊 Crocodyliens", period:"~230 Ma", from:230e6, to:null, color:"#166534", vivant:true,
                     desc:"Plus proches parents vivants des oiseaux. Quasi inchangés depuis 80 Ma. 25 espèces.",
-                    color:"#166534", vivant:true,
                   },
-                  {
-                    id:"ptero", label:"🦴 Ptérosaures", period:"~228–66 Ma",
-                    desc:"Premiers vertébrés volants. 30 cm à 11 m d'envergure (Quetzalcoatlus). Pas des dinosaures.",
-                    color:"#7c3aed", vivant:false, eteint:true,
+                  { id:"ptero", label:"🦴 Ptérosaures", period:"~228–66 Ma", from:228e6, to:66e6, color:"#7c3aed", vivant:false, eteint:true,
+                    desc:"Premiers vertébrés volants. Envergures de 30 cm à 11 m. Pas des dinosaures. Éteints −66 Ma.",
                   },
-                  {
-                    id:"dino", label:"🦕 Dinosaures", period:"~230 Ma",
-                    desc:"165 Ma de règne. PAS éteints : leurs descendants, les oiseaux, comptent ~10 000 espèces.",
-                    color:"#b91c1c", vivant:true,
+                  { id:"dino", label:"🦕 Dinosaures", period:"~230 Ma", from:230e6, to:null, color:"#b91c1c", vivant:true,
+                    desc:"165 Ma de règne. PAS éteints : leurs descendants les oiseaux comptent ~10 000 espèces vivantes.",
                     children:[
-                      {
-                        id:"sauris", label:"🦴 Saurischiens", period:"~230 Ma",
-                        desc:"Bassin orienté comme les lézards. Paradoxalement, les oiseaux en descendent.",
-                        color:"#991b1b", vivant:true,
+                      { id:"sauris", label:"🦴 Saurischiens", period:"~230 Ma", from:230e6, to:null, color:"#991b1b", vivant:true,
+                        desc:"Bassin orienté comme les lézards. Les oiseaux en descendent paradoxalement (pas des ornithischiens).",
                         children:[
-                          {
-                            id:"therop", label:"🦖 Théropodes", period:"~230 Ma",
-                            desc:"Bipèdes, souvent carnivores. Donnent les oiseaux. T-Rex, Velociraptor, Spinosaurus.",
-                            color:"#a32d2d", vivant:true,
+                          { id:"therop", label:"🦖 Théropodes", period:"~230 Ma", from:230e6, to:null, color:"#a32d2d", vivant:true,
+                            desc:"Bipèdes, souvent carnivores. Ancêtres des oiseaux. T-Rex, Velociraptor, Spinosaurus...",
                             children:[
-                              {
-                                id:"trex", label:"💀 Tyrannosaurus rex", period:"~68–66 Ma",
-                                desc:"12 m, 8 tonnes. Prédateur apex. Probablement emplumé. Disparu −66 Ma.",
-                                color:"#6b7280", vivant:false, eteint:true,
+                              { id:"trex", label:"💀 Tyrannosaurus rex", period:"~68–66 Ma", from:68e6, to:66e6, color:"#6b7280", vivant:false, eteint:true,
+                                desc:"12 m, 8 tonnes. Prédateur apex du Crétacé. Probablement emplumé. Disparu −66 Ma.",
                               },
-                              {
-                                id:"velo", label:"💀 Velociraptor", period:"~75–71 Ma",
-                                desc:"Taille d'une dinde, couvert de plumes. Mongolie, Crétacé supérieur.",
-                                color:"#6b7280", vivant:false, eteint:true,
+                              { id:"velo", label:"💀 Velociraptor", period:"~75–71 Ma", from:75e6, to:71e6, color:"#6b7280", vivant:false, eteint:true,
+                                desc:"Taille d'une dinde, couvert de plumes. Mongolie. Lié à Deinonychus (plus grand).",
                               },
-                              {
-                                id:"oiseau", label:"🐦 Oiseaux", period:"~150 Ma",
-                                desc:"SONT des dinosaures théropodes. Archaeopteryx −150 Ma. ~10 000 espèces vivantes.",
-                                color:"#0369a1", vivant:true,
+                              { id:"oiseau", label:"🐦 Oiseaux", period:"~150 Ma", from:150e6, to:null, color:"#0369a1", vivant:true,
+                                desc:"SONT des dinosaures théropodes. Archaeopteryx −150 Ma. ~10 000 espèces vivantes aujourd'hui.",
                               }
                             ]
                           },
-                          {
-                            id:"sauro", label:"🦕 Sauropodes", period:"~200–66 Ma",
-                            desc:"Plus grands animaux terrestres de l'histoire. Diplodocus (27 m), Brachiosaurus (18 m de haut).",
-                            color:"#6b7280", vivant:false, eteint:true,
+                          { id:"sauro", label:"🦕 Sauropodes", period:"~200–66 Ma", from:200e6, to:66e6, color:"#6b7280", vivant:false, eteint:true,
+                            desc:"Plus grands animaux terrestres. Diplodocus (27 m), Brachiosaurus (18 m de haut). Herbivores.",
                             children:[
-                              {
-                                id:"diplo", label:"💀 Diplodocus / Brachiosaurus", period:"Jurassique",
+                              { id:"diplo", label:"💀 Diplodocus / Brachiosaurus", period:"Jurassique", from:155e6, to:145e6, color:"#6b7280", vivant:false, eteint:true,
                                 desc:"Diplodocus : 27 m, queue fouet. Brachiosaurus : broutait comme une girafe géante de 18 m.",
-                                color:"#6b7280", vivant:false, eteint:true,
                               }
                             ]
                           }
                         ]
                       },
-                      {
-                        id:"ornit", label:"🦴 Ornithischiens", period:"~230–66 Ma",
+                      { id:"ornit", label:"🦴 Ornithischiens", period:"~230–66 Ma", from:230e6, to:66e6, color:"#6b7280", vivant:false, eteint:true,
                         desc:"Malgré leur nom (bassin d'oiseau), pas les ancêtres des oiseaux. Tous herbivores, tous éteints.",
-                        color:"#6b7280", vivant:false, eteint:true,
                         children:[
-                          {
-                            id:"tricera", label:"💀 Triceratops / Stegosaurus", period:"Crétacé / Jurassique",
-                            desc:"Triceratops (3 cornes, collerette, 9 m). Stegosaurus (plaques dorsales, 9 m).",
-                            color:"#6b7280", vivant:false, eteint:true,
+                          { id:"tricera", label:"💀 Triceratops / Stegosaurus", period:"Crétacé / Jurassique", from:155e6, to:66e6, color:"#6b7280", vivant:false, eteint:true,
+                            desc:"Triceratops (3 cornes, 9 m, Crétacé). Stegosaurus (plaques dorsales, 9 m, Jurassique).",
                           }
                         ]
                       }
@@ -165,118 +112,160 @@ const TREE = [
   }
 ];
 
-// ── STYLES NOTION ─────────────────────────────────────────────────────────────
-const S = {
-  wrap: {
-    fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
-    fontSize:15, lineHeight:1.6, color:"#37352f",
-    padding:"24px 32px 40px", background:"#fff",
-    borderTop:"1px solid rgba(55,53,47,.09)",
-  },
-  header: {
-    display:"flex", alignItems:"center", gap:10,
-    marginBottom:20,
-  },
-  h2: {
-    fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
-    fontSize:20, fontWeight:700, color:"#37352f", margin:0,
-  },
-  badge: {
-    fontSize:12, padding:"2px 8px", borderRadius:4,
-    background:"rgba(55,53,47,.08)", color:"rgba(55,53,47,.65)",
-    fontWeight:500,
-  },
-  node: (depth) => ({
-    marginLeft: depth * 24,
-    marginBottom: 2,
-  }),
-  row: (open, color) => ({
-    display:"flex", alignItems:"flex-start", gap:6,
-    padding:"3px 6px", borderRadius:4,
-    cursor:"pointer",
-    transition:"background .1s",
-    background: open ? `${color}0f` : "transparent",
-    userSelect:"none",
-  }),
-  chevron: (open, hasKids) => ({
-    fontSize:11, color:"rgba(55,53,47,.35)",
-    transform: open ? "rotate(90deg)" : "rotate(0deg)",
-    transition:"transform .15s",
-    marginTop:4, flexShrink:0, width:14, textAlign:"center",
-    visibility: hasKids ? "visible" : "hidden",
-  }),
-  dot: (color) => ({
-    width:10, height:10, borderRadius:"50%", background:color,
-    flexShrink:0, marginTop:6,
-  }),
-  label: (depth, eteint) => ({
-    fontWeight: depth <= 1 ? 600 : depth <= 3 ? 500 : 400,
-    fontSize: depth === 0 ? 16 : depth <= 2 ? 15 : 14,
-    color: eteint ? "rgba(55,53,47,.45)" : "#37352f",
-    textDecoration: eteint ? "line-through" : "none",
-    flexShrink:0,
-  }),
-  period: {
-    fontSize:12, color:"rgba(55,53,47,.45)",
-    marginLeft:6, marginTop:4, flexShrink:0,
-  },
-  desc: (open) => ({
-    fontSize:13, color:"rgba(55,53,47,.65)",
-    lineHeight:1.5, marginTop:2, marginBottom:6,
-    display: open ? "block" : "none",
-    marginLeft:30, padding:"6px 10px",
-    borderLeft:"2px solid rgba(55,53,47,.1)",
-    background:"rgba(55,53,47,.02)", borderRadius:"0 4px 4px 0",
-  }),
-  extinctTag: {
-    fontSize:11, padding:"1px 6px", borderRadius:3,
-    background:"rgba(239,68,68,.1)", color:"#dc2626",
-    marginLeft:6, fontWeight:500, flexShrink:0, marginTop:4,
-  },
-  vivantTag: {
-    fontSize:11, padding:"1px 6px", borderRadius:3,
-    background:"rgba(22,163,74,.1)", color:"#15803d",
-    marginLeft:6, fontWeight:500, flexShrink:0, marginTop:4,
-  },
-};
+// ── BARRE TEMPORELLE ──────────────────────────────────────────────────────────
+const MAX_AGE = 530e6; // 530 Ma = échelle de la barre
 
-// ── COMPOSANT NŒUD ────────────────────────────────────────────────────────────
-function Node({node, depth=0}) {
-  const [open, setOpen] = useState(depth < 2);
+function TimeBar({ from, to, color, vivant }) {
+  const pct = (v) => Math.min(100, Math.max(0, (v / MAX_AGE) * 100));
+  const left  = 100 - pct(from);   // plus ancien = plus à gauche
+  const right = to ? 100 - pct(to) : 0;
+  const width = 100 - left - right;
+
+  return (
+    <div style={{
+      position:"relative", height:6, background:"rgba(55,53,47,.07)",
+      borderRadius:3, margin:"5px 0 2px", overflow:"hidden",
+    }}>
+      <div style={{
+        position:"absolute",
+        left:`${left}%`, width:`${Math.max(width,0.5)}%`, height:"100%",
+        background: vivant ? color : color+"88",
+        borderRadius:3,
+        transition:"width .3s",
+      }}/>
+      {/* Labels échelle */}
+    </div>
+  );
+}
+
+// ── ÉTIQUETTES DE L'ÉCHELLE ───────────────────────────────────────────────────
+function ScaleBar() {
+  const marks = [
+    { label:"Aujourd'hui", pct:100 },
+    { label:"100 Ma",  pct:100-100e6/MAX_AGE*100 },
+    { label:"250 Ma",  pct:100-250e6/MAX_AGE*100 },
+    { label:"400 Ma",  pct:100-400e6/MAX_AGE*100 },
+    { label:"530 Ma",  pct:0 },
+  ];
+  return (
+    <div style={{position:"relative",height:18,margin:"4px 0 16px",fontSize:10,
+      color:"rgba(55,53,47,.35)",fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif"}}>
+      <div style={{position:"absolute",left:0,right:0,top:8,height:1,background:"rgba(55,53,47,.08)"}}/>
+      {marks.map(m=>(
+        <div key={m.label} style={{position:"absolute",left:`${m.pct}%`,top:0,
+          transform:"translateX(-50%)",whiteSpace:"nowrap",textAlign:"center"}}>
+          <div style={{width:1,height:5,background:"rgba(55,53,47,.2)",margin:"0 auto 2px"}}/>
+          {m.label}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── NŒUD ─────────────────────────────────────────────────────────────────────
+function Node({ node, depth=0 }) {
+  const [open, setOpen]       = useState(depth < 2);
   const [showDesc, setShowDesc] = useState(false);
   const hasKids = node.children && node.children.length > 0;
 
+  const indent = depth * 20;
+
   return (
-    <div style={S.node(depth)}>
+    <div style={{marginLeft:indent, marginBottom:1}}>
+
       {/* Ligne principale */}
       <div
-        style={S.row(open, node.color)}
-        onClick={() => { if(hasKids) setOpen(o=>!o); setShowDesc(d=>!d); }}
-        onMouseEnter={e=>e.currentTarget.style.background=`${node.color}12`}
-        onMouseLeave={e=>e.currentTarget.style.background=open?`${node.color}0f`:"transparent"}
+        style={{
+          display:"flex", alignItems:"center", gap:6,
+          padding:"4px 8px", borderRadius:5, cursor:"pointer",
+          transition:"background .1s",
+          background: open && hasKids ? `${node.color}0d` : "transparent",
+        }}
+        onClick={()=>{ if(hasKids) setOpen(o=>!o); setShowDesc(d=>!d); }}
+        onMouseEnter={e=>e.currentTarget.style.background=`${node.color}14`}
+        onMouseLeave={e=>e.currentTarget.style.background=open&&hasKids?`${node.color}0d`:"transparent"}
       >
         {/* Chevron */}
-        <span style={S.chevron(open, hasKids)}>▶</span>
+        <span style={{
+          fontSize:10, color:"rgba(55,53,47,.3)",
+          transform:open?"rotate(90deg)":"rotate(0deg)",
+          transition:"transform .15s", flexShrink:0, width:12,
+          visibility:hasKids?"visible":"hidden",
+        }}>▶</span>
+
         {/* Point couleur */}
-        <div style={S.dot(node.color)}/>
+        <div style={{
+          width:9, height:9, borderRadius:"50%",
+          background:node.color, flexShrink:0,
+          opacity:node.eteint?.5:1,
+        }}/>
+
         {/* Label */}
-        <span style={S.label(depth, node.eteint)}>{node.label}</span>
+        <span style={{
+          fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
+          fontWeight: depth===0?700:depth<=2?600:500,
+          fontSize: depth===0?16:depth<=2?15:14,
+          color: node.eteint ? "rgba(55,53,47,.4)" : "#37352f",
+          textDecoration: node.eteint?"line-through":"none",
+        }}>
+          {node.label}
+        </span>
+
         {/* Période */}
-        <span style={S.period}>{node.period}</span>
-        {/* Badge vivant/éteint */}
+        <span style={{
+          fontSize:12,
+          fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
+          color:"rgba(55,53,47,.38)", marginLeft:2,
+        }}>
+          {node.period}
+        </span>
+
+        {/* Badge */}
         {node.eteint
-          ? <span style={S.extinctTag}>Éteint</span>
-          : <span style={S.vivantTag}>Vivant</span>
+          ? <span style={{fontSize:11,padding:"1px 7px",borderRadius:4,
+              background:"rgba(239,68,68,.1)",color:"#dc2626",fontWeight:500,marginLeft:"auto",flexShrink:0}}>
+              Éteint
+            </span>
+          : <span style={{fontSize:11,padding:"1px 7px",borderRadius:4,
+              background:"rgba(22,163,74,.1)",color:"#15803d",fontWeight:500,marginLeft:"auto",flexShrink:0}}>
+              Vivant
+            </span>
         }
       </div>
 
-      {/* Description */}
-      <div style={S.desc(showDesc)}>{node.desc}</div>
+      {/* Barre temporelle */}
+      {node.from && (
+        <div style={{paddingLeft:26, paddingRight:8}}>
+          <TimeBar from={node.from} to={node.to} color={node.color} vivant={node.vivant}/>
+        </div>
+      )}
+
+      {/* Description (dépliable au clic) */}
+      {showDesc && (
+        <div style={{
+          marginLeft:26, marginRight:8, marginBottom:6, marginTop:2,
+          padding:"8px 12px",
+          background:"rgba(55,53,47,.03)",
+          borderLeft:`3px solid ${node.color}55`,
+          borderRadius:"0 6px 6px 0",
+          fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
+          fontSize:13, color:"rgba(55,53,47,.65)", lineHeight:1.6,
+        }}>
+          {node.desc}
+        </div>
+      )}
 
       {/* Enfants */}
-      {open && hasKids && node.children.map(child => (
-        <Node key={child.id} node={child} depth={depth+1}/>
-      ))}
+      {open && hasKids && (
+        <div style={{
+          borderLeft:"1.5px solid rgba(55,53,47,.09)",
+          marginLeft:14, paddingLeft:4, marginTop:2,
+        }}>
+          {node.children.map(child => (
+            <Node key={child.id} node={child} depth={depth+1}/>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -284,11 +273,42 @@ function Node({node, depth=0}) {
 // ── EXPORT ────────────────────────────────────────────────────────────────────
 export function LifeTree() {
   return (
-    <div style={S.wrap}>
-      <div style={S.header}>
-        <h2 style={S.h2}>🌿 Arbre de la vie</h2>
-        <span style={S.badge}>Cliquer pour déplier · Cliquer encore pour la description</span>
+    <div style={{
+      fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
+      background:"#fff", borderTop:"1px solid rgba(55,53,47,.09)",
+      padding:"28px 32px 48px",
+    }}>
+      {/* En-tête */}
+      <div style={{display:"flex",alignItems:"baseline",gap:12,marginBottom:8}}>
+        <h2 style={{
+          fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
+          fontSize:22, fontWeight:700, color:"#37352f", margin:0,
+        }}>
+          🌿 Arbre de la vie
+        </h2>
+        <span style={{
+          fontSize:13, color:"rgba(55,53,47,.45)",
+          fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
+        }}>
+          Cliquer pour déplier · cliquer encore pour la description
+        </span>
       </div>
+
+      {/* Légende barre temporelle */}
+      <div style={{
+        fontSize:12, color:"rgba(55,53,47,.4)", marginBottom:16,
+        fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
+        display:"flex", alignItems:"center", gap:8,
+      }}>
+        <div style={{width:32,height:5,borderRadius:2,background:"#0ea5e9"}}/>
+        <span>Durée d'existence (de l'apparition à l'extinction ou aujourd'hui)</span>
+        <div style={{width:32,height:5,borderRadius:2,background:"#6b7280aa",marginLeft:8}}/>
+        <span>Éteint</span>
+      </div>
+
+      <ScaleBar/>
+
+      {/* Arbre */}
       {TREE.map(node => <Node key={node.id} node={node} depth={0}/>)}
     </div>
   );
