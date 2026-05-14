@@ -14,7 +14,7 @@ import { ExploreCards } from "./components/ExploreCards.jsx";
 
 export default function Chronos() {
   const canvasRef=useRef(null),miniRef=useRef(null),wrapRef=useRef(null);
-  const S=useRef({vs:UA*1.04,ve:20,aiEvents:[],selectedId:null,hoveredId:null,fetchedZones:new Set(),fetching:false,fetchQueue:[],panelCache:{},placed:[],lineY:0});
+  const S=useRef({vs:UA*1.04,ve:20,aiEvents:[],selectedId:null,hoveredId:null,fetchedZones:new Set(),fetching:false,fetchQueue:[],panelCache:{},placed:[],lineY:0,_currentPanelEv:null});
   const rafRef=useRef(null),fetchDebRef=useRef(null),animRef=useRef(null);
 
   // ── STORAGE: load saved content + bookmarks on mount ──
@@ -102,7 +102,32 @@ export default function Chronos() {
       return next;
     });
   },[saveTags,saveBookmarks]);
-  const [ui,setUi]=useState({epochLabel:"Vue globale",range:"",aiVisible:false,aiLabel:"",legendOpen:false,panelOpen:false,panelCat:"",panelCatColor:"#555",panelDate:"",panelTitle:"",panelContent:null,panelError:null,tooltip:null,searchOpen:false,searchQuery:"",searchResults:[],searchLoading:false,searchDone:false,searchError:null,panelEventId:null,bookmarkTag:null,showBookmarkMenu:false,showBookmarksView:false});
+
+  const [ui,setUi]=useState({
+    epochLabel:"Vue globale",
+    range:"",
+    aiVisible:false,
+    aiLabel:"",
+    legendOpen:false,
+    panelOpen:false,
+    panelCat:"",
+    panelCatColor:"#555",
+    panelDate:"",
+    panelTitle:"",
+    panelContent:null,
+    panelEventId:null,
+    panelError:null,
+    tooltip:null,
+    searchQuery:"",
+    searchResults:[],
+    searchLoading:false,
+    searchDone:false,
+    searchError:null,
+    searchOpen:false,
+    showBookmarkMenu:false,
+    showBookmarksView:false
+  });
+  
   const [bookmarks,setBookmarks]=useState({});       // {eventId: {tag, title, date_label, cat, yearsAgo}}
   const [customTags,setCustomTags]=useState(["Favori","À revoir","Intéressant"]); // editable list
   const [addingTag,setAddingTag]=useState(false);
@@ -147,7 +172,7 @@ export default function Chronos() {
     s.fetching=true;s.fetchedZones.add(key);
     setUi(u=>({...u,aiVisible:true,aiLabel:`${fmt(startYa)} → ${fmt(Math.max(endYa,0.1))}`}));
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:900,messages:[{role:"user",content:buildPrompt(startYa,endYa)}]})});
       if(!res.ok)throw new Error(res.status);
       const data=await res.json();
@@ -157,7 +182,7 @@ export default function Chronos() {
       for(const ev of evs){
         const ya=Number(ev.yearsAgo);if(!ev.title||isNaN(ya)||ya<0)continue;
         if(s.aiEvents.find(e=>Math.abs(L(e.yearsAgo)-L(ya))<0.02&&e.title===ev.title))continue;
-        s.aiEvents.push({id:`ai_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,yearsAgo:ya,title:ev.title,date_label:ev.date_label||fmt(ya),desc:ev.desc||"",cat:ev.cat||"histoire",importance:3,minZoom:0});
+        s.aiEvents.push({id:`ai_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,yearsAgo:ya,title:ev.title,date_label:ev.date_label||fmt(ya),desc:ev.desc||"",cat:ev.cat||"histoire",importance:2,minZoom:0});
         added++;
       }
       if(added>0)scheduleRedraw();
@@ -186,12 +211,12 @@ export default function Chronos() {
     // 3. Generate via API then persist
     setUi(u=>({...u,panelContent:"loading",panelError:null,panelEventId:ev.id}));
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:900,messages:[{role:"user",content:`Rédige une fiche encyclopédique engageante sur :
 Événement : ${ev.title}
 Date : ${ev.date_label}
 Contexte : ${ev.desc}
-En HTML simple (<p>,<h3>,<strong> uniquement). Sections : intro immersive (1§), <h3>Contexte</h3>(1§), <h3>Ce qui s'est passé</h3>(1§), <h3>Héritage</h3>(1§), <h3>Le saviez-vous ?</h3>(1§). ~260 mots. HTML direct, sans balises html/body.`}]})});
+En HTML simple (<p>,<h3>,<strong> uniquement). Sections : intro immersive (1§), <h3>Contexte</h3>(1§), <h3>Ce qui s'est passé</h3>(1§), <h3>Héritage</h3>(1§), <h3>Le saviez-vous ?</h3>(1§). ~260 mots.`}]})});
       if(!res.ok)throw new Error(`Erreur API ${res.status}`);
       const data=await res.json();
       const html=(data.content||[]).find(b=>b.type==="text")?.text||"<p>Indisponible.</p>";
@@ -205,7 +230,7 @@ En HTML simple (<p>,<h3>,<strong> uniquement). Sections : intro immersive (1§),
     S.current.selectedId=null; scheduleRedraw();
     const desc=PERIOD_DESCRIPTIONS[item.label]||{summary:"",highlights:[]};
     const html=`<p style="font-family:Georgia,serif;font-size:14px;line-height:1.8;color:#12100e;margin-bottom:12px">${desc.summary}</p>`+
-      (desc.highlights.length?`<h3 style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:rgba(18,16,14,.4);margin:14px 0 8px">Points clés</h3><ul style="list-style:none;padding:0;margin:0">${desc.highlights.map(h=>`<li style="font-family:Georgia,serif;font-size:13px;color:#12100e;padding:5px 0;border-bottom:1px solid rgba(18,16,14,.06);display:flex;align-items:flex-start;gap:8px"><span style="color:#c8963c;flex-shrink:0">◆</span>${h}</li>`).join("")}</ul>`:"");
+      (desc.highlights.length?`<h3 style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:rgba(18,16,14,.4);margin:14px 0 8px">Points clés</h3><ul style="margin:0;padding-left:18px;color:rgba(18,16,14,.75);">${desc.highlights.map(h=>`<li style="margin:5px 0;font-size:13px">${h}</li>`).join("")}</ul>`:"");
     setUi(u=>({...u,panelOpen:true,panelCat:item.from>1e9?"ÈRE":"PÉRIODE",
       panelCatColor:item.stripe||item.color||"#c8963c",
       panelDate:fmt(item.from)+" → "+(item.to>0?fmt(item.to):"aujourd'hui"),
@@ -215,8 +240,9 @@ En HTML simple (<p>,<h3>,<strong> uniquement). Sections : intro immersive (1§),
 
   const openPanel=useCallback((ev)=>{
     S.current._currentPanelEv=ev;
+    S.current.selectedId=ev.id;
     scheduleRedraw();
-    setUi(u=>({...u,panelOpen:true,panelCat:ev.cat.toUpperCase(),panelCatColor:cc(ev.cat),panelDate:ev.date_label,panelTitle:ev.title,panelContent:"loading",panelError:null,tooltip:null,panelEventId:ev.id,showBookmarkMenu:false}));
+    setUi(u=>({...u,panelOpen:true,panelCat:ev.cat.toUpperCase(),panelCatColor:cc(ev.cat),panelDate:ev.date_label,panelTitle:ev.title,panelContent:"loading",panelError:null,tooltip:null,panelEventId:ev.id}));
     fetchRich(ev);
   },[scheduleRedraw,fetchRich]);
 
@@ -241,7 +267,7 @@ En HTML simple (<p>,<h3>,<strong> uniquement). Sections : intro immersive (1§),
 
     // 2. Universal AI search — any event in all of history
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:1000,
           messages:[{role:"user",content:`Tu es un historien et scientifique expert de toute l'histoire de l'univers, de la Terre, de la vie et de l'humanité.
 
@@ -255,7 +281,7 @@ Trouve les événements historiques, scientifiques, biologiques ou cosmiques les
 - Des événements aussi petits ou grands que nécessaire pour répondre à la requête
 
 Réponds UNIQUEMENT par un tableau JSON valide (sans markdown). Max 6 résultats, du plus pertinent au moins pertinent :
-[{"yearsAgo":number,"title":"titre court max 6 mots","date_label":"date précise lisible","desc":"1-2 phrases de description factuelle","cat":"cosmique|geologique|biologique|prehistoire|histoire","relevance":"lien avec la recherche en 4 mots max"}]
+[{"yearsAgo":number,"title":"titre court max 6 mots","date_label":"date précise lisible","desc":"1-2 phrases de description factuelle","cat":"cosmique|geologique|biologique|prehistoire|histoire","relevance":number}]
 
 IMPORTANT : yearsAgo doit être un nombre positif représentant combien d'années avant 2025. Ex: 1804 ap.J.-C. → yearsAgo=221, 500 av.J.-C. → yearsAgo=2525.
 Si aucun événement réel ne correspond, retourne [].`}]})});
@@ -389,7 +415,7 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
     const onTM=(e)=>{
       e.preventDefault();const rect=cnv.getBoundingClientRect(),s=S.current;
       if(e.touches.length===1&&lt!==null){const dx=e.touches[0].clientX-lt;lt=e.touches[0].clientX;const lr=L(s.vs)-L(s.ve),sh=-(dx/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);scheduleRedraw();triggerFetch();}
-      else if(e.touches.length===2&&ld!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const mx=(e.touches[0].clientX+e.touches[1].clientX)/2-rect.left;zoomAround(makeCoord(s.vs,s.ve,cnv.width).toYa(mx),ld/d);ld=d;scheduleRedraw();triggerFetch();}
+      else if(e.touches.length===2&&ld!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const mx=(e.touches[0].clientX+e.touches[1].clientX)/2;const factor=ld>d?1.13:.88;const pivot=makeCoord(s.vs,s.ve,cnv.width).toYa(mx);zoomAround(pivot,factor);ld=d;scheduleRedraw();triggerFetch();}
     };
     const onTE=()=>{lt=null;ld=null;};
     const onResize=()=>scheduleRedraw();
@@ -402,7 +428,7 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
 
   return (
     <div style={css.app}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap');@keyframes dp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.5)}}@keyframes bw{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}@keyframes spin{to{transform:rotate(360deg)}}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#d8d0c3;border-radius:999px}.srch-item:hover{background:#f5f0e8!important}.srch-item{font:inherit;text-align:left;border:0;background:transparent;width:100%}button:hover{transform:translateY(-1px)}button:active{transform:translateY(0)}@media (max-width:1120px){.chronos-shell{grid-template-columns:280px minmax(0,1fr)!important}}@media (max-width:860px){.chronos-shell{display:flex!important;flex-direction:column!important;height:auto!important;min-height:100vh}.chronos-sidebar{position:relative!important;max-height:none!important;border-right:0!important;border-bottom:1px solid rgba(23,20,18,.10)!important}.chronos-main{min-height:calc(100vh - 360px);padding:14px!important}.chronos-mini{display:none}.chronos-header{align-items:flex-start!important;flex-direction:column!important}.chronos-explore{grid-template-columns:repeat(2,minmax(0,1fr))!important}.chronos-toolbar-hint{display:none}}@media (max-width:520px){.chronos-explore{grid-template-columns:1fr!important}.chronos-actions{width:100%}.chronos-actions button{flex:1}.chronos-page-title{font-size:34px!important}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap');@keyframes dp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.5)}}@keyframes bw{0%,100%{height:7px}50%{height:18px}}@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}`}</style>
 
       <div className="chronos-shell" style={css.shell}>
         <Topbar
