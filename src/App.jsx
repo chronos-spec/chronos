@@ -478,6 +478,10 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
             </div>
           </section>
 
+<LifeTree />   {/* ← ajoute cette ligne ici */}
+
+<StatusBar ui={ui}/>
+
           <StatusBar ui={ui}/>
         </main>
       </div>
