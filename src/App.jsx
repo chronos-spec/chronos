@@ -470,33 +470,44 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
           width: sidebarOpen ? "calc(100% - 280px)" : "100%",
         }}>
 
-          {/* ── FRISE IMMERSIVE — plein écran ── */}
-          <section style={css.timelineCard}>
-            {/* Mini header dans la frise */}
+          {/* ── HEADER + CARTES (comme la capture) ── */}
+          <header style={css.mainHeader}>
+            <div>
+              <div style={css.eyebrow}>Chronos Atlas</div>
+              <h1 style={css.pageTitle}>Explore toute l'histoire, simplement.</h1>
+              <p style={css.pageSubtitle}>{ui.epochLabel}</p>
+            </div>
+            <div style={css.headerActions}>
+              <button type="button" style={css.primaryAction} onClick={resetView}>Vue globale</button>
+              <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,legendOpen:!u.legendOpen,showBookmarksView:false}))}>Légende</button>
+              <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,showBookmarksView:!u.showBookmarksView,legendOpen:false}))}>Signets</button>
+            </div>
+          </header>
+
+          <ExploreCards navigateToEpoch={navigateToEpoch}/>
+
+          {/* ── FRISE — grande, avec espace respirable ── */}
+          <section style={{
+            ...css.timelineCard,
+            height:"70vh",
+            minHeight:480,
+            margin:"0 18px 18px",
+            borderRadius:10,
+            border:"1px solid rgba(23,20,18,.10)",
+            flexShrink:0,
+          }}>
             <div style={{
               position:"absolute",top:0,left:0,right:0,zIndex:10,
               display:"flex",alignItems:"center",justifyContent:"space-between",
-              padding:"10px 16px",
-              background:"rgba(250,247,242,.92)",
-              backdropFilter:"blur(8px)",
+              padding:"8px 14px",
+              background:"rgba(250,247,242,.95)",
               borderBottom:"1px solid rgba(23,20,18,.07)",
             }}>
-              <div style={{display:"flex",alignItems:"center",gap:16}}>
-                <div style={{fontFamily:"Georgia,serif",fontSize:13,fontStyle:"italic",color:"rgba(23,20,18,.6)"}}>
-                  {ui.epochLabel||"Vue globale"}
-                </div>
-                <span style={{fontSize:11,color:"rgba(23,20,18,.35)",letterSpacing:".1em",textTransform:"uppercase"}}>
-                  {ui.range||"zoom ×1"}
-                </span>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <span style={css.metaLabel}>Navigation</span>
+                <span style={css.metaValue}>{ui.range||"zoom ×1"}</span>
               </div>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:11,color:"rgba(23,20,18,.35)",fontStyle:"italic"}}>
-                  Molette · glisser · clic
-                </span>
-                <button type="button" style={css.secondaryAction} onClick={resetView}>⌂ Globale</button>
-                <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,legendOpen:!u.legendOpen,showBookmarksView:false}))}>Légende</button>
-                <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,showBookmarksView:!u.showBookmarksView,legendOpen:false}))}>Signets</button>
-              </div>
+              <span style={css.toolbarHint}>Molette pour zoomer, glisser pour se déplacer, clic pour ouvrir une fiche.</span>
             </div>
 
             <div ref={wrapRef} style={css.wrap}>
@@ -535,20 +546,6 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
               />
             </div>
           </section>
-
-          {/* ── ZONE DÉCOUVERTE — header + cards ── */}
-          <div style={{background:"#f5f2ec",padding:"48px 32px 32px",borderTop:"1px solid rgba(23,20,18,.08)"}}>
-            <div style={{marginBottom:8}}>
-              <div style={css.eyebrow}>Chronos Atlas</div>
-              <h1 style={{...css.pageTitle,fontSize:"clamp(24px,3vw,42px)",marginBottom:8}}>
-                Explore toute l'histoire, simplement.
-              </h1>
-              <p style={css.pageSubtitle}>Accès rapide aux grandes époques</p>
-            </div>
-            <div style={{marginTop:24}}>
-              <ExploreCards navigateToEpoch={navigateToEpoch}/>
-            </div>
-          </div>
 
           {/* ── ARBRE DE LA VIE ── bien séparé */}
           <LifeTree />
