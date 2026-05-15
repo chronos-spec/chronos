@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 
 const MAX_AGE = 540e6;
 const pct = (v) => Math.min(100, Math.max(0, (v / MAX_AGE) * 100));
@@ -536,22 +536,30 @@ function SearchResult({node, onClose}) {
 // NŒUD avec ref pour la navigation
 // ══════════════════════════════════════════════════════════════════════════════
 function NodeWithRef({node, depth=0, targetId=null, nodeRefs}) {
-  // Auto-ouvrir si un descendant est la cible
   const hasTarget = (n, id) => {
     if (n.id === id) return true;
     return n.children?.some(c => hasTarget(c, id)) || false;
   };
-  const shouldOpen = targetId && hasTarget(node, targetId);
-  const [open, setOpen] = useState(depth < 1 || shouldOpen);
-  const [desc, setDesc] = useState(node.id === targetId);
-  const hasKids = node.children?.length > 0;
-  const isTarget = node.id === targetId;
+  const isTarget   = node.id === targetId;
+  const isAncestor = targetId && hasTarget(node, targetId);
 
-  // Enregistrer la ref du nœud cible
+  const [open, setOpen] = useState(depth < 1);
+  const [desc, setDesc] = useState(false);
+  const hasKids = node.children?.length > 0;
+
+  // Quand targetId change : ouvrir si ancêtre, descr si cible
+  useEffect(() => {
+    if (isAncestor) setOpen(true);
+    if (isTarget)   setDesc(true);
+  }, [targetId, isTarget, isAncestor]);
+
+  // Enregistrer la ref DOM du nœud cible pour le scroll
   const nodeRef = useRef(null);
-  if (nodeRefs && node.id === targetId) {
-    nodeRefs.current = nodeRef;
-  }
+  useEffect(() => {
+    if (isTarget && nodeRefs) {
+      nodeRefs.current = nodeRef;
+    }
+  }, [isTarget, nodeRefs]);
 
   return (
     <div ref={nodeRef} style={{marginLeft:depth*16,marginBottom:1}}>
@@ -708,15 +716,18 @@ export function LifeTree() {
 
   // Clic sur un résultat → ouvre dans l'arbre + fiche
   const handleSelect = (node) => {
-    setSearch("");       // ferme la recherche
-    setTargetId(node.id);
+    setSearch("");
     setPanel(node);
-    // Scroll vers le nœud après un court délai (le temps que React rende)
+    setTargetId(node.id);
+    // Scroll vers le nœud après que React ait rendu l'arbre déplié
     setTimeout(() => {
       if (nodeRefs.current?.current) {
-        nodeRefs.current.current.scrollIntoView({behavior:"smooth", block:"center"});
+        nodeRefs.current.current.scrollIntoView({
+          behavior: "smooth",
+          block: "center"
+        });
       }
-    }, 150);
+    }, 300);
   };
 
   return (
