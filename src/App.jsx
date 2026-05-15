@@ -414,27 +414,27 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
     <div style={css.app}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap');@keyframes dp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.5)}}@keyframes bw{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}@keyframes spin{to{transform:rotate(360deg)}}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#d8d0c3;border-radius:999px}.srch-item:hover{background:#f5f0e8!important}.srch-item{font:inherit;text-align:left;border:0;background:transparent;width:100%}button:hover{transform:translateY(-1px)}button:active{transform:translateY(0)}@media (max-width:1120px){.chronos-shell{grid-template-columns:280px minmax(0,1fr)!important}}@media (max-width:860px){.chronos-shell{display:flex!important;flex-direction:column!important;height:auto!important;min-height:100vh}.chronos-sidebar{position:relative!important;max-height:none!important;border-right:0!important;border-bottom:1px solid rgba(23,20,18,.10)!important}.chronos-main{min-height:calc(100vh - 360px);padding:14px!important}.chronos-mini{display:none}.chronos-header{align-items:flex-start!important;flex-direction:column!important}.chronos-explore{grid-template-columns:repeat(2,minmax(0,1fr))!important}.chronos-toolbar-hint{display:none}}@media (max-width:520px){.chronos-explore{grid-template-columns:1fr!important}.chronos-actions{width:100%}.chronos-actions button{flex:1}.chronos-page-title{font-size:34px!important}}`}</style>
 
-      {/* ── BOUTON TOGGLE SIDEBAR ── style Claude.ai */}
+      {/* ── BOUTON TOGGLE SIDEBAR ── */}
       <button
         onClick={()=>setSidebarOpen(o=>!o)}
         title={sidebarOpen?"Masquer la barre latérale":"Afficher la barre latérale"}
         style={{
           position:"fixed",
-          left: sidebarOpen ? 268 : 12,
-          top: 16,
-          zIndex: 300,
-          width: 32,
-          height: 32,
-          borderRadius: 8,
+          left: sidebarOpen ? 284 : 12,
+          top: 14,
+          zIndex: 400,
+          width: 30,
+          height: 30,
+          borderRadius: 7,
           background: "#fbfaf7",
           border: "1px solid rgba(23,20,18,.14)",
-          boxShadow: "0 2px 10px rgba(23,20,18,.10)",
+          boxShadow: "0 2px 8px rgba(23,20,18,.12)",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 14,
-          color: "rgba(23,20,18,.55)",
+          fontSize: 15,
+          color: "rgba(23,20,18,.6)",
           transition: "left .3s cubic-bezier(.16,1,.3,1)",
           fontFamily: "inherit",
         }}
@@ -442,8 +442,16 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
         {sidebarOpen ? "←" : "☰"}
       </button>
 
-      <div className="chronos-shell" style={css.shell(sidebarOpen)}>
-        <Topbar
+      <div className="chronos-shell" style={css.shell}>
+        {/* Sidebar — position fixe, slide in/out */}
+        <div style={{
+          position:"fixed", left:0, top:0, bottom:0, width:280,
+          transform: sidebarOpen ? "translateX(0)" : "translateX(-280px)",
+          transition:"transform .3s cubic-bezier(.16,1,.3,1)",
+          zIndex:300,
+          flexShrink:0,
+        }}>
+          <Topbar
           ui={ui}
           setUi={setUi}
           handleSearch={handleSearch}
@@ -452,11 +460,18 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
           resetView={resetView}
           isMobile={isMobile}
         />
+        </div>{/* fin sidebar fixe */}
 
-        <main className="chronos-main" style={css.main}>
+        {/* Main — décalé quand sidebar ouverte */}
+        <main className="chronos-main" style={{
+          ...css.main,
+          marginLeft: sidebarOpen ? 280 : 0,
+          transition:"margin-left .3s cubic-bezier(.16,1,.3,1)",
+          width: sidebarOpen ? "calc(100% - 280px)" : "100%",
+        }}>
 
           {/* ── FRISE IMMERSIVE — plein écran ── */}
-          <section style={css.timelineCard}>
+          <section style={{...css.timelineCard, position:"relative", height:"100vh", flexShrink:0}}>
             {/* Mini header dans la frise */}
             <div style={{
               position:"absolute",top:0,left:0,right:0,zIndex:10,
