@@ -1,4 +1,3 @@
-import { LifeTree } from "./components/LifeTree.jsx";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ALL_EVENTS, EPOCHS, PERIODS, PERIOD_DESCRIPTIONS, STATIC_CONTENT, UA, cc } from "./data/timelineData.js";
 import { buildPrompt, epochAt, fmt, L, makeCoord, zoomLvl } from "./utils/time.js";
@@ -12,6 +11,7 @@ import { BookmarksPanel } from "./components/BookmarksPanel.jsx";
 import { EventPanel } from "./components/EventPanel.jsx";
 import { StatusBar } from "./components/StatusBar.jsx";
 import { ExploreCards } from "./components/ExploreCards.jsx";
+import { LifeTree } from "./components/LifeTree.jsx";
 
 export default function Chronos() {
   const canvasRef=useRef(null),miniRef=useRef(null),wrapRef=useRef(null);
@@ -109,6 +109,7 @@ export default function Chronos() {
   const [addingTag,setAddingTag]=useState(false);
   const [newTagInput,setNewTagInput]=useState("");
   const [isMobile,setIsMobile]=useState(()=>typeof window!=="undefined"&&window.innerWidth<760);
+  const [sidebarOpen,setSidebarOpen]=useState(true);
 
   const redraw=useCallback(()=>{
     const cnv=canvasRef.current,mcnv=miniRef.current,wrap=wrapRef.current;
@@ -148,7 +149,7 @@ export default function Chronos() {
     s.fetching=true;s.fetchedZones.add(key);
     setUi(u=>({...u,aiVisible:true,aiLabel:`${fmt(startYa)} → ${fmt(Math.max(endYa,0.1))}`}));
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:900,messages:[{role:"user",content:buildPrompt(startYa,endYa)}]})});
       if(!res.ok)throw new Error(res.status);
       const data=await res.json();
@@ -187,7 +188,7 @@ export default function Chronos() {
     // 3. Generate via API then persist
     setUi(u=>({...u,panelContent:"loading",panelError:null,panelEventId:ev.id}));
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:900,messages:[{role:"user",content:`Rédige une fiche encyclopédique engageante sur :
 Événement : ${ev.title}
 Date : ${ev.date_label}
@@ -242,7 +243,7 @@ En HTML simple (<p>,<h3>,<strong> uniquement). Sections : intro immersive (1§),
 
     // 2. Universal AI search — any event in all of history
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":(window.__ANTHROPIC_KEY__||""),"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:1000,
           messages:[{role:"user",content:`Tu es un historien et scientifique expert de toute l'histoire de l'univers, de la Terre, de la vie et de l'humanité.
 
@@ -336,6 +337,14 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
     triggerFetch();
   },[scheduleRedraw,triggerFetch]);
 
+  // Stable refs pour le useEffect
+  const _openPanel=useRef(null);_openPanel.current=openPanel;
+  const _openPeriod=useRef(null);_openPeriod.current=openPeriodPanel;
+  const _closePanel=useRef(null);_closePanel.current=closePanel;
+  const _redraw=useRef(null);_redraw.current=scheduleRedraw;
+  const _fetch=useRef(null);_fetch.current=triggerFetch;
+  const _zoom=useRef(null);_zoom.current=zoomAround;
+
   const zoomFromCenter=useCallback((factor)=>{
     const s=S.current,W=canvasRef.current?.width||800;
     const center=makeCoord(s.vs,s.ve,W).toYa(W/2);
@@ -368,22 +377,22 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
     const onClick=(e)=>{
       const rect=cnv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top,s=S.current;
       // 1. Event dots
-      for(const p of s.placed)if(Math.abs(p.x-mx)<16&&Math.abs(s.lineY-my)<80){openPanel(p.ev);return;}
+      for(const p of s.placed)if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){_openPanel.current(p.ev);return;}
       // 2. Period band click
       if(s.periodY&&my>=s.periodY&&my<=s.periodY+s.periodH){
         const coord=makeCoord(s.vs,s.ve,cnv.width);
         const ya=coord.toYa(mx);
         const per=PERIODS.find(p=>ya<=p.from&&ya>=p.to);
-        if(per){openPeriodPanel(per);return;}
+        if(per){_openPeriod.current(per);return;}
       }
       // 3. Epoch band click (above period band)
       if(s.periodY&&my<s.periodY&&my>56){
         const coord=makeCoord(s.vs,s.ve,cnv.width);
         const ya=coord.toYa(mx);
         const ep=EPOCHS.find(p=>ya<=p.from&&ya>=p.to);
-        if(ep){openPeriodPanel(ep);return;}
+        if(ep){_openPeriod.current(ep);return;}
       }
-      closePanel();
+      _closePanel.current();
     };
     let lt=null,ld=null;
     const onTS=(e)=>{if(e.touches.length===1)lt=e.touches[0].clientX;else if(e.touches.length===2)ld=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);};
@@ -399,13 +408,25 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
     window.addEventListener("mousemove",onMM);window.addEventListener("mouseup",onMU);window.addEventListener("resize",onResize);
     scheduleRedraw();triggerFetch();
     return()=>{cnv.removeEventListener("wheel",onWheel);cnv.removeEventListener("mousedown",onMD);cnv.removeEventListener("click",onClick);cnv.removeEventListener("touchstart",onTS);cnv.removeEventListener("touchmove",onTM);cnv.removeEventListener("touchend",onTE);window.removeEventListener("mousemove",onMM);window.removeEventListener("mouseup",onMU);window.removeEventListener("resize",onResize);};
-  },[scheduleRedraw,triggerFetch,zoomAround,openPanel,openPeriodPanel,closePanel]);
+  },[]);// deps vides — utilise les refs
 
   return (
     <div style={css.app}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap');@keyframes dp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.5)}}@keyframes bw{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}@keyframes spin{to{transform:rotate(360deg)}}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#d8d0c3;border-radius:999px}.srch-item:hover{background:#f5f0e8!important}.srch-item{font:inherit;text-align:left;border:0;background:transparent;width:100%}button:hover{transform:translateY(-1px)}button:active{transform:translateY(0)}@media (max-width:1120px){.chronos-shell{grid-template-columns:280px minmax(0,1fr)!important}}@media (max-width:860px){.chronos-shell{display:flex!important;flex-direction:column!important;height:auto!important;min-height:100vh}.chronos-sidebar{position:relative!important;max-height:none!important;border-right:0!important;border-bottom:1px solid rgba(23,20,18,.10)!important}.chronos-main{min-height:calc(100vh - 360px);padding:14px!important}.chronos-mini{display:none}.chronos-header{align-items:flex-start!important;flex-direction:column!important}.chronos-explore{grid-template-columns:repeat(2,minmax(0,1fr))!important}.chronos-toolbar-hint{display:none}}@media (max-width:520px){.chronos-explore{grid-template-columns:1fr!important}.chronos-actions{width:100%}.chronos-actions button{flex:1}.chronos-page-title{font-size:34px!important}}`}</style>
 
-      <div className="chronos-shell" style={css.shell}>
+      <div className="chronos-shell" style={{...css.shell, gridTemplateColumns:sidebarOpen?"320px minmax(0,1fr)":"0px minmax(0,1fr)"}}>
+        {/* Toggle sidebar button */}
+        <button
+          onClick={()=>setSidebarOpen(o=>!o)}
+          style={{position:"fixed",left:sidebarOpen?292:8,top:"50%",transform:"translateY(-50%)",
+            zIndex:200,width:28,height:48,borderRadius:sidebarOpen?"0 8px 8px 0":"8px",
+            background:"#fbfaf7",border:"1px solid rgba(23,20,18,.12)",
+            boxShadow:"2px 0 12px rgba(23,20,18,.10)",cursor:"pointer",
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:13,color:"rgba(23,20,18,.5)",transition:"left .3s cubic-bezier(.16,1,.3,1)",
+            fontFamily:"inherit"}}
+          title={sidebarOpen?"Masquer la barre":"Afficher la barre"}
+        >{sidebarOpen?"◀":"▶"}</button>
         <Topbar
           ui={ui}
           setUi={setUi}
@@ -478,11 +499,8 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
             </div>
           </section>
 
-<LifeTree />   {/* ← ajoute cette ligne ici */}
-
-<StatusBar ui={ui}/>
-
           <StatusBar ui={ui}/>
+          <LifeTree />
         </main>
       </div>
     </div>
