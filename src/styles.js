@@ -13,17 +13,18 @@ export const css = {
     fontFamily:"'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
     overflow:"hidden"
   },
-  shell:{
+  shell:(open)=>({
     display:"grid",
+    gridTemplateColumns:open?"280px 1fr":"0px 1fr",
     height:"100vh",
     gap:0,
     transition:"grid-template-columns .3s cubic-bezier(.16,1,.3,1)",
     overflow:"hidden"
-  },
+  }),
   sidebar:{
     position:"relative",
     zIndex:60,
-    transition:"width .3s cubic-bezier(.16,1,.3,1)",
+    width:280,
     overflow:"hidden",
     display:"flex",
     flexDirection:"column",
