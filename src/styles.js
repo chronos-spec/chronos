@@ -13,18 +13,16 @@ export const css = {
     fontFamily:"'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
     overflow:"hidden"
   },
-  shell:(open)=>({
-    display:"grid",
-    gridTemplateColumns:open?"280px 1fr":"0px 1fr",
+  shell:{
+    display:"flex",
     height:"100vh",
-    gap:0,
-    transition:"grid-template-columns .3s cubic-bezier(.16,1,.3,1)",
-    overflow:"hidden"
-  }),
+    overflow:"hidden",
+  },
   sidebar:{
     position:"relative",
     zIndex:60,
     width:280,
+    minWidth:280,
     overflow:"hidden",
     display:"flex",
     flexDirection:"column",
@@ -33,7 +31,8 @@ export const css = {
     background:SURFACE,
     borderRight:`1px solid ${LINE}`,
     boxShadow:"8px 0 28px rgba(23,20,18,.05)",
-    overflowY:"auto"
+    overflowY:"auto",
+    flexShrink:0,
   },
   sidebarMobile:{
     border:`1px solid ${LINE}`,
@@ -109,7 +108,7 @@ export const css = {
     boxShadow:"0 1px 0 rgba(23,20,18,.04)"
   },
 
-  main:{display:"flex",flexDirection:"column",minWidth:0,padding:0,gap:0,background:"#efede7",overflowY:"auto"},
+  main:{display:"flex",flexDirection:"column",minWidth:0,padding:0,gap:0,background:"#efede7",overflowY:"auto",height:"100vh"},
   mainHeader:{
     display:"flex",
     alignItems:"center",
