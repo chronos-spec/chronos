@@ -533,10 +533,168 @@ function SearchResult({node, onClose}) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// NŒUD avec ref pour la navigation
+// ══════════════════════════════════════════════════════════════════════════════
+function NodeWithRef({node, depth=0, targetId=null, nodeRefs}) {
+  // Auto-ouvrir si un descendant est la cible
+  const hasTarget = (n, id) => {
+    if (n.id === id) return true;
+    return n.children?.some(c => hasTarget(c, id)) || false;
+  };
+  const shouldOpen = targetId && hasTarget(node, targetId);
+  const [open, setOpen] = useState(depth < 1 || shouldOpen);
+  const [desc, setDesc] = useState(node.id === targetId);
+  const hasKids = node.children?.length > 0;
+  const isTarget = node.id === targetId;
+
+  // Enregistrer la ref du nœud cible
+  const nodeRef = useRef(null);
+  if (nodeRefs && node.id === targetId) {
+    nodeRefs.current = nodeRef;
+  }
+
+  return (
+    <div ref={nodeRef} style={{marginLeft:depth*16,marginBottom:1}}>
+      <div
+        style={{display:"flex",alignItems:"center",gap:5,padding:"4px 8px",
+          borderRadius:5,cursor:"pointer",transition:"background .1s",
+          background: isTarget
+            ? "rgba(250,204,21,.2)"
+            : open&&hasKids ? `${node.color}0e` : "transparent",
+          outline: isTarget ? "2px solid rgba(250,204,21,.7)" : "none",
+        }}
+        onClick={()=>{if(hasKids)setOpen(o=>!o);setDesc(d=>!d);}}
+        onMouseEnter={e=>e.currentTarget.style.background=isTarget?"rgba(250,204,21,.3)":`${node.color}15`}
+        onMouseLeave={e=>e.currentTarget.style.background=isTarget?"rgba(250,204,21,.2)":open&&hasKids?`${node.color}0e`:"transparent"}
+      >
+        <span style={{fontSize:10,color:"rgba(55,53,47,.3)",width:12,textAlign:"center",
+          flexShrink:0,transform:open?"rotate(90deg)":"none",transition:"transform .15s",
+          visibility:hasKids?"visible":"hidden"}}>▶</span>
+        <div style={{width:9,height:9,borderRadius:"50%",background:node.color,
+          flexShrink:0,opacity:node.eteint?.45:1}}/>
+        <span style={{fontWeight:depth===0?700:depth<=2?600:500,
+          fontSize:depth===0?15:depth<=2?14:13,
+          color:node.eteint?"rgba(55,53,47,.4)":"#37352f",
+          textDecoration:node.eteint?"line-through":"none",lineHeight:1.3}}>
+          {node.label}
+        </span>
+        <span style={{fontSize:11,color:"rgba(55,53,47,.38)",marginLeft:3,flexShrink:0}}>
+          {node.period}
+        </span>
+        <CousinBadge cousinIds={node.cousin}/>
+        <span style={{marginLeft:"auto",flexShrink:0,fontSize:10,padding:"1px 6px",borderRadius:3,
+          background:node.eteint?"rgba(239,68,68,.08)":"rgba(22,163,74,.08)",
+          color:node.eteint?"#dc2626":"#15803d",fontWeight:500}}>
+          {node.eteint?"Éteint":"Vivant"}
+        </span>
+      </div>
+      {node.from&&(
+        <div style={{paddingLeft:22,paddingRight:6}}>
+          <TimeBar from={node.from} to={node.to} color={node.color} vivant={node.vivant}/>
+        </div>
+      )}
+      {desc&&node.desc&&(
+        <div style={{marginLeft:22,marginRight:6,marginBottom:5,marginTop:1,
+          padding:"8px 12px",background:"rgba(55,53,47,.03)",
+          borderLeft:`3px solid ${node.color}55`,borderRadius:"0 5px 5px 0",
+          fontSize:12,color:"rgba(55,53,47,.62)",lineHeight:1.6}}>
+          {node.desc}
+        </div>
+      )}
+      {open&&hasKids&&(
+        <div style={{borderLeft:"1.5px solid rgba(55,53,47,.08)",marginLeft:13,paddingLeft:3,marginTop:1}}>
+          {node.children.map(c=>(
+            <NodeWithRef key={c.id} node={c} depth={depth+1} targetId={targetId} nodeRefs={nodeRefs}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── FICHE LATÉRALE ────────────────────────────────────────────────────────────
+function SidePanel({node, onClose}) {
+  if (!node) return null;
+  const cousins = node.cousin?.map(id=>ALL_NODES.find(n=>n.id===id)).filter(Boolean)||[];
+  return (
+    <div style={{
+      position:"fixed",right:0,top:0,bottom:0,width:"min(420px,90vw)",
+      background:"#fff",borderLeft:"1px solid rgba(55,53,47,.12)",
+      boxShadow:"-8px 0 32px rgba(0,0,0,.12)",zIndex:500,
+      display:"flex",flexDirection:"column",
+      fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
+    }}>
+      {/* Header */}
+      <div style={{padding:"20px 24px 16px",borderBottom:"1px solid rgba(55,53,47,.09)",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:12,height:12,borderRadius:"50%",background:node.color,opacity:node.eteint?.5:1}}/>
+            <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,
+              background:node.eteint?"rgba(239,68,68,.1)":"rgba(22,163,74,.1)",
+              color:node.eteint?"#dc2626":"#15803d",fontWeight:600}}>
+              {node.eteint?"Espèce éteinte":"Espèce vivante"}
+            </span>
+          </div>
+          <button onClick={onClose} style={{width:28,height:28,borderRadius:7,
+            background:"rgba(55,53,47,.06)",border:"none",cursor:"pointer",
+            fontSize:14,color:"rgba(55,53,47,.6)",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+        </div>
+        <h2 style={{fontSize:20,fontWeight:700,color:"#37352f",margin:"0 0 4px",lineHeight:1.2}}>
+          {node.label.replace(/💀|⭐|🔀/g,"").trim()}
+        </h2>
+        <div style={{fontSize:12,color:"rgba(55,53,47,.45)"}}>{node.period}</div>
+      </div>
+      {/* Barre temporelle */}
+      {node.from&&(
+        <div style={{padding:"12px 24px",borderBottom:"1px solid rgba(55,53,47,.06)",flexShrink:0}}>
+          <div style={{fontSize:11,color:"rgba(55,53,47,.4)",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Durée d'existence</div>
+          <TimeBar from={node.from} to={node.to} color={node.color} vivant={node.vivant}/>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"rgba(55,53,47,.35)",marginTop:4}}>
+            <span>Apparition : {node.period?.split("–")[0]||"?"}</span>
+            <span>{node.to?"Extinction : "+node.period?.split("–")[1]||"?":"Vivant aujourd'hui"}</span>
+          </div>
+        </div>
+      )}
+      {/* Contenu */}
+      <div style={{flex:1,overflowY:"auto",padding:"20px 24px"}}>
+        {node.desc&&(
+          <>
+            <div style={{fontSize:11,color:"rgba(55,53,47,.4)",letterSpacing:".08em",textTransform:"uppercase",marginBottom:10}}>Description</div>
+            <p style={{fontSize:14,lineHeight:1.7,color:"#37352f",margin:"0 0 20px"}}>{node.desc}</p>
+          </>
+        )}
+        {cousins.length>0&&(
+          <>
+            <div style={{fontSize:11,color:"rgba(55,53,47,.4)",letterSpacing:".08em",textTransform:"uppercase",marginBottom:10}}>
+              🔀 Espèces cousines (lignées parallèles)
+            </div>
+            {cousins.map(c=>(
+              <div key={c.id} style={{padding:"10px 12px",borderRadius:8,
+                background:"rgba(99,102,241,.06)",border:"1px solid rgba(99,102,241,.15)",marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                  <div style={{width:8,height:8,borderRadius:"50%",background:c.color}}/>
+                  <span style={{fontWeight:600,fontSize:13,color:"#37352f"}}>{c.label.replace(/💀|⭐|🔀/g,"").trim()}</span>
+                  <span style={{fontSize:11,color:"rgba(55,53,47,.4)"}}>{c.period}</span>
+                </div>
+                {c.desc&&<p style={{fontSize:12,color:"rgba(55,53,47,.6)",margin:0,lineHeight:1.5}}>{c.desc}</p>}
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // EXPORT PRINCIPAL
 // ══════════════════════════════════════════════════════════════════════════════
 export function LifeTree() {
-  const [search, setSearch] = useState("");
+  const [search, setSearch]     = useState("");
+  const [targetId, setTargetId] = useState(null);
+  const [panel, setPanel]       = useState(null); // nœud affiché en fiche
+  const nodeRefs = useRef(null);
+  const treeRef  = useRef(null);
 
   const results = useMemo(() => {
     if (!search.trim()) return [];
@@ -548,80 +706,121 @@ export function LifeTree() {
     ).slice(0, 12);
   }, [search]);
 
+  // Clic sur un résultat → ouvre dans l'arbre + fiche
+  const handleSelect = (node) => {
+    setSearch("");       // ferme la recherche
+    setTargetId(node.id);
+    setPanel(node);
+    // Scroll vers le nœud après un court délai (le temps que React rende)
+    setTimeout(() => {
+      if (nodeRefs.current?.current) {
+        nodeRefs.current.current.scrollIntoView({behavior:"smooth", block:"center"});
+      }
+    }, 150);
+  };
+
   return (
     <div style={{fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
-      background:"#fff",borderTop:"1px solid rgba(55,53,47,.09)",
-      padding:"28px 32px 64px"}}>
+      background:"#fff",padding:"48px 32px 80px",
+      borderTop:"4px solid rgba(55,53,47,.06)",
+      marginTop:80, // espace sous la frise
+    }}>
+      {/* Fiche latérale */}
+      {panel&&<SidePanel node={panel} onClose={()=>{setPanel(null);setTargetId(null);}}/>}
 
       {/* En-tête */}
-      <div style={{display:"flex",alignItems:"baseline",gap:12,marginBottom:6}}>
-        <h2 style={{fontSize:22,fontWeight:700,color:"#37352f",margin:0}}>🌿 Arbre de la vie</h2>
-        <span style={{fontSize:13,color:"rgba(55,53,47,.45)"}}>
-          Cliquer pour déplier · cliquer encore pour la description
-        </span>
-      </div>
-
-      {/* Légende */}
-      <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:14,
-        fontSize:12,color:"rgba(55,53,47,.45)",flexWrap:"wrap"}}>
-        <span>⭐ = ancêtre direct</span>
-        <span>🔀 = cousin (lignée parallèle)</span>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <div style={{width:24,height:5,borderRadius:2,background:"#0ea5e9"}}/><span>Vivant</span>
-          <div style={{width:24,height:5,borderRadius:2,background:"#6b728077",marginLeft:6}}/><span>Éteint</span>
+      <div style={{maxWidth:900,margin:"0 auto"}}>
+        <div style={{display:"flex",alignItems:"baseline",gap:12,marginBottom:8}}>
+          <h2 style={{fontSize:26,fontWeight:700,color:"#37352f",margin:0}}>🌿 Arbre de la vie</h2>
+          <span style={{fontSize:13,color:"rgba(55,53,47,.45)"}}>
+            Cliquer pour déplier · cliquer encore pour la description
+          </span>
         </div>
-        <span>— Barre = durée (échelle 540 Ma)</span>
-      </div>
 
-      {/* Barre de recherche */}
-      <div style={{position:"relative",marginBottom:16}}>
-        <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",
-          fontSize:14,color:"rgba(55,53,47,.4)"}}>🔍</span>
-        <input
-          type="text"
-          value={search}
-          onChange={e=>setSearch(e.target.value)}
-          placeholder="Rechercher une espèce, un ancêtre, une période..."
-          style={{width:"100%",height:42,borderRadius:8,
-            border:"1px solid rgba(55,53,47,.18)",background:"#f9f9f8",
-            padding:"0 36px 0 36px",fontSize:14,
-            fontFamily:"inherit",color:"#37352f",outline:"none",
-            boxSizing:"border-box",transition:"border-color .2s"}}
-        />
-        {search&&(
-          <button onClick={()=>setSearch("")}
-            style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
-              background:"none",border:"none",cursor:"pointer",fontSize:16,
-              color:"rgba(55,53,47,.4)"}}>✕</button>
-        )}
-      </div>
+        {/* Légende */}
+        <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20,
+          fontSize:12,color:"rgba(55,53,47,.45)",flexWrap:"wrap"}}>
+          <span>⭐ = ancêtre direct</span>
+          <span>🔀 = cousin (lignée parallèle)</span>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <div style={{width:24,height:5,borderRadius:2,background:"#0ea5e9"}}/><span>Vivant</span>
+            <div style={{width:24,height:5,borderRadius:2,background:"#6b728077",marginLeft:6}}/><span>Éteint</span>
+          </div>
+          <span>— Barre = durée d'existence (échelle 540 Ma)</span>
+        </div>
 
-      {/* Résultats de recherche */}
-      {search.trim()&&(
-        <div style={{marginBottom:20}}>
-          {results.length===0?(
-            <div style={{padding:"16px",textAlign:"center",color:"rgba(55,53,47,.45)",fontSize:13}}>
-              Aucun résultat pour «&nbsp;{search}&nbsp;»
-            </div>
-          ):(
-            <>
-              <div style={{fontSize:11,color:"rgba(55,53,47,.4)",
-                letterSpacing:".1em",textTransform:"uppercase",marginBottom:10}}>
-                {results.length} résultat{results.length>1?"s":""}
-              </div>
-              {results.map(n=><SearchResult key={n.id} node={n}/>)}
-            </>
+        {/* Barre de recherche */}
+        <div style={{position:"relative",marginBottom:24}}>
+          <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",
+            fontSize:16,color:"rgba(55,53,47,.35)"}}>🔍</span>
+          <input type="text" value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="Rechercher : T-Rex, Homo sapiens, Jurassique..."
+            style={{width:"100%",height:46,borderRadius:10,
+              border:"1.5px solid rgba(55,53,47,.15)",background:"#fafafa",
+              padding:"0 40px 0 42px",fontSize:14,fontFamily:"inherit",
+              color:"#37352f",outline:"none",boxSizing:"border-box",
+              boxShadow:"0 2px 8px rgba(0,0,0,.04)"}}
+          />
+          {search&&(
+            <button onClick={()=>setSearch("")}
+              style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
+                background:"none",border:"none",cursor:"pointer",fontSize:16,
+                color:"rgba(55,53,47,.4)"}}>✕</button>
           )}
         </div>
-      )}
 
-      {/* Arbre complet */}
-      {!search.trim()&&(
-        <>
+        {/* Résultats de recherche */}
+        {search.trim()&&(
+          <div style={{marginBottom:24,background:"#f9f9f8",borderRadius:10,
+            border:"1px solid rgba(55,53,47,.1)",overflow:"hidden"}}>
+            {results.length===0?(
+              <div style={{padding:"20px",textAlign:"center",color:"rgba(55,53,47,.45)",fontSize:13}}>
+                Aucun résultat pour «&nbsp;{search}&nbsp;»
+              </div>
+            ):(
+              <>
+                <div style={{padding:"10px 16px 6px",fontSize:11,color:"rgba(55,53,47,.4)",
+                  letterSpacing:".1em",textTransform:"uppercase",borderBottom:"1px solid rgba(55,53,47,.07)"}}>
+                  {results.length} résultat{results.length>1?"s":""}
+                </div>
+                {results.map(n=>(
+                  <div key={n.id}
+                    onClick={()=>handleSelect(n)}
+                    style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",
+                      cursor:"pointer",borderBottom:"1px solid rgba(55,53,47,.06)",
+                      transition:"background .1s"}}
+                    onMouseEnter={e=>e.currentTarget.style.background="rgba(55,53,47,.04)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+                  >
+                    <div style={{width:10,height:10,borderRadius:"50%",background:n.color,
+                      flexShrink:0,opacity:n.eteint?.5:1}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:600,fontSize:14,color:"#37352f",marginBottom:2}}>
+                        {n.label.replace(/💀|⭐|🔀/g,"").trim()}
+                      </div>
+                      <div style={{fontSize:12,color:"rgba(55,53,47,.45)"}}>{n.period}</div>
+                    </div>
+                    <span style={{fontSize:10,padding:"2px 8px",borderRadius:4,flexShrink:0,
+                      background:n.eteint?"rgba(239,68,68,.08)":"rgba(22,163,74,.08)",
+                      color:n.eteint?"#dc2626":"#15803d",fontWeight:500}}>
+                      {n.eteint?"Éteint":"Vivant"}
+                    </span>
+                    <span style={{fontSize:12,color:"rgba(55,53,47,.3)",flexShrink:0}}>→</span>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Arbre complet */}
+        <div ref={treeRef}>
           <ScaleBar/>
-          {TREE.map(n=><Node key={n.id} node={n} depth={0}/>)}
-        </>
-      )}
+          {TREE.map(n=>(
+            <NodeWithRef key={n.id} node={n} depth={0} targetId={targetId} nodeRefs={nodeRefs}/>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
