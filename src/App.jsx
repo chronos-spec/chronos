@@ -109,7 +109,7 @@ export default function Chronos() {
   const [addingTag,setAddingTag]=useState(false);
   const [newTagInput,setNewTagInput]=useState("");
   const [isMobile,setIsMobile]=useState(()=>typeof window!=="undefined"&&window.innerWidth<760);
-  const [sidebarOpen,setSidebarOpen]=useState(true);
+  const [sidebarOpen,setSidebarOpen]=useState(false);
 
   const redraw=useCallback(()=>{
     const cnv=canvasRef.current,mcnv=miniRef.current,wrap=wrapRef.current;
@@ -414,19 +414,35 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
     <div style={css.app}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap');@keyframes dp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.5)}}@keyframes bw{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}@keyframes spin{to{transform:rotate(360deg)}}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#d8d0c3;border-radius:999px}.srch-item:hover{background:#f5f0e8!important}.srch-item{font:inherit;text-align:left;border:0;background:transparent;width:100%}button:hover{transform:translateY(-1px)}button:active{transform:translateY(0)}@media (max-width:1120px){.chronos-shell{grid-template-columns:280px minmax(0,1fr)!important}}@media (max-width:860px){.chronos-shell{display:flex!important;flex-direction:column!important;height:auto!important;min-height:100vh}.chronos-sidebar{position:relative!important;max-height:none!important;border-right:0!important;border-bottom:1px solid rgba(23,20,18,.10)!important}.chronos-main{min-height:calc(100vh - 360px);padding:14px!important}.chronos-mini{display:none}.chronos-header{align-items:flex-start!important;flex-direction:column!important}.chronos-explore{grid-template-columns:repeat(2,minmax(0,1fr))!important}.chronos-toolbar-hint{display:none}}@media (max-width:520px){.chronos-explore{grid-template-columns:1fr!important}.chronos-actions{width:100%}.chronos-actions button{flex:1}.chronos-page-title{font-size:34px!important}}`}</style>
 
-      <div className="chronos-shell" style={{...css.shell, gridTemplateColumns:sidebarOpen?"320px minmax(0,1fr)":"0px minmax(0,1fr)"}}>
-        {/* Toggle sidebar button */}
-        <button
-          onClick={()=>setSidebarOpen(o=>!o)}
-          style={{position:"fixed",left:sidebarOpen?292:8,top:"50%",transform:"translateY(-50%)",
-            zIndex:200,width:28,height:48,borderRadius:sidebarOpen?"0 8px 8px 0":"8px",
-            background:"#fbfaf7",border:"1px solid rgba(23,20,18,.12)",
-            boxShadow:"2px 0 12px rgba(23,20,18,.10)",cursor:"pointer",
-            display:"flex",alignItems:"center",justifyContent:"center",
-            fontSize:13,color:"rgba(23,20,18,.5)",transition:"left .3s cubic-bezier(.16,1,.3,1)",
-            fontFamily:"inherit"}}
-          title={sidebarOpen?"Masquer la barre":"Afficher la barre"}
-        >{sidebarOpen?"◀":"▶"}</button>
+      {/* ── BOUTON TOGGLE SIDEBAR ── style Claude.ai */}
+      <button
+        onClick={()=>setSidebarOpen(o=>!o)}
+        title={sidebarOpen?"Masquer la barre latérale":"Afficher la barre latérale"}
+        style={{
+          position:"fixed",
+          left: sidebarOpen ? 268 : 12,
+          top: 16,
+          zIndex: 300,
+          width: 32,
+          height: 32,
+          borderRadius: 8,
+          background: "#fbfaf7",
+          border: "1px solid rgba(23,20,18,.14)",
+          boxShadow: "0 2px 10px rgba(23,20,18,.10)",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 14,
+          color: "rgba(23,20,18,.55)",
+          transition: "left .3s cubic-bezier(.16,1,.3,1)",
+          fontFamily: "inherit",
+        }}
+      >
+        {sidebarOpen ? "←" : "☰"}
+      </button>
+
+      <div className="chronos-shell" style={css.shell(sidebarOpen)}>
         <Topbar
           ui={ui}
           setUi={setUi}
@@ -438,28 +454,34 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
         />
 
         <main className="chronos-main" style={css.main}>
-          <header className="chronos-header" style={css.mainHeader}>
-            <div>
-              <div style={css.eyebrow}>Chronos Atlas</div>
-              <h1 className="chronos-page-title" style={css.pageTitle}>Explore toute l'histoire, simplement.</h1>
-              <p style={css.pageSubtitle}>{ui.epochLabel}</p>
-            </div>
-            <div className="chronos-actions" style={css.headerActions}>
-              <button type="button" style={css.primaryAction} onClick={resetView}>Vue globale</button>
-              <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,legendOpen:!u.legendOpen,showBookmarksView:false}))}>Légende</button>
-              <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,showBookmarksView:!u.showBookmarksView,legendOpen:false}))}>Signets</button>
-            </div>
-          </header>
 
-          <ExploreCards navigateToEpoch={navigateToEpoch}/>
-
+          {/* ── FRISE IMMERSIVE — plein écran ── */}
           <section style={css.timelineCard}>
-            <div style={css.timelineToolbar}>
-              <div style={css.timelineMeta}>
-                <span style={css.metaLabel}>Navigation</span>
-                <span style={css.metaValue}>{ui.range || "zoom ×1"}</span>
+            {/* Mini header dans la frise */}
+            <div style={{
+              position:"absolute",top:0,left:0,right:0,zIndex:10,
+              display:"flex",alignItems:"center",justifyContent:"space-between",
+              padding:"10px 16px",
+              background:"rgba(250,247,242,.92)",
+              backdropFilter:"blur(8px)",
+              borderBottom:"1px solid rgba(23,20,18,.07)",
+            }}>
+              <div style={{display:"flex",alignItems:"center",gap:16}}>
+                <div style={{fontFamily:"Georgia,serif",fontSize:13,fontStyle:"italic",color:"rgba(23,20,18,.6)"}}>
+                  {ui.epochLabel||"Vue globale"}
+                </div>
+                <span style={{fontSize:11,color:"rgba(23,20,18,.35)",letterSpacing:".1em",textTransform:"uppercase"}}>
+                  {ui.range||"zoom ×1"}
+                </span>
               </div>
-              <div className="chronos-toolbar-hint" style={css.toolbarHint}>Molette pour zoomer, glisser pour se déplacer, clic pour ouvrir une fiche.</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:11,color:"rgba(23,20,18,.35)",fontStyle:"italic"}}>
+                  Molette · glisser · clic
+                </span>
+                <button type="button" style={css.secondaryAction} onClick={resetView}>⌂ Globale</button>
+                <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,legendOpen:!u.legendOpen,showBookmarksView:false}))}>Légende</button>
+                <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,showBookmarksView:!u.showBookmarksView,legendOpen:false}))}>Signets</button>
+              </div>
             </div>
 
             <div ref={wrapRef} style={css.wrap}>
@@ -499,8 +521,23 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
             </div>
           </section>
 
-          <StatusBar ui={ui}/>
+          {/* ── ZONE DÉCOUVERTE — header + cards ── */}
+          <div style={{background:"#f5f2ec",padding:"48px 32px 32px",borderTop:"1px solid rgba(23,20,18,.08)"}}>
+            <div style={{marginBottom:8}}>
+              <div style={css.eyebrow}>Chronos Atlas</div>
+              <h1 style={{...css.pageTitle,fontSize:"clamp(24px,3vw,42px)",marginBottom:8}}>
+                Explore toute l'histoire, simplement.
+              </h1>
+              <p style={css.pageSubtitle}>Accès rapide aux grandes époques</p>
+            </div>
+            <div style={{marginTop:24}}>
+              <ExploreCards navigateToEpoch={navigateToEpoch}/>
+            </div>
+          </div>
+
+          {/* ── ARBRE DE LA VIE ── bien séparé */}
           <LifeTree />
+
         </main>
       </div>
     </div>
