@@ -471,7 +471,7 @@ Si aucun événement réel ne correspond, retourne [].`}]})});
         }}>
 
           {/* ── FRISE IMMERSIVE — plein écran ── */}
-          <section style={{...css.timelineCard, position:"relative", height:"100vh", flexShrink:0}}>
+          <section style={css.timelineCard}>
             {/* Mini header dans la frise */}
             <div style={{
               position:"absolute",top:0,left:0,right:0,zIndex:10,
