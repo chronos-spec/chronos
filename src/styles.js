@@ -108,7 +108,7 @@ export const css = {
     boxShadow:"0 1px 0 rgba(23,20,18,.04)"
   },
 
-  main:{display:"flex",flexDirection:"column",minWidth:0,padding:0,gap:0,background:"#efede7",overflowY:"auto",height:"100vh"},
+  main:{display:"flex",flexDirection:"column",minWidth:0,padding:0,gap:0,background:"#efede7",overflowY:"auto"},
   mainHeader:{
     display:"flex",
     alignItems:"center",
