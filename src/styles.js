@@ -144,17 +144,12 @@ export const css = {
     fontFamily:"inherit",
     fontSize:12
   },
-  timelineCard:{margin:0,borderRadius:0,height:"100vh",flexShrink:0,overflow:"hidden",
+  timelineCard:{
     position:"relative",
-    display:"flex",
-    flexDirection:"column",
-    minHeight:0,
-    flex:1,
+    flexShrink:0,
+    height:"100vh",
     overflow:"hidden",
-    borderRadius:8,
-    border:`1px solid ${LINE}`,
     background:PANEL,
-    boxShadow:"0 16px 50px rgba(23,20,18,.08)"
   },
   timelineToolbar:{
     height:54,
@@ -214,8 +209,8 @@ export const css = {
   exploreTitle:{fontFamily:"Georgia,serif",fontSize:21,lineHeight:1.08,color:INK},
   exploreText:{fontSize:11,lineHeight:1.45,color:MUTED},
 
-  wrap:{flex:1,position:"relative",overflow:"hidden",cursor:"grab",minHeight:360,background:"#faf7f2"},
-  cnv:{position:"absolute",top:0,left:0,width:"100%",height:"100%"},
+  wrap:{position:"absolute",inset:0,cursor:"grab",background:"#faf7f2",overflow:"hidden"},
+  cnv:{position:"absolute",top:0,left:0},
   zoomBtns:{position:"absolute",right:14,top:14,display:"flex",gap:6,zIndex:20},
   zoomBtn:{
     width:36,
