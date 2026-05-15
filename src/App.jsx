@@ -13,123 +13,108 @@ import { StatusBar } from "./components/StatusBar.jsx";
 import { ExploreCards } from "./components/ExploreCards.jsx";
 import { LifeTree } from "./components/LifeTree.jsx";
 
+// ── ÉTAPES DE LA VISITE GUIDÉE ────────────────────────────────────────────────
+const TOUR_STEPS = [
+  { label:"🌌 Big Bang", vs:UA*1.04, ve:10e9, desc:"Tout commence ici — 13,8 milliards d'années. L'univers naît en un instant." },
+  { label:"🌍 Naissance de la Terre", vs:5e9, ve:3.5e9, desc:"Il y a 4,5 milliards d'années, la Terre se forme par accrétion de poussières." },
+  { label:"🦠 Premières formes de vie", vs:4e9, ve:2.5e9, desc:"Les premières bactéries apparaissent il y a 3,5 milliards d'années." },
+  { label:"🦕 Ère des dinosaures", vs:260e6, ve:60e6, desc:"Le Mésozoïque — 165 millions d'années de règne des dinosaures." },
+  { label:"🧠 Homo sapiens", vs:500e3, ve:10e3, desc:"Notre espèce apparaît il y a ~300 000 ans. Art, langage, outils." },
+  { label:"📜 Civilisations", vs:8000, ve:0.1, desc:"De l'écriture sumérienne à l'intelligence artificielle — 5 000 ans d'histoire." },
+];
+
+// ── CATÉGORIES POUR LES FILTRES ───────────────────────────────────────────────
+const CATS = [
+  { id:"all",    label:"Tout",        color:"#555" },
+  { id:"cosmique",label:"Cosmique",   color:"#5a3db8" },
+  { id:"geologique",label:"Géologie", color:"#0868a8" },
+  { id:"biologique",label:"Biologie", color:"#0a7848" },
+  { id:"prehistoire",label:"Préhistoire",color:"#b03010" },
+  { id:"histoire",label:"Histoire",   color:"#8a6000" },
+];
+
 export default function Chronos() {
   const canvasRef=useRef(null),miniRef=useRef(null),wrapRef=useRef(null);
-  const S=useRef({vs:UA*1.04,ve:20,aiEvents:[],selectedId:null,hoveredId:null,fetchedZones:new Set(),fetching:false,fetchQueue:[],panelCache:{},placed:[],lineY:0});
+  const S=useRef({vs:UA*1.04,ve:20,aiEvents:[],selectedId:null,hoveredId:null,fetchedZones:new Set(),fetching:false,fetchQueue:[],panelCache:{},placed:[],lineY:0,periodY:0,periodH:0,treeTop:0});
   const rafRef=useRef(null),fetchDebRef=useRef(null),animRef=useRef(null);
 
-  // ── STORAGE: load saved content + bookmarks on mount ──
-  useEffect(()=>{
-    (async()=>{
-      try{
-        // Load cached rich content
-        const cached=JSON.parse(localStorage.getItem("chronos-cache") || "null");
-        if(cached && typeof cached === "object") Object.assign(S.current.panelCache,cached);
-      }catch(e){}
-      try{
-        // Load bookmarks
-        const bm=JSON.parse(localStorage.getItem("chronos-bookmarks") || "null");
-        if(bm && typeof bm === "object") setBookmarks(bm);
-      }catch(e){}
-      try{
-        // Load custom tags
-        const tags=JSON.parse(localStorage.getItem("chronos-tags") || "null");
-        if(Array.isArray(tags)) setCustomTags(tags);
-      }catch(e){}
-    })();
-  },[]);
-
-  const saveCache=useCallback(async()=>{
-    try{ localStorage.setItem("chronos-cache",JSON.stringify(S.current.panelCache)); }catch(e){}
-  },[]);
-
-  const saveBookmarks=useCallback(async(bm)=>{
-    try{ localStorage.setItem("chronos-bookmarks",JSON.stringify(bm)); }catch(e){}
-  },[]);
-
-  const saveTags=useCallback(async(tags)=>{
-    try{ localStorage.setItem("chronos-tags",JSON.stringify(tags)); }catch(e){}
-  },[]);
-
-  useEffect(()=>{
-    const onResize=()=>setIsMobile(window.innerWidth<760);
-    window.addEventListener("resize",onResize);
-    return()=>window.removeEventListener("resize",onResize);
-  },[]);
-
-  const toggleBookmark=useCallback((ev,tag)=>{
-    setBookmarks(prev=>{
-      const next={...prev};
-      if(next[ev.id]?.tag===tag){
-        delete next[ev.id]; // remove if same tag clicked again
-      } else {
-        next[ev.id]={tag,title:ev.title,date_label:ev.date_label,cat:ev.cat,yearsAgo:ev.yearsAgo,desc:ev.desc||""};
-      }
-      saveBookmarks(next);
-      return next;
-    });
-    setUi(u=>({...u,showBookmarkMenu:false}));
-  },[saveBookmarks]);
-
-  const removeBookmark=useCallback((evId)=>{
-    setBookmarks(prev=>{
-      const next={...prev};
-      delete next[evId];
-      saveBookmarks(next);
-      return next;
-    });
-  },[saveBookmarks]);
-
-  const addCustomTag=useCallback((tag)=>{
-    if(!tag.trim())return;
-    setCustomTags(prev=>{
-      const next=[...prev,tag.trim()];
-      saveTags(next);
-      return next;
-    });
-    setNewTagInput(""); setAddingTag(false);
-  },[saveTags]);
-
-  const removeCustomTag=useCallback((tag)=>{
-    setCustomTags(prev=>{
-      const next=prev.filter(t=>t!==tag);
-      saveTags(next);
-      return next;
-    });
-    // Remove bookmarks using this tag
-    setBookmarks(prev=>{
-      const next=Object.fromEntries(Object.entries(prev).filter(([,v])=>v.tag!==tag));
-      saveBookmarks(next);
-      return next;
-    });
-  },[saveTags,saveBookmarks]);
-  const [ui,setUi]=useState({epochLabel:"Vue globale",range:"",aiVisible:false,aiLabel:"",legendOpen:false,panelOpen:false,panelCat:"",panelCatColor:"#555",panelDate:"",panelTitle:"",panelContent:null,panelError:null,tooltip:null,searchOpen:false,searchQuery:"",searchResults:[],searchLoading:false,searchDone:false,searchError:null,panelEventId:null,bookmarkTag:null,showBookmarkMenu:false,showBookmarksView:false});
-  const [bookmarks,setBookmarks]=useState({});       // {eventId: {tag, title, date_label, cat, yearsAgo}}
-  const [customTags,setCustomTags]=useState(["Favori","À revoir","Intéressant"]); // editable list
+  // ── ÉTAT ──────────────────────────────────────────────────────────────────
+  const [ui,setUi]=useState({
+    epochLabel:"Vue globale",range:"",aiVisible:false,aiLabel:"",
+    legendOpen:false,panelOpen:false,panelCat:"",panelCatColor:"#555",
+    panelDate:"",panelTitle:"",panelContent:null,panelError:null,
+    tooltip:null,searchOpen:false,searchQuery:"",searchResults:[],
+    searchLoading:false,searchDone:false,searchError:null,
+    panelEventId:null,showBookmarkMenu:false,showBookmarksView:false,
+  });
+  const [bookmarks,setBookmarks]=useState({});
+  const [customTags,setCustomTags]=useState(["Favori","À revoir","Intéressant"]);
   const [addingTag,setAddingTag]=useState(false);
   const [newTagInput,setNewTagInput]=useState("");
   const [isMobile,setIsMobile]=useState(()=>typeof window!=="undefined"&&window.innerWidth<760);
   const [sidebarOpen,setSidebarOpen]=useState(false);
 
+  // Nouvelles fonctionnalités
+  const [fullscreen,setFullscreen]=useState(false);       // mode plein écran frise
+  const [filterCat,setFilterCat]=useState("all");         // filtre catégorie
+  const [tourStep,setTourStep]=useState(null);            // visite guidée (null = inactif)
+  const [annotations,setAnnotations]=useState({});        // {evId: texte}
+  const [annotInput,setAnnotInput]=useState("");
+  const [annotTarget,setAnnotTarget]=useState(null);
+  const [showLegendBar,setShowLegendBar]=useState(true);  // légende permanente
+
+  // ── STORAGE ───────────────────────────────────────────────────────────────
+  useEffect(()=>{
+    (async()=>{
+      try{const c=JSON.parse(localStorage.getItem("chronos-cache")||"null");if(c&&typeof c==="object")Object.assign(S.current.panelCache,c);}catch(e){}
+      try{const bm=JSON.parse(localStorage.getItem("chronos-bookmarks")||"null");if(bm&&typeof bm==="object")setBookmarks(bm);}catch(e){}
+      try{const tags=JSON.parse(localStorage.getItem("chronos-tags")||"null");if(Array.isArray(tags))setCustomTags(tags);}catch(e){}
+      // Charger les événements IA persistants
+      try{const aiev=JSON.parse(localStorage.getItem("chronos-aievents")||"null");if(Array.isArray(aiev)&&aiev.length){S.current.aiEvents=aiev;S.current.fetchedZones=new Set(aiev.map(e=>e._zone||""));}}catch(e){}
+      // Charger les annotations
+      try{const ann=JSON.parse(localStorage.getItem("chronos-annotations")||"null");if(ann&&typeof ann==="object")setAnnotations(ann);}catch(e){}
+    })();
+  },[]);
+
+  const saveCache=useCallback(()=>{try{localStorage.setItem("chronos-cache",JSON.stringify(S.current.panelCache));}catch(e){}},[]);
+  const saveBookmarks=useCallback((bm)=>{try{localStorage.setItem("chronos-bookmarks",JSON.stringify(bm));}catch(e){}},[]);
+  const saveTags=useCallback((tags)=>{try{localStorage.setItem("chronos-tags",JSON.stringify(tags));}catch(e){}},[]);
+  const saveAiEvents=useCallback(()=>{try{localStorage.setItem("chronos-aievents",JSON.stringify(S.current.aiEvents.slice(-200)));}catch(e){}},[]);
+  const saveAnnotations=useCallback((ann)=>{try{localStorage.setItem("chronos-annotations",JSON.stringify(ann));}catch(e){}},[]);
+
+  useEffect(()=>{const onResize=()=>setIsMobile(window.innerWidth<760);window.addEventListener("resize",onResize);return()=>window.removeEventListener("resize",onResize);},[]);
+
+  // ── BOOKMARKS ─────────────────────────────────────────────────────────────
+  const toggleBookmark=useCallback((ev,tag)=>{setBookmarks(prev=>{const next={...prev};if(next[ev.id]?.tag===tag){delete next[ev.id];}else{next[ev.id]={tag,title:ev.title,date_label:ev.date_label,cat:ev.cat,yearsAgo:ev.yearsAgo,desc:ev.desc||""};}saveBookmarks(next);return next;});setUi(u=>({...u,showBookmarkMenu:false}));},[saveBookmarks]);
+  const removeBookmark=useCallback((evId)=>{setBookmarks(prev=>{const next={...prev};delete next[evId];saveBookmarks(next);return next;});},[saveBookmarks]);
+  const addCustomTag=useCallback((tag)=>{if(!tag.trim())return;setCustomTags(prev=>{const next=[...prev,tag.trim()];saveTags(next);return next;});setNewTagInput("");setAddingTag(false);},[saveTags]);
+  const removeCustomTag=useCallback((tag)=>{setCustomTags(prev=>{const next=prev.filter(t=>t!==tag);saveTags(next);return next;});setBookmarks(prev=>{const next=Object.fromEntries(Object.entries(prev).filter(([,v])=>v.tag!==tag));saveBookmarks(next);return next;});},[saveTags,saveBookmarks]);
+
+  // ── ANNOTATIONS ───────────────────────────────────────────────────────────
+  const saveAnnotation=useCallback((evId,text)=>{setAnnotations(prev=>{const next={...prev};if(text.trim()){next[evId]=text;}else{delete next[evId];}saveAnnotations(next);return next;});},[saveAnnotations]);
+
+  // ── DESSIN ────────────────────────────────────────────────────────────────
   const redraw=useCallback(()=>{
     const cnv=canvasRef.current,mcnv=miniRef.current,wrap=wrapRef.current;
     if(!cnv||!wrap)return;
     const nextW=wrap.offsetWidth,nextH=wrap.offsetHeight;
-    if(cnv.width!==nextW) cnv.width=nextW;
-    if(cnv.height!==nextH) cnv.height=nextH;
-    if(mcnv){
-      if(mcnv.width!==160) mcnv.width=160;
-      if(mcnv.height!==28) mcnv.height=28;
-    }
+    if(cnv.width!==nextW)cnv.width=nextW;
+    if(cnv.height!==nextH)cnv.height=nextH;
+    if(mcnv){if(mcnv.width!==200)mcnv.width=200;if(mcnv.height!==40)mcnv.height=40;}
     const s=S.current;
-    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:s.aiEvents,selectedId:s.selectedId,hoveredId:s.hoveredId});
+    // Appliquer filtre catégorie
+    const filteredEvents=filterCat==="all"?s.aiEvents:s.aiEvents.filter(e=>e.cat===filterCat);
+    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:filteredEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,filterCat});
     s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;
     const mid=makeCoord(s.vs,s.ve,cnv.width).toYa(cnv.width/2);
     const ep=epochAt(mid);
     setUi(u=>({...u,epochLabel:ep.label+"  ·  "+fmt(s.vs)+" → "+fmt(Math.max(s.ve,0.1)),range:`zoom ×${Math.pow(10,zoomLvl(s.vs,s.ve)).toFixed(0)}`}));
-  },[]);
+  },[filterCat]);
 
   const scheduleRedraw=useCallback(()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);rafRef.current=requestAnimationFrame(redraw);},[redraw]);
+
+  // Re-dessiner quand le filtre change
+  useEffect(()=>scheduleRedraw(),[filterCat,scheduleRedraw]);
 
   const navigateToEpoch=useCallback((ep)=>{
     if(animRef.current)cancelAnimationFrame(animRef.current);
@@ -142,6 +127,7 @@ export default function Chronos() {
     animRef.current=requestAnimationFrame(animate);
   },[scheduleRedraw]);
 
+  // ── FETCH ÉVÉNEMENTS IA ───────────────────────────────────────────────────
   const fetchZone=useCallback(async(startYa,endYa)=>{
     const s=S.current,key=`${L(startYa).toFixed(2)}_${L(Math.max(endYa,0.1)).toFixed(2)}`;
     if(s.fetchedZones.has(key))return;
@@ -159,16 +145,16 @@ export default function Chronos() {
       for(const ev of evs){
         const ya=Number(ev.yearsAgo);if(!ev.title||isNaN(ya)||ya<0)continue;
         if(s.aiEvents.find(e=>Math.abs(L(e.yearsAgo)-L(ya))<0.02&&e.title===ev.title))continue;
-        s.aiEvents.push({id:`ai_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,yearsAgo:ya,title:ev.title,date_label:ev.date_label||fmt(ya),desc:ev.desc||"",cat:ev.cat||"histoire",importance:3,minZoom:0});
+        s.aiEvents.push({id:`ai_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,yearsAgo:ya,title:ev.title,date_label:ev.date_label||fmt(ya),desc:ev.desc||"",cat:ev.cat||"histoire",importance:3,minZoom:0,_zone:key});
         added++;
       }
-      if(added>0)scheduleRedraw();
+      if(added>0){scheduleRedraw();saveAiEvents();}// Persistance immédiate
     }catch(e){console.warn("AI:",e);}
     finally{
       s.fetching=false;setTimeout(()=>setUi(u=>({...u,aiVisible:false})),700);
       if(s.fetchQueue.length>0){const n=s.fetchQueue.shift();if(!s.fetchedZones.has(n.key))setTimeout(()=>fetchZone(n.startYa,n.endYa),350);}
     }
-  },[scheduleRedraw]);
+  },[scheduleRedraw,saveAiEvents]);
 
   const triggerFetch=useCallback(()=>{
     clearTimeout(fetchDebRef.current);
@@ -179,13 +165,11 @@ export default function Chronos() {
     },800);
   },[fetchZone]);
 
+  // ── FETCH FICHE RICHE ─────────────────────────────────────────────────────
   const fetchRich=useCallback(async(ev)=>{
     const s=S.current;
-    // 1. Pre-written static content — instant, no API
     if(STATIC_CONTENT[ev.id]){setUi(u=>({...u,panelContent:STATIC_CONTENT[ev.id],panelEventId:ev.id}));return;}
-    // 2. Already cached (from storage or previous API call)
     if(s.panelCache[ev.id]){setUi(u=>({...u,panelContent:s.panelCache[ev.id],panelEventId:ev.id}));return;}
-    // 3. Generate via API then persist
     setUi(u=>({...u,panelContent:"loading",panelError:null,panelEventId:ev.id}));
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
@@ -193,362 +177,454 @@ export default function Chronos() {
 Événement : ${ev.title}
 Date : ${ev.date_label}
 Contexte : ${ev.desc}
-En HTML simple (<p>,<h3>,<strong> uniquement). Sections : intro immersive (1§), <h3>Contexte</h3>(1§), <h3>Ce qui s'est passé</h3>(1§), <h3>Héritage</h3>(1§), <h3>Le saviez-vous ?</h3>(1§). ~260 mots. HTML direct, sans balises html/body.`}]})});
+En HTML simple (<p>,<h3>,<strong> uniquement). Sections : intro immersive (1§), <h3>Contexte</h3>(1§), <h3>Ce qui s'est passé</h3>(1§), <h3>Héritage</h3>(1§), <h3>Le saviez-vous ?</h3>(1§). ~280 mots. HTML direct, sans balises html/body.`}]})});
       if(!res.ok)throw new Error(`Erreur API ${res.status}`);
       const data=await res.json();
       const html=(data.content||[]).find(b=>b.type==="text")?.text||"<p>Indisponible.</p>";
       s.panelCache[ev.id]=html;
       setUi(u=>({...u,panelContent:html,panelError:null,panelEventId:ev.id}));
-      saveCache(); // persist to storage
-    }catch(e){setUi(u=>({...u,panelContent:"<p>La fiche détaillée n'a pas pu être chargée pour le moment.</p>",panelError:"Connexion à l'IA indisponible. Vous pouvez réessayer en rouvrant cette fiche.",panelEventId:ev.id}));}
+      saveCache();
+    }catch(e){setUi(u=>({...u,panelContent:"<p>La fiche n'a pas pu être chargée.</p>",panelError:"IA indisponible. Réessayez en rouvrant la fiche.",panelEventId:ev.id}));}
+  },[saveCache]);
+
+  // ── FICHE PÉRIODE — génération IA ─────────────────────────────────────────
+  const fetchPeriodRich=useCallback(async(item)=>{
+    const cacheKey="period_"+item.label;
+    const s=S.current;
+    // Cache hit
+    if(s.panelCache[cacheKey]){
+      setUi(u=>({...u,panelContent:s.panelCache[cacheKey],panelEventId:cacheKey}));return;
+    }
+    // Données statiques en attendant l'IA
+    const desc=PERIOD_DESCRIPTIONS[item.label]||{summary:"",highlights:[]};
+    const staticHtml=`<p>${desc.summary}</p>`+(desc.highlights.length?`<h3>Points clés</h3><ul>${desc.highlights.map(h=>`<li>◆ ${h}</li>`).join("")}</ul>`:"");
+    setUi(u=>({...u,panelContent:"loading",panelError:null,panelEventId:cacheKey}));
+    try{
+      const isEre=item.from>1e9;
+      const prompt=`Tu es un expert en histoire naturelle et géologie. Rédige une fiche encyclopédique immersive sur ${isEre?"l'ère":"la période"} géologique du ${item.label} (${fmt(item.from)} → ${item.to>0?fmt(item.to):"aujourd'hui"}).
+En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
+- Intro accrocheuse (1§)
+- <h3>Caractéristiques</h3> : climat, géographie, océans (1§)
+- <h3>Vie et évolution</h3> : espèces dominantes, grandes innovations biologiques (1§)
+- <h3>Événements majeurs</h3> : extinctions, apparitions, bouleversements (liste à puces HTML)
+- <h3>Héritage</h3> : ce que cette période a légué (1§)
+- <h3>Chiffres clés</h3> : durée, températures, CO₂, niveau mers (liste)
+~350 mots. HTML direct uniquement.`;
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:1100,messages:[{role:"user",content:prompt}]})});
+      if(!res.ok)throw new Error(res.status);
+      const data=await res.json();
+      const html=(data.content||[]).find(b=>b.type==="text")?.text||staticHtml;
+      s.panelCache[cacheKey]=html;
+      setUi(u=>({...u,panelContent:html,panelError:null,panelEventId:cacheKey}));
+      saveCache();
+    }catch(e){
+      setUi(u=>({...u,panelContent:staticHtml,panelError:"Fiche IA indisponible — contenu de base affiché.",panelEventId:cacheKey}));
+    }
   },[saveCache]);
 
   const openPeriodPanel=useCallback((item)=>{
-    S.current.selectedId=null; scheduleRedraw();
-    const desc=PERIOD_DESCRIPTIONS[item.label]||{summary:"",highlights:[]};
-    const html=`<p style="font-family:Georgia,serif;font-size:14px;line-height:1.8;color:#12100e;margin-bottom:12px">${desc.summary}</p>`+
-      (desc.highlights.length?`<h3 style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:rgba(18,16,14,.4);margin:14px 0 8px">Points clés</h3><ul style="list-style:none;padding:0;margin:0">${desc.highlights.map(h=>`<li style="font-family:Georgia,serif;font-size:13px;color:#12100e;padding:5px 0;border-bottom:1px solid rgba(18,16,14,.06);display:flex;align-items:flex-start;gap:8px"><span style="color:#c8963c;flex-shrink:0">◆</span>${h}</li>`).join("")}</ul>`:"");
-    setUi(u=>({...u,panelOpen:true,panelCat:item.from>1e9?"ÈRE":"PÉRIODE",
+    S.current.selectedId=null;scheduleRedraw();
+    const isEre=item.from>1e9;
+    setUi(u=>({...u,panelOpen:true,
+      panelCat:isEre?"ÈRE GÉOLOGIQUE":"PÉRIODE GÉOLOGIQUE",
       panelCatColor:item.stripe||item.color||"#c8963c",
       panelDate:fmt(item.from)+" → "+(item.to>0?fmt(item.to):"aujourd'hui"),
-      panelTitle:item.label,panelContent:html,panelError:null,tooltip:null,panelEventId:"period_"+item.label,showBookmarkMenu:false}));
+      panelTitle:item.label,panelContent:"loading",panelError:null,
+      tooltip:null,panelEventId:"period_"+item.label,showBookmarkMenu:false}));
     S.current._currentPanelEv={id:"period_"+item.label,title:item.label,date_label:fmt(item.from),yearsAgo:item.from,cat:"geologique"};
-  },[scheduleRedraw]);
+    fetchPeriodRich(item);
+  },[scheduleRedraw,fetchPeriodRich]);
 
   const openPanel=useCallback((ev)=>{
-    S.current._currentPanelEv=ev;
-    scheduleRedraw();
+    S.current._currentPanelEv=ev;scheduleRedraw();
     setUi(u=>({...u,panelOpen:true,panelCat:ev.cat.toUpperCase(),panelCatColor:cc(ev.cat),panelDate:ev.date_label,panelTitle:ev.title,panelContent:"loading",panelError:null,tooltip:null,panelEventId:ev.id,showBookmarkMenu:false}));
     fetchRich(ev);
   },[scheduleRedraw,fetchRich]);
 
   const closePanel=useCallback(()=>{S.current.selectedId=null;scheduleRedraw();setUi(u=>({...u,panelOpen:false}));},[scheduleRedraw]);
 
+  // ── RECHERCHE ─────────────────────────────────────────────────────────────
   const searchDebRef=useRef(null);
-
-  // Universal search: local match + AI search across all of human history
   const searchWithAI=useCallback(async(query)=>{
     if(!query.trim()){setUi(u=>({...u,searchResults:[],searchDone:false,searchLoading:false,searchError:null}));return;}
-
-    // 1. Local match
-    const q=query.toLowerCase();
-    const s=S.current;
-    const local=[...ALL_EVENTS,...s.aiEvents].filter(ev=>
-      ev.title.toLowerCase().includes(q)||
-      ev.desc.toLowerCase().includes(q)||
-      ev.date_label.toLowerCase().includes(q)||
-      ev.cat.toLowerCase().includes(q)
-    ).slice(0,4);
+    const q=query.toLowerCase(),s=S.current;
+    const local=[...ALL_EVENTS,...s.aiEvents].filter(ev=>ev.title.toLowerCase().includes(q)||ev.desc.toLowerCase().includes(q)||ev.date_label.toLowerCase().includes(q)||ev.cat.toLowerCase().includes(q)).slice(0,4);
     setUi(u=>({...u,searchResults:local,searchLoading:true,searchDone:false,searchError:null}));
-
-    // 2. Universal AI search — any event in all of history
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":import.meta.env.VITE_ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:1000,
-          messages:[{role:"user",content:`Tu es un historien et scientifique expert de toute l'histoire de l'univers, de la Terre, de la vie et de l'humanité.
-
-L'utilisateur recherche : "${query}"
-
-Trouve les événements historiques, scientifiques, biologiques ou cosmiques les plus pertinents correspondant à cette recherche. Tu peux inclure :
-- Des événements très précis et peu connus (batailles, inventions, naissances, découvertes, traités...)
-- Des personnages historiques (leur naissance ou mort comme événement)
-- Des phénomènes naturels, géologiques, biologiques
-- N'importe quelle période de l'histoire, de n'importe quel pays ou région du monde
-- Des événements aussi petits ou grands que nécessaire pour répondre à la requête
-
-Réponds UNIQUEMENT par un tableau JSON valide (sans markdown). Max 6 résultats, du plus pertinent au moins pertinent :
-[{"yearsAgo":number,"title":"titre court max 6 mots","date_label":"date précise lisible","desc":"1-2 phrases de description factuelle","cat":"cosmique|geologique|biologique|prehistoire|histoire","relevance":"lien avec la recherche en 4 mots max"}]
-
-IMPORTANT : yearsAgo doit être un nombre positif représentant combien d'années avant 2025. Ex: 1804 ap.J.-C. → yearsAgo=221, 500 av.J.-C. → yearsAgo=2525.
-Si aucun événement réel ne correspond, retourne [].`}]})});
+        body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:1000,messages:[{role:"user",content:`Historien expert. Recherche: "${query}". Retourne UNIQUEMENT un JSON valide.\nMax 6 résultats: [{"yearsAgo":number,"title":"max 6 mots","date_label":"date lisible","desc":"1-2 phrases","cat":"cosmique|geologique|biologique|prehistoire|histoire","relevance":"4 mots"}]\nyearsAgo = années avant 2025 (ex: 1804 → 221). Si aucun événement, retourne [].`}]})});
       if(!res.ok)throw new Error(res.status);
       const data=await res.json();
       const raw=(data.content||[]).find(b=>b.type==="text")?.text||"[]";
-      const match=raw.match(/\[[\s\S]*?\]/);
-      if(!match)throw new Error("no array");
+      const match=raw.match(/\[[\s\S]*?\]/);if(!match)throw new Error("no array");
       const aiResults=JSON.parse(match[0]);
       const merged=[...local];
       for(const r of aiResults){
-        const ya=Number(r.yearsAgo);
-        if(isNaN(ya)||ya<0)continue;
-        const dup=merged.find(e=>e.title.toLowerCase()===r.title.toLowerCase());
-        if(!dup){
-          merged.push({
-            id:`srch_${Date.now()}_${Math.random().toString(36).slice(2,5)}`,
-            yearsAgo:ya,title:r.title,date_label:r.date_label||"",
-            desc:r.desc||"",cat:r.cat||"histoire",
-            relevance:r.relevance,importance:2,minZoom:0,fromSearch:true
-          });
-        }
+        const ya=Number(r.yearsAgo);if(isNaN(ya)||ya<0)continue;
+        if(!merged.find(e=>e.title.toLowerCase()===r.title.toLowerCase()))
+          merged.push({id:`srch_${Date.now()}_${Math.random().toString(36).slice(2,5)}`,yearsAgo:ya,title:r.title,date_label:r.date_label||"",desc:r.desc||"",cat:r.cat||"histoire",relevance:r.relevance,importance:2,minZoom:0,fromSearch:true});
       }
       setUi(u=>({...u,searchResults:merged.slice(0,8),searchLoading:false,searchDone:true,searchError:null}));
-    }catch(e){
-      setUi(u=>({...u,searchLoading:false,searchDone:true,searchError:"La recherche IA est indisponible. Les résultats locaux restent affichés."}));
-    }
+    }catch(e){setUi(u=>({...u,searchLoading:false,searchDone:true,searchError:"Recherche IA indisponible."}));}
   },[]);
 
   const handleSearch=useCallback((query)=>{
     setUi(u=>({...u,searchQuery:query,searchResults:[],searchDone:false,searchError:null}));
     clearTimeout(searchDebRef.current);
-    if(!query.trim()){setUi(u=>({...u,searchLoading:false,searchError:null}));return;}
+    if(!query.trim()){setUi(u=>({...u,searchLoading:false}));return;}
     searchDebRef.current=setTimeout(()=>searchWithAI(query),500);
   },[searchWithAI]);
 
-  // Navigate to a search result: zoom in on the event, add it if not present, open panel
   const goToResult=useCallback((ev)=>{
-    // Add to aiEvents if not already there
     const s=S.current;
-    if(!ALL_EVENTS.find(e=>e.id===ev.id)&&!s.aiEvents.find(e=>e.id===ev.id)){
-      s.aiEvents.push({...ev,importance:ev.importance||2,minZoom:0});
-    }
-    // Animate to event: zoom in to ~50× around the event's date
-    const targetYa=ev.yearsAgo;
-    const span=Math.max(targetYa*0.15,500); // show ±15% of event date, min 500 years
-    const targetVs=targetYa+span, targetVe=Math.max(targetYa-span,0.1);
+    if(!ALL_EVENTS.find(e=>e.id===ev.id)&&!s.aiEvents.find(e=>e.id===ev.id)){s.aiEvents.push({...ev,importance:ev.importance||2,minZoom:0});}
+    const targetYa=ev.yearsAgo,span=Math.max(targetYa*0.15,500);
+    const targetVs=targetYa+span,targetVe=Math.max(targetYa-span,0.1);
     if(animRef.current)cancelAnimationFrame(animRef.current);
     const startVs=s.vs,startVe=s.ve,steps=30;let step=0;
-    const animate=()=>{
-      step++;const t=step/steps,ease=t<0.5?2*t*t:-1+(4-2*t)*t;
+    const animate=()=>{step++;const t=step/steps,ease=t<0.5?2*t*t:-1+(4-2*t)*t;
       const ls=L(startVs)+(L(targetVs)-L(startVs))*ease,le=L(startVe)+(L(targetVe)-L(startVe))*ease;
-      s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);
-      scheduleRedraw();
+      s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);scheduleRedraw();
       if(step<steps)animRef.current=requestAnimationFrame(animate);
-      else{
-        // Open panel after animation
-        setUi(u=>({...u,searchOpen:false,searchQuery:"",searchResults:[],searchDone:false}));
-        openPanel(ev);
-        triggerFetch();
-      }
-    };
+      else{setUi(u=>({...u,searchOpen:false,searchQuery:"",searchResults:[],searchDone:false}));openPanel(ev);triggerFetch();}};
     animRef.current=requestAnimationFrame(animate);
   },[scheduleRedraw,openPanel,triggerFetch]);
 
   const zoomAround=useCallback((pivotYa,factor)=>{
-    const s=S.current;
-    const ns=pivotYa+(s.vs-pivotYa)*factor,ne=pivotYa+(s.ve-pivotYa)*factor;
+    const s=S.current,ns=pivotYa+(s.vs-pivotYa)*factor,ne=pivotYa+(s.ve-pivotYa)*factor;
     if(ns>UA*1.1||ne<0.05)return;if(L(ns)-L(Math.max(ne,0.1))<0.03)return;
     s.vs=Math.min(ns,UA*1.1);s.ve=Math.max(ne,0.05);
   },[]);
 
-  const resetView=useCallback(()=>{
-    S.current.vs=UA*1.04;
-    S.current.ve=20;
-    scheduleRedraw();
-    triggerFetch();
-  },[scheduleRedraw,triggerFetch]);
-
-  // Stable refs pour le useEffect
-  const _openPanel=useRef(null);_openPanel.current=openPanel;
-  const _openPeriod=useRef(null);_openPeriod.current=openPeriodPanel;
-  const _closePanel=useRef(null);_closePanel.current=closePanel;
-  const _redraw=useRef(null);_redraw.current=scheduleRedraw;
-  const _fetch=useRef(null);_fetch.current=triggerFetch;
-  const _zoom=useRef(null);_zoom.current=zoomAround;
+  const resetView=useCallback(()=>{S.current.vs=UA*1.04;S.current.ve=20;scheduleRedraw();triggerFetch();},[scheduleRedraw,triggerFetch]);
 
   const zoomFromCenter=useCallback((factor)=>{
     const s=S.current,W=canvasRef.current?.width||800;
-    const center=makeCoord(s.vs,s.ve,W).toYa(W/2);
-    zoomAround(center,factor);
-    scheduleRedraw();
-    triggerFetch();
+    zoomAround(makeCoord(s.vs,s.ve,W).toYa(W/2),factor);scheduleRedraw();triggerFetch();
   },[scheduleRedraw,triggerFetch,zoomAround]);
+
+  // ── VISITE GUIDÉE ─────────────────────────────────────────────────────────
+  const goTourStep=useCallback((idx)=>{
+    if(idx===null){setTourStep(null);return;}
+    const step=TOUR_STEPS[idx];
+    setTourStep(idx);
+    if(animRef.current)cancelAnimationFrame(animRef.current);
+    const s=S.current,startVs=s.vs,startVe=s.ve,steps=30;let i=0;
+    const animate=()=>{i++;const t=i/steps,ease=t<0.5?2*t*t:-1+(4-2*t)*t;
+      const ls=L(startVs)+(L(step.vs)-L(startVs))*ease,le=L(startVe)+(L(step.ve)-L(startVe))*ease;
+      s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);scheduleRedraw();
+      if(i<steps)animRef.current=requestAnimationFrame(animate);else triggerFetch();};
+    animRef.current=requestAnimationFrame(animate);
+  },[scheduleRedraw,triggerFetch]);
+
+  // ── EXPORT IMAGE ──────────────────────────────────────────────────────────
+  const exportImage=useCallback(()=>{
+    const cnv=canvasRef.current;if(!cnv)return;
+    const link=document.createElement("a");
+    link.download=`chronos-${new Date().toISOString().slice(0,10)}.png`;
+    link.href=cnv.toDataURL("image/png");
+    link.click();
+  },[]);
+
+  // ── MINIMAP CLICK ─────────────────────────────────────────────────────────
+  const onMinimapClick=useCallback((e)=>{
+    const mini=miniRef.current;if(!mini)return;
+    const rect=mini.getBoundingClientRect();
+    const relX=(e.clientX-rect.left)/rect.width;
+    const tls=Math.log10(UA),tle=0,tR=tls-tle;
+    const clickLog=tls-(relX*tR);
+    const clickYa=Math.pow(10,clickLog);
+    // Centrer sur ce point
+    const s=S.current;
+    const halfSpan=(L(s.vs)-L(Math.max(s.ve,0.1)))/2;
+    const newLs=clickLog+halfSpan,newLe=clickLog-halfSpan;
+    s.vs=Math.pow(10,newLs);s.ve=Math.max(Math.pow(10,newLe),0.1);
+    scheduleRedraw();triggerFetch();
+  },[scheduleRedraw,triggerFetch]);
+
+  // ── REFS STABLES ──────────────────────────────────────────────────────────
+  const _op=useRef(null);_op.current=openPanel;
+  const _opp=useRef(null);_opp.current=openPeriodPanel;
+  const _cp=useRef(null);_cp.current=closePanel;
+  const _sr=useRef(null);_sr.current=scheduleRedraw;
+  const _tf=useRef(null);_tf.current=triggerFetch;
+  const _za=useRef(null);_za.current=zoomAround;
 
   useEffect(()=>{
     const wrap=wrapRef.current,cnv=canvasRef.current;if(!wrap||!cnv)return;
-    const onWheel=(e)=>{e.preventDefault();const rect=cnv.getBoundingClientRect();zoomAround(makeCoord(S.current.vs,S.current.ve,cnv.width).toYa(e.clientX-rect.left),e.deltaY>0?1.13:.88);scheduleRedraw();triggerFetch();};
+    const onWheel=(e)=>{e.preventDefault();const rect=cnv.getBoundingClientRect();_za.current(makeCoord(S.current.vs,S.current.ve,cnv.width).toYa(e.clientX-rect.left),e.deltaY>0?1.13:.88);_sr.current();_tf.current();};
     let dragging=false;
-    const onMD=(e)=>{dragging=true;wrap.style.cursor="grabbing";};
+    const onMD=()=>{dragging=true;wrap.style.cursor="grabbing";};
     const onMU=()=>{dragging=false;wrap.style.cursor="grab";};
     const onMM=(e)=>{
       const rect=cnv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;
-      if(dragging){
-        const s=S.current,lr=L(s.vs)-L(s.ve),sh=-(e.movementX/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;
-        if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);scheduleRedraw();triggerFetch();return;
-      }
+      if(dragging){const s=S.current,lr=L(s.vs)-L(s.ve),sh=-(e.movementX/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);_sr.current();_tf.current();return;}
       const s=S.current;let found=null;
-      for(const p of s.placed)if(Math.abs(p.x-mx)<16&&Math.abs(s.lineY-my)<80){found=p.ev;break;}
+      for(const p of s.placed)if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){found=p.ev;break;}
       const nid=found?found.id:null;
-      if(nid!==s.hoveredId){
-        s.hoveredId=nid;wrap.style.cursor=found?"pointer":"grab";scheduleRedraw();
+      if(nid!==s.hoveredId){s.hoveredId=nid;wrap.style.cursor=found?"pointer":"grab";_sr.current();
         if(found){let tx=mx+16,ty=my-68;if(tx+220>cnv.width)tx=mx-226;if(ty<10)ty=my+20;setUi(u=>({...u,tooltip:{x:tx,y:ty,date:found.date_label,title:found.title}}));}
-        else setUi(u=>({...u,tooltip:null}));
-      }
+        else setUi(u=>({...u,tooltip:null}));}
     };
     const onClick=(e)=>{
       const rect=cnv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top,s=S.current;
-      // 1. Event dots
-      for(const p of s.placed)if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){_openPanel.current(p.ev);return;}
-      // 2. Period band click
-      if(s.periodY&&my>=s.periodY&&my<=s.periodY+s.periodH){
-        const coord=makeCoord(s.vs,s.ve,cnv.width);
-        const ya=coord.toYa(mx);
-        const per=PERIODS.find(p=>ya<=p.from&&ya>=p.to);
-        if(per){_openPeriod.current(per);return;}
-      }
-      // 3. Epoch band click (above period band)
-      if(s.periodY&&my<s.periodY&&my>56){
-        const coord=makeCoord(s.vs,s.ve,cnv.width);
-        const ya=coord.toYa(mx);
-        const ep=EPOCHS.find(p=>ya<=p.from&&ya>=p.to);
-        if(ep){_openPeriod.current(ep);return;}
-      }
-      _closePanel.current();
+      for(const p of s.placed)if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){_op.current(p.ev);return;}
+      if(s.periodY!=null&&my>=s.periodY&&my<=s.periodY+(s.periodH||20)){const ya=makeCoord(s.vs,s.ve,cnv.width).toYa(mx);const per=PERIODS.find(p=>ya<=p.from&&ya>=p.to);if(per){_opp.current(per);return;}}
+      if(s.periodY!=null&&my<s.periodY&&my>44){const ya=makeCoord(s.vs,s.ve,cnv.width).toYa(mx);const ep=EPOCHS.find(p=>ya<=p.from&&ya>=p.to);if(ep){_opp.current(ep);return;}}
+      _cp.current();
     };
     let lt=null,ld=null;
     const onTS=(e)=>{if(e.touches.length===1)lt=e.touches[0].clientX;else if(e.touches.length===2)ld=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);};
-    const onTM=(e)=>{
-      e.preventDefault();const rect=cnv.getBoundingClientRect(),s=S.current;
-      if(e.touches.length===1&&lt!==null){const dx=e.touches[0].clientX-lt;lt=e.touches[0].clientX;const lr=L(s.vs)-L(s.ve),sh=-(dx/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);scheduleRedraw();triggerFetch();}
-      else if(e.touches.length===2&&ld!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const mx=(e.touches[0].clientX+e.touches[1].clientX)/2-rect.left;zoomAround(makeCoord(s.vs,s.ve,cnv.width).toYa(mx),ld/d);ld=d;scheduleRedraw();triggerFetch();}
-    };
+    const onTM=(e)=>{e.preventDefault();const rect=cnv.getBoundingClientRect(),s=S.current;
+      if(e.touches.length===1&&lt!==null){const dx=e.touches[0].clientX-lt;lt=e.touches[0].clientX;const lr=L(s.vs)-L(s.ve),sh=-(dx/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);_sr.current();_tf.current();}
+      else if(e.touches.length===2&&ld!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const mx=(e.touches[0].clientX+e.touches[1].clientX)/2-rect.left;_za.current(makeCoord(s.vs,s.ve,cnv.width).toYa(mx),ld/d);ld=d;_sr.current();_tf.current();}};
     const onTE=()=>{lt=null;ld=null;};
-    const onResize=()=>scheduleRedraw();
+    const onResize=()=>_sr.current();
     cnv.addEventListener("wheel",onWheel,{passive:false});cnv.addEventListener("mousedown",onMD);cnv.addEventListener("click",onClick);
     cnv.addEventListener("touchstart",onTS,{passive:false});cnv.addEventListener("touchmove",onTM,{passive:false});cnv.addEventListener("touchend",onTE);
     window.addEventListener("mousemove",onMM);window.addEventListener("mouseup",onMU);window.addEventListener("resize",onResize);
-    scheduleRedraw();triggerFetch();
+    _sr.current();_tf.current();
     return()=>{cnv.removeEventListener("wheel",onWheel);cnv.removeEventListener("mousedown",onMD);cnv.removeEventListener("click",onClick);cnv.removeEventListener("touchstart",onTS);cnv.removeEventListener("touchmove",onTM);cnv.removeEventListener("touchend",onTE);window.removeEventListener("mousemove",onMM);window.removeEventListener("mouseup",onMU);window.removeEventListener("resize",onResize);};
-  },[]);// deps vides — utilise les refs
+  },[]);
+
+  // ── JSX ───────────────────────────────────────────────────────────────────
+  const currentEv=S.current._currentPanelEv;
 
   return (
     <div style={css.app}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap');@keyframes dp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.5)}}@keyframes bw{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}@keyframes spin{to{transform:rotate(360deg)}}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#d8d0c3;border-radius:999px}.srch-item:hover{background:#f5f0e8!important}.srch-item{font:inherit;text-align:left;border:0;background:transparent;width:100%}button:hover{transform:translateY(-1px)}button:active{transform:translateY(0)}@media (max-width:1120px){.chronos-shell{grid-template-columns:280px minmax(0,1fr)!important}}@media (max-width:860px){.chronos-shell{display:flex!important;flex-direction:column!important;height:auto!important;min-height:100vh}.chronos-sidebar{position:relative!important;max-height:none!important;border-right:0!important;border-bottom:1px solid rgba(23,20,18,.10)!important}.chronos-main{min-height:calc(100vh - 360px);padding:14px!important}.chronos-mini{display:none}.chronos-header{align-items:flex-start!important;flex-direction:column!important}.chronos-explore{grid-template-columns:repeat(2,minmax(0,1fr))!important}.chronos-toolbar-hint{display:none}}@media (max-width:520px){.chronos-explore{grid-template-columns:1fr!important}.chronos-actions{width:100%}.chronos-actions button{flex:1}.chronos-page-title{font-size:34px!important}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap');
+        @keyframes dp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.5)}}
+        @keyframes bw{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#d8d0c3;border-radius:999px}
+        .srch-item:hover{background:#f5f0e8!important}
+        button:active{opacity:.85}`}
+      </style>
 
-      {/* ── BOUTON TOGGLE SIDEBAR ── */}
-      <button
-        onClick={()=>setSidebarOpen(o=>!o)}
-        title={sidebarOpen?"Masquer la barre latérale":"Afficher la barre latérale"}
-        style={{
-          position:"fixed",
-          left: sidebarOpen ? 284 : 12,
-          top: 14,
-          zIndex: 400,
-          width: 30,
-          height: 30,
-          borderRadius: 7,
-          background: "#fbfaf7",
-          border: "1px solid rgba(23,20,18,.14)",
-          boxShadow: "0 2px 8px rgba(23,20,18,.12)",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 15,
-          color: "rgba(23,20,18,.6)",
-          transition: "left .3s cubic-bezier(.16,1,.3,1)",
-          fontFamily: "inherit",
-        }}
-      >
-        {sidebarOpen ? "←" : "☰"}
+      {/* ── BOUTON SIDEBAR ── */}
+      <button onClick={()=>setSidebarOpen(o=>!o)} title={sidebarOpen?"Fermer":"Menu"}
+        style={{position:"fixed",left:sidebarOpen?284:12,top:14,zIndex:400,width:30,height:30,borderRadius:7,background:"#fbfaf7",border:"1px solid rgba(23,20,18,.14)",boxShadow:"0 2px 8px rgba(23,20,18,.12)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,color:"rgba(23,20,18,.6)",transition:"left .3s cubic-bezier(.16,1,.3,1)"}}>
+        {sidebarOpen?"←":"☰"}
       </button>
 
-      <div className="chronos-shell" style={css.shell}>
-        {/* Sidebar — position fixe, slide in/out */}
-        <div style={{
-          position:"fixed", left:0, top:0, bottom:0, width:280,
-          transform: sidebarOpen ? "translateX(0)" : "translateX(-280px)",
-          transition:"transform .3s cubic-bezier(.16,1,.3,1)",
-          zIndex:300,
-          flexShrink:0,
-        }}>
-          <Topbar
-          ui={ui}
-          setUi={setUi}
-          handleSearch={handleSearch}
-          goToResult={goToResult}
-          navigateToEpoch={navigateToEpoch}
-          resetView={resetView}
-          isMobile={isMobile}
-        />
-        </div>{/* fin sidebar fixe */}
+      <div style={css.shell}>
+        {/* Sidebar */}
+        <div style={{position:"fixed",left:0,top:0,bottom:0,width:280,transform:sidebarOpen?"translateX(0)":"translateX(-280px)",transition:"transform .3s cubic-bezier(.16,1,.3,1)",zIndex:300,flexShrink:0}}>
+          <Topbar ui={ui} setUi={setUi} handleSearch={handleSearch} goToResult={goToResult} navigateToEpoch={navigateToEpoch} resetView={resetView} isMobile={isMobile}/>
+        </div>
 
-        {/* Main — décalé quand sidebar ouverte */}
-        <main className="chronos-main" style={{
-          ...css.main,
-          marginLeft: sidebarOpen ? 280 : 0,
-          transition:"margin-left .3s cubic-bezier(.16,1,.3,1)",
-          width: sidebarOpen ? "calc(100% - 280px)" : "100%",
-        }}>
+        {/* Main */}
+        <main style={{...css.main,marginLeft:sidebarOpen?280:0,transition:"margin-left .3s cubic-bezier(.16,1,.3,1)",width:sidebarOpen?"calc(100% - 280px)":"100%",flex:1}}>
 
-          {/* ── HEADER + CARTES (comme la capture) ── */}
-          <header style={css.mainHeader}>
-            <div>
-              <div style={css.eyebrow}>Chronos Atlas</div>
-              <h1 style={css.pageTitle}>Explore toute l'histoire, simplement.</h1>
-              <p style={css.pageSubtitle}>{ui.epochLabel}</p>
+          {/* ── HEADER — masqué en plein écran ── */}
+          {!fullscreen&&(
+            <header style={css.mainHeader}>
+              <div>
+                <div style={css.eyebrow}>Chronos Atlas</div>
+                <h1 style={css.pageTitle}>Explore toute l'histoire, simplement.</h1>
+                <p style={css.pageSubtitle}>{ui.epochLabel}</p>
+              </div>
+              <div style={css.headerActions}>
+                <button type="button" style={css.primaryAction} onClick={resetView}>Vue globale</button>
+                <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,legendOpen:!u.legendOpen,showBookmarksView:false}))}>Légende</button>
+                <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,showBookmarksView:!u.showBookmarksView,legendOpen:false}))}>Signets</button>
+              </div>
+            </header>
+          )}
+
+          {/* ── CARDS — masquées en plein écran ── */}
+          {!fullscreen&&<ExploreCards navigateToEpoch={navigateToEpoch}/>}
+
+          {/* ── BARRE OUTILS FRISE ── */}
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 18px",background:"#f5f2ec",flexWrap:"wrap",flexShrink:0}}>
+            {/* Filtres catégories */}
+            <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
+              {CATS.map(c=>(
+                <button key={c.id} onClick={()=>setFilterCat(c.id)}
+                  style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+                    border:`1px solid ${c.id==="all"?"rgba(23,20,18,.2)":c.color+"66"}`,
+                    background:filterCat===c.id?(c.id==="all"?"#12100e":c.color):"transparent",
+                    color:filterCat===c.id?"#fff":(c.id==="all"?"rgba(23,20,18,.6)":c.color),
+                    transition:"all .15s"}}>
+                  {c.label}
+                </button>
+              ))}
             </div>
-            <div style={css.headerActions}>
-              <button type="button" style={css.primaryAction} onClick={resetView}>Vue globale</button>
-              <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,legendOpen:!u.legendOpen,showBookmarksView:false}))}>Légende</button>
-              <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,showBookmarksView:!u.showBookmarksView,legendOpen:false}))}>Signets</button>
+            {/* Actions droite */}
+            <div style={{display:"flex",gap:6,flexShrink:0}}>
+              {/* Visite guidée */}
+              <button onClick={()=>goTourStep(tourStep===null?0:null)}
+                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(185,130,47,.4)",background:tourStep!==null?"rgba(185,130,47,.15)":"transparent",color:"#7a4b12"}}>
+                {tourStep!==null?`🎯 Étape ${tourStep+1}/${TOUR_STEPS.length}`:"🎯 Visite guidée"}
+              </button>
+              {/* Plein écran */}
+              <button onClick={()=>setFullscreen(f=>!f)}
+                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:fullscreen?"#12100e":"transparent",color:fullscreen?"#fff":"rgba(23,20,18,.6)"}}>
+                {fullscreen?"⊡ Normal":"⊞ Plein écran"}
+              </button>
+              {/* Export */}
+              <button onClick={exportImage}
+                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
+                ↓ Image
+              </button>
             </div>
-          </header>
+          </div>
 
-          <ExploreCards navigateToEpoch={navigateToEpoch}/>
+          {/* ── VISITE GUIDÉE — bandeau ── */}
+          {tourStep!==null&&(
+            <div style={{background:"#fff7e8",borderBottom:"1px solid rgba(185,130,47,.2)",padding:"8px 18px",display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
+              <div style={{flex:1}}>
+                <strong style={{fontFamily:"Georgia,serif",fontSize:14,color:"#7a4b12"}}>{TOUR_STEPS[tourStep].label}</strong>
+                <span style={{fontSize:12,color:"rgba(122,75,18,.7)",marginLeft:10}}>{TOUR_STEPS[tourStep].desc}</span>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>goTourStep(tourStep>0?tourStep-1:null)} disabled={tourStep===0}
+                  style={{padding:"4px 12px",borderRadius:7,border:"1px solid rgba(185,130,47,.3)",background:"transparent",color:"#7a4b12",cursor:"pointer",fontFamily:"inherit",fontSize:11,opacity:tourStep===0?.4:1}}>← Préc.</button>
+                <button onClick={()=>goTourStep(tourStep<TOUR_STEPS.length-1?tourStep+1:null)}
+                  style={{padding:"4px 12px",borderRadius:7,border:"none",background:"#b9822f",color:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:11}}>
+                  {tourStep<TOUR_STEPS.length-1?"Suiv. →":"✓ Fin"}
+                </button>
+              </div>
+            </div>
+          )}
 
-          {/* ── FRISE — grande, avec espace respirable ── */}
-          <section style={{
-            ...css.timelineCard,
-            height:"70vh",
-            minHeight:480,
-            margin:"0 18px 18px",
-            borderRadius:10,
-            border:"1px solid rgba(23,20,18,.10)",
-            flexShrink:0,
-          }}>
-            <div style={{
-              position:"absolute",top:0,left:0,right:0,zIndex:10,
-              display:"flex",alignItems:"center",justifyContent:"space-between",
-              padding:"8px 14px",
-              background:"rgba(250,247,242,.95)",
-              borderBottom:"1px solid rgba(23,20,18,.07)",
-            }}>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
+          {/* ── LÉGENDE PERMANENTE ── */}
+          {showLegendBar&&!fullscreen&&(
+            <div style={{display:"flex",alignItems:"center",gap:16,padding:"5px 18px",background:"#faf7f2",borderBottom:"1px solid rgba(23,20,18,.06)",flexShrink:0,flexWrap:"wrap"}}>
+              <span style={{fontSize:9,letterSpacing:".12em",textTransform:"uppercase",color:"rgba(23,20,18,.35)",fontWeight:600}}>Légende :</span>
+              {Object.entries({cosmique:"#5a3db8",geologique:"#0868a8",biologique:"#0a7848",prehistoire:"#b03010",histoire:"#8a6000"}).map(([k,v])=>(
+                <div key={k} style={{display:"flex",alignItems:"center",gap:4}}>
+                  <div style={{width:8,height:8,borderRadius:"50%",background:v}}/>
+                  <span style={{fontSize:10,color:"rgba(23,20,18,.55)",textTransform:"capitalize"}}>{k}</span>
+                </div>
+              ))}
+              <span style={{marginLeft:"auto",fontSize:9,color:"rgba(23,20,18,.3)"}}>● Majeur &nbsp; ◦ Notable &nbsp; · Contextuel</span>
+              <button onClick={()=>setShowLegendBar(false)} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"rgba(23,20,18,.3)"}}>✕</button>
+            </div>
+          )}
+
+          {/* ── FRISE ── */}
+          <section style={{...css.timelineCard,height:fullscreen?"calc(100vh - 88px)":"70vh",minHeight:fullscreen?400:480,margin:fullscreen?"0":"0 18px 18px",borderRadius:fullscreen?0:10,border:fullscreen?"none":"1px solid rgba(23,20,18,.10)",flexShrink:0}}>
+            {/* Toolbar frise */}
+            <div style={{position:"absolute",top:0,left:0,right:0,zIndex:10,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 12px",background:"rgba(250,247,242,.95)",borderBottom:"1px solid rgba(23,20,18,.07)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <span style={css.metaLabel}>Navigation</span>
                 <span style={css.metaValue}>{ui.range||"zoom ×1"}</span>
+                <span style={{fontSize:11,color:"rgba(23,20,18,.35)",fontStyle:"italic"}}>{ui.epochLabel}</span>
               </div>
-              <span style={css.toolbarHint}>Molette pour zoomer, glisser pour se déplacer, clic pour ouvrir une fiche.</span>
+              <span style={{fontSize:10,color:"rgba(23,20,18,.32)",display:isMobile?"none":"block"}}>
+                Molette = zoom · Drag = déplacer · Clic = fiche
+              </span>
             </div>
 
             <div ref={wrapRef} style={css.wrap}>
               <canvas ref={canvasRef} style={css.cnv} aria-label="Frise chronologique interactive"/>
               <Legend open={ui.legendOpen}/>
               <ZoomControls onZoomIn={()=>zoomFromCenter(.72)} onZoomOut={()=>zoomFromCenter(1.38)}/>
-              <div className="chronos-mini" style={css.mini}><canvas ref={miniRef} aria-hidden="true"/></div>
+
+              {/* Minimap cliquable — plus grande */}
+              <div style={{position:"absolute",bottom:10,right:10,width:200,height:40,background:"#eee8dc",border:"1px solid rgba(23,20,18,.12)",borderRadius:6,overflow:"hidden",zIndex:20,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,.1)"}}
+                onClick={onMinimapClick} title="Cliquer pour naviguer">
+                <canvas ref={miniRef} aria-hidden="true"/>
+                <div style={{position:"absolute",bottom:2,left:4,fontSize:7,color:"rgba(23,20,18,.4)",letterSpacing:".06em"}}>MINIMAP — cliquer pour naviguer</div>
+              </div>
+
               <TimelineTooltip tooltip={ui.tooltip}/>
-              <BookmarksPanel
-                open={ui.showBookmarksView}
-                bookmarks={bookmarks}
-                customTags={customTags}
-                addingTag={addingTag}
-                newTagInput={newTagInput}
-                setUi={setUi}
-                setAddingTag={setAddingTag}
-                setNewTagInput={setNewTagInput}
-                addCustomTag={addCustomTag}
-                removeCustomTag={removeCustomTag}
-                removeBookmark={removeBookmark}
-                goToResult={goToResult}
-                stateRef={S}
-              />
-              <EventPanel
-                ui={ui}
-                bookmarks={bookmarks}
-                customTags={customTags}
-                addingTag={addingTag}
-                newTagInput={newTagInput}
-                setAddingTag={setAddingTag}
-                setNewTagInput={setNewTagInput}
-                addCustomTag={addCustomTag}
-                toggleBookmark={toggleBookmark}
-                closePanel={closePanel}
-                stateRef={S}
-              />
+
+              <BookmarksPanel open={ui.showBookmarksView} bookmarks={bookmarks} customTags={customTags} addingTag={addingTag} newTagInput={newTagInput} setUi={setUi} setAddingTag={setAddingTag} setNewTagInput={setNewTagInput} addCustomTag={addCustomTag} removeCustomTag={removeCustomTag} removeBookmark={removeBookmark} goToResult={goToResult} stateRef={S}/>
+
+              {/* EventPanel avec annotations */}
+              <aside style={css.panel(ui.panelOpen)}>
+                <div style={css.panelStripe(ui.panelCatColor)}/>
+                <div style={css.panelHdr}>
+                  <button style={css.panelClose} onClick={closePanel}>✕</button>
+                  <div style={{...css.panelCat,color:ui.panelCatColor}}>{ui.panelCat}</div>
+                  <div style={css.panelDate}>{ui.panelDate}</div>
+                  <div style={css.panelTitle}>{ui.panelTitle}</div>
+                </div>
+                {ui.panelError&&<div style={css.panelError}>{ui.panelError}</div>}
+                {/* Signets */}
+                {ui.panelEventId&&(
+                  <div style={css.bmBar}>
+                    <span style={{fontSize:11,color:"rgba(23,20,18,.45)",marginRight:2}}>Signet :</span>
+                    {customTags.map((tag,i)=>{
+                      const tagColors=["#c8963c","#0868a8","#0a7848","#b03010","#7a5fa5"];
+                      const col=tagColors[i%5];
+                      const active=currentEv&&bookmarks[currentEv.id]?.tag===tag;
+                      return <button key={tag} style={css.bmBtn(active,col)} onClick={()=>{if(currentEv)toggleBookmark(currentEv,tag);}}>{active?"✓ ":""}{tag}</button>;
+                    })}
+                    {addingTag?(
+                      <div style={{display:"flex",gap:3,alignItems:"center"}}>
+                        <input autoFocus value={newTagInput} onChange={e=>setNewTagInput(e.target.value)}
+                          onKeyDown={e=>{if(e.key==="Enter")addCustomTag(newTagInput);if(e.key==="Escape"){setAddingTag(false);setNewTagInput("");}}}
+                          style={{width:80,height:24,border:"1px solid rgba(23,20,18,.2)",borderRadius:5,padding:"0 6px",fontSize:11,outline:"none"}} placeholder="Nom..."/>
+                        <button style={{...css.panelClose,position:"static"}} onClick={()=>addCustomTag(newTagInput)}>✓</button>
+                      </div>
+                    ):(
+                      <button style={{...css.bmBtn(false,"rgba(23,20,18,.3)"),borderStyle:"dashed"}} onClick={()=>setAddingTag(true)}>+ Tag</button>
+                    )}
+                  </div>
+                )}
+                <div style={css.panelBody}>
+                  {ui.panelContent==="loading"?(
+                    <div style={css.loading}>
+                      <div style={css.bars}>{[7,14,20,14,7].map((h,i)=><span key={i} style={{width:3,height:h,borderRadius:2,background:"#c8963c",animation:`bw 1s ${i*.15}s ease-in-out infinite`,display:"inline-block"}}/>)}</div>
+                      <div style={css.barsLbl}>Génération de la fiche IA…</div>
+                    </div>
+                  ):(
+                    <>
+                      <div style={css.panelContent} dangerouslySetInnerHTML={{__html:ui.panelContent||""}}/>
+                      {/* ── ANNOTATION PERSONNELLE ── */}
+                      {ui.panelEventId&&(
+                        <div style={{marginTop:24,paddingTop:16,borderTop:"1px solid rgba(23,20,18,.08)"}}>
+                          <div style={{fontSize:10,letterSpacing:".12em",textTransform:"uppercase",color:"rgba(23,20,18,.38)",marginBottom:8,fontWeight:600}}>
+                            ✏️ Ma note personnelle
+                          </div>
+                          {annotTarget===ui.panelEventId?(
+                            <div>
+                              <textarea value={annotInput} onChange={e=>setAnnotInput(e.target.value)}
+                                placeholder="Ajoute ta propre note, réflexion, lien..."
+                                style={{width:"100%",minHeight:80,border:"1px solid rgba(23,20,18,.18)",borderRadius:8,padding:"8px 10px",fontSize:13,fontFamily:"inherit",color:"#12100e",outline:"none",resize:"vertical",boxSizing:"border-box"}}/>
+                              <div style={{display:"flex",gap:8,marginTop:6}}>
+                                <button onClick={()=>{saveAnnotation(ui.panelEventId,annotInput);setAnnotTarget(null);}}
+                                  style={{padding:"5px 14px",borderRadius:7,border:"none",background:"#0a7848",color:"#fff",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Sauvegarder</button>
+                                <button onClick={()=>setAnnotTarget(null)}
+                                  style={{padding:"5px 14px",borderRadius:7,border:"1px solid rgba(23,20,18,.15)",background:"transparent",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
+                              </div>
+                            </div>
+                          ):(
+                            <div onClick={()=>{setAnnotTarget(ui.panelEventId);setAnnotInput(annotations[ui.panelEventId]||"");}}
+                              style={{padding:"8px 12px",borderRadius:8,border:"1px dashed rgba(23,20,18,.15)",cursor:"pointer",minHeight:40,fontSize:13,color:annotations[ui.panelEventId]?"#12100e":"rgba(23,20,18,.35)",background:"rgba(23,20,18,.02)",lineHeight:1.6}}>
+                              {annotations[ui.panelEventId]||"Cliquer pour ajouter une note…"}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {/* ── LIEN VERS L'ARBRE ── */}
+                      {ui.panelEventId&&currentEv?.cat==="biologique"&&(
+                        <div style={{marginTop:16,padding:"10px 14px",borderRadius:8,background:"rgba(10,120,72,.06)",border:"1px solid rgba(10,120,72,.15)"}}>
+                          <div style={{fontSize:11,color:"#0a7848",fontWeight:600,marginBottom:4}}>🌿 Voir dans l'Arbre de la vie</div>
+                          <div style={{fontSize:12,color:"rgba(23,20,18,.55)"}}>Cet événement est lié à l'évolution du vivant.</div>
+                          <button onClick={()=>{closePanel();setTimeout(()=>{const tree=document.getElementById("arbre-de-vie");if(tree)tree.scrollIntoView({behavior:"smooth",block:"start"});},200);}}
+                            style={{marginTop:8,padding:"4px 12px",borderRadius:7,border:"1px solid rgba(10,120,72,.3)",background:"transparent",color:"#0a7848",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
+                            ↓ Aller à l'arbre de vie
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </aside>
             </div>
           </section>
 
-          {/* ── ARBRE DE LA VIE ── bien séparé */}
-          <LifeTree />
+          {/* ── ARBRE DE LA VIE ── */}
+          {!fullscreen&&(
+            <div id="arbre-de-vie">
+              <LifeTree/>
+            </div>
+          )}
 
         </main>
       </div>
