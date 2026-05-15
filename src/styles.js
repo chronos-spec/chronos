@@ -108,7 +108,7 @@ export const css = {
     boxShadow:"0 1px 0 rgba(23,20,18,.04)"
   },
 
-  main:{display:"flex",flexDirection:"column",minWidth:0,padding:0,gap:0,background:"#efede7",overflowY:"auto",height:"100vh"},
+  main:{display:"flex",flexDirection:"column",minWidth:0,padding:0,gap:0,background:"#efede7",overflowY:"auto"},
   mainHeader:{
     display:"flex",
     alignItems:"center",
@@ -144,7 +144,7 @@ export const css = {
     fontFamily:"inherit",
     fontSize:12
   },
-  timelineCard:{margin:0,borderRadius:0,height:"80vh",minHeight:520,flexShrink:0,overflow:"hidden",
+  timelineCard:{margin:0,borderRadius:0,height:"100vh",flexShrink:0,overflow:"hidden",
     position:"relative",
     display:"flex",
     flexDirection:"column",
