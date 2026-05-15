@@ -53,6 +53,8 @@ export default function Chronos() {
   const [newTagInput,setNewTagInput]=useState("");
   const [isMobile,setIsMobile]=useState(()=>typeof window!=="undefined"&&window.innerWidth<760);
   const [sidebarOpen,setSidebarOpen]=useState(false);
+  const [linearScale,setLinearScale]=useState(false);
+  const [expandedBands,setExpandedBands]=useState(new Set(["euca","vert"]));
 
   // Nouvelles fonctionnalités
   const [fullscreen,setFullscreen]=useState(false);       // mode plein écran frise
@@ -104,8 +106,8 @@ export default function Chronos() {
     const s=S.current;
     // Appliquer filtre catégorie
     const filteredEvents=filterCat==="all"?s.aiEvents:s.aiEvents.filter(e=>e.cat===filterCat);
-    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:filteredEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,filterCat});
-    s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;
+    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:filteredEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,filterCat,expandedBands,linearScale});
+    s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;s.bandRects=r.bandRects||[];
     const mid=makeCoord(s.vs,s.ve,cnv.width).toYa(cnv.width/2);
     const ep=epochAt(mid);
     setUi(u=>({...u,epochLabel:ep.label+"  ·  "+fmt(s.vs)+" → "+fmt(Math.max(s.ve,0.1)),range:`zoom ×${Math.pow(10,zoomLvl(s.vs,s.ve)).toFixed(0)}`}));
@@ -113,8 +115,8 @@ export default function Chronos() {
 
   const scheduleRedraw=useCallback(()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);rafRef.current=requestAnimationFrame(redraw);},[redraw]);
 
-  // Re-dessiner quand le filtre change
-  useEffect(()=>scheduleRedraw(),[filterCat,scheduleRedraw]);
+  // Re-dessiner quand les paramètres de dessin changent
+  useEffect(()=>scheduleRedraw(),[filterCat,expandedBands,linearScale,scheduleRedraw]);
 
   const navigateToEpoch=useCallback((ep)=>{
     if(animRef.current)cancelAnimationFrame(animRef.current);
@@ -369,6 +371,14 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
     };
     const onClick=(e)=>{
       const rect=cnv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top,s=S.current;
+      // Clic sur barre de l'arbre de vie — déplier/replier
+      if (s.bandRects) {
+        const band=s.bandRects.find(b=>b.hasKids&&mx>=b.rx&&mx<=b.rx+b.rw&&my>=b.ry&&my<=b.ry+b.rh);
+        if(band){
+          setExpandedBands(prev=>{const next=new Set(prev);next.has(band.id)?next.delete(band.id):next.add(band.id);return next;});
+          return;
+        }
+      }
       for(const p of s.placed)if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){_op.current(p.ev);return;}
       if(s.periodY!=null&&my>=s.periodY&&my<=s.periodY+(s.periodH||20)){const ya=makeCoord(s.vs,s.ve,cnv.width).toYa(mx);const per=PERIODS.find(p=>ya<=p.from&&ya>=p.to);if(per){_opp.current(per);return;}}
       if(s.periodY!=null&&my<s.periodY&&my>44){const ya=makeCoord(s.vs,s.ve,cnv.width).toYa(mx);const ep=EPOCHS.find(p=>ya<=p.from&&ya>=p.to);if(ep){_opp.current(ep);return;}}
@@ -457,6 +467,11 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
               <button onClick={()=>goTourStep(tourStep===null?0:null)}
                 style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(185,130,47,.4)",background:tourStep!==null?"rgba(185,130,47,.15)":"transparent",color:"#7a4b12"}}>
                 {tourStep!==null?`🎯 Étape ${tourStep+1}/${TOUR_STEPS.length}`:"🎯 Visite guidée"}
+              </button>
+              {/* Échelle réelle */}
+              <button onClick={()=>{setLinearScale(l=>!l);}}
+                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:`1px solid ${linearScale?"#0369a1":"rgba(23,20,18,.15)"}`,background:linearScale?"rgba(3,105,161,.12)":"transparent",color:linearScale?"#0369a1":"rgba(23,20,18,.6)"}}>
+                {linearScale?"📏 Échelle réelle ✓":"📏 Échelle réelle"}
               </button>
               {/* Plein écran */}
               <button onClick={()=>setFullscreen(f=>!f)}
