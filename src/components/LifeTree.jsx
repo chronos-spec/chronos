@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 
 const MAX_AGE = 540e6;
 const pct = (v) => Math.min(100, Math.max(0, (v / MAX_AGE) * 100));
