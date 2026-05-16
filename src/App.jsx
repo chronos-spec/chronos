@@ -495,7 +495,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                   {c.label}
                 </button>
               ))}
-            </div></div>
+            </div>
             {/* Actions droite */}
             <div style={{display:"flex",gap:6,flexShrink:0}}>
               {/* Visite guidée */}
