@@ -9,11 +9,11 @@ import { ZoomControls } from "./components/ZoomControls.jsx";
 import { TimelineTooltip } from "./components/TimelineTooltip.jsx";
 import { BookmarksPanel } from "./components/BookmarksPanel.jsx";
 import { EventPanel } from "./components/EventPanel.jsx";
-import { StatusBar } from "./components/StatusBar.jsx";
 import { ExploreCards } from "./components/ExploreCards.jsx";
 import { LifeTree } from "./components/LifeTree.jsx";
 import { THEMES } from "./canvas/civilisations.js";
-import { LIFE_TREE_DATA, flattenTree } from "./canvas/drawTimeline.js";
+import { LIFE_TREE_DATA } from "./canvas/lifeTree.js";
+import { flattenTree } from "./canvas/drawTimeline.js";
 
 // ── ÉTAPES DE LA VISITE GUIDÉE ────────────────────────────────────────────────
 const TOUR_STEPS = [
