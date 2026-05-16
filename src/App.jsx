@@ -12,6 +12,8 @@ import { EventPanel } from "./components/EventPanel.jsx";
 import { StatusBar } from "./components/StatusBar.jsx";
 import { ExploreCards } from "./components/ExploreCards.jsx";
 import { LifeTree } from "./components/LifeTree.jsx";
+import { THEMES } from "./canvas/civilisations.js";
+import { LIFE_TREE_DATA, flattenTree } from "./canvas/drawTimeline.js";
 
 // ── ÉTAPES DE LA VISITE GUIDÉE ────────────────────────────────────────────────
 const TOUR_STEPS = [
@@ -55,6 +57,7 @@ export default function Chronos() {
   const [sidebarOpen,setSidebarOpen]=useState(false);
   const [linearScale,setLinearScale]=useState(false);
   const [expandedBands,setExpandedBands]=useState(new Set(["euca","vert"]));
+  const [activeThemes,setActiveThemes]=useState(new Set()); // couches civ/sciences/etc
 
   // Nouvelles fonctionnalités
   const [fullscreen,setFullscreen]=useState(false);       // mode plein écran frise
@@ -106,8 +109,9 @@ export default function Chronos() {
     const s=S.current;
     // Appliquer filtre catégorie
     const filteredEvents=filterCat==="all"?s.aiEvents:s.aiEvents.filter(e=>e.cat===filterCat);
-    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:filteredEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,filterCat,expandedBands,linearScale});
-    s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;s.bandRects=r.bandRects||[];
+    const flatBands=flattenTree(LIFE_TREE_DATA,expandedBands);
+    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:filteredEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,filterCat,expandedBands,linearScale,activeThemes,flatBands});
+    s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;s.bandRects=r.bandRects||[];s.chronoRects=r.chronoRects||[];
     const mid=makeCoord(s.vs,s.ve,cnv.width).toYa(cnv.width/2);
     const ep=epochAt(mid);
     setUi(u=>({...u,epochLabel:ep.label+"  ·  "+fmt(s.vs)+" → "+fmt(Math.max(s.ve,0.1)),range:`zoom ×${Math.pow(10,zoomLvl(s.vs,s.ve)).toFixed(0)}`}));
@@ -116,7 +120,7 @@ export default function Chronos() {
   const scheduleRedraw=useCallback(()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);rafRef.current=requestAnimationFrame(redraw);},[redraw]);
 
   // Re-dessiner quand les paramètres de dessin changent
-  useEffect(()=>scheduleRedraw(),[filterCat,expandedBands,linearScale,scheduleRedraw]);
+  useEffect(()=>scheduleRedraw(),[filterCat,expandedBands,linearScale,activeThemes,scheduleRedraw]);
 
   const navigateToEpoch=useCallback((ep)=>{
     if(animRef.current)cancelAnimationFrame(animRef.current);
@@ -371,6 +375,22 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
     };
     const onClick=(e)=>{
       const rect=cnv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top,s=S.current;
+      // Clic sur rectangle ChronoZoom — zoom animé à l'intérieur
+      if (s.chronoRects) {
+        const cRect=s.chronoRects.find(r=>mx>=r.rx&&mx<=r.rx+r.rw&&my>=r.ry&&my<=r.ry+r.rh);
+        if(cRect){
+          _cp.current();
+          if(animRef.current)cancelAnimationFrame(animRef.current);
+          const s2=S.current,targetVs=cRect.from*1.02,targetVe=Math.max(cRect.to*0.98,0.1);
+          const startVs=s2.vs,startVe=s2.ve,steps=32;let step=0;
+          const animate=()=>{step++;const t=step/steps,ease=t<0.5?2*t*t:-1+(4-2*t)*t;
+            const ls=L(startVs)+(L(targetVs)-L(startVs))*ease,le=L(startVe)+(L(targetVe)-L(startVe))*ease;
+            s2.vs=Math.pow(10,ls);s2.ve=Math.pow(10,le);_sr.current();
+            if(step<steps)animRef.current=requestAnimationFrame(animate);else _tf.current();};
+          animRef.current=requestAnimationFrame(animate);
+          return;
+        }
+      }
       // Clic sur barre de l'arbre de vie — déplier/replier
       if (s.bandRects) {
         const band=s.bandRects.find(b=>b.hasKids&&mx>=b.rx&&mx<=b.rx+b.rw&&my>=b.ry&&my<=b.ry+b.rh);
@@ -447,20 +467,35 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           {!fullscreen&&<ExploreCards navigateToEpoch={navigateToEpoch}/>}
 
           {/* ── BARRE OUTILS FRISE ── */}
-          <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 18px",background:"#f5f2ec",flexWrap:"wrap",flexShrink:0}}>
-            {/* Filtres catégories */}
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 18px",background:"#0c0a1a",borderBottom:"1px solid rgba(255,255,255,.06)",flexWrap:"wrap",flexShrink:0}}>
+            {/* Thèmes civilisations */}
+            <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+              <span style={{fontSize:9,color:"rgba(255,255,255,.35)",letterSpacing:".1em",textTransform:"uppercase",fontWeight:600,flexShrink:0}}>Couches :</span>
+              {Object.entries(THEMES).map(([key,theme])=>(
+                <button key={key} onClick={()=>setActiveThemes(prev=>{const next=new Set(prev);next.has(key)?next.delete(key):next.add(key);return next;})}
+                  style={{padding:"3px 9px",borderRadius:10,fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+                    border:`1px solid ${theme.color}${activeThemes.has(key)?"":"44"}`,
+                    background:activeThemes.has(key)?`${theme.color}22`:"transparent",
+                    color:activeThemes.has(key)?theme.color:"rgba(255,255,255,.45)",
+                    transition:"all .15s",whiteSpace:"nowrap"}}>
+                  {theme.icon} {theme.label.split(" ")[0]}
+                </button>
+              ))}
+            </div>
+            <div style={{width:1,background:"rgba(255,255,255,.1)",alignSelf:"stretch",flexShrink:0}}/>
+            {/* Filtres catégories événements */}
             <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
               {CATS.map(c=>(
                 <button key={c.id} onClick={()=>setFilterCat(c.id)}
                   style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
                     border:`1px solid ${c.id==="all"?"rgba(23,20,18,.2)":c.color+"66"}`,
-                    background:filterCat===c.id?(c.id==="all"?"#12100e":c.color):"transparent",
-                    color:filterCat===c.id?"#fff":(c.id==="all"?"rgba(23,20,18,.6)":c.color),
+                    background:filterCat===c.id?(c.id==="all"?"#fff":c.color):"transparent",
+                    color:filterCat===c.id?"#000":(c.id==="all"?"rgba(255,255,255,.45)":c.color),"
                     transition:"all .15s"}}>
                   {c.label}
                 </button>
               ))}
-            </div>
+            </div></div>
             {/* Actions droite */}
             <div style={{display:"flex",gap:6,flexShrink:0}}>
               {/* Visite guidée */}
