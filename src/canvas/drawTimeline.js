@@ -25,8 +25,6 @@ const CHRONO_RECTS = [
   { id:"hist",   label:"Histoire",      from:5200,    to:0,      color:"#0f172a", textColor:"#e2e8f0", depth:2 },
 ];
 
-export { LIFE_TREE_DATA } from './lifeTree.js';
-
 // ── Aplatir l'arbre de vie ─────────────────────────────────────────────────────
 export function flattenTree(nodes, expandedIds, depth=0, result=[]) {
   for (const n of nodes) {
