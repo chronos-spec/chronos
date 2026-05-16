@@ -1,1 +1,151 @@
-
+// Arbre de la vie — données hiérarchiques
+export const LIFE_TREE_DATA = [
+  { id:"bact",  label:"🦠 Bactéries",      from:3500e6, to:null,  color:"#64748b", children:[]},
+  { id:"euca",  label:"🔵 Eucaryotes",     from:2000e6, to:null,  color:"#6366f1",
+    children:[
+      { id:"cham", label:"🍄 Champignons", from:1000e6, to:null,  color:"#a78bfa", children:[] },
+      { id:"plan", label:"🌿 Plantes",     from:470e6,  to:null,  color:"#16a34a",
+        children:[
+          { id:"mous", label:"🌱 Mousses",      from:470e6, to:null, color:"#4ade80", children:[] },
+          { id:"foug", label:"🌾 Fougères",     from:360e6, to:null, color:"#22c55e", children:[] },
+          { id:"gymn", label:"🌲 Gymnospermes", from:320e6, to:null, color:"#15803d", children:[
+            { id:"gink", label:"🌳 Ginkgo",     from:270e6, to:null, color:"#84cc16", children:[] },
+          ]},
+          { id:"angi", label:"🌸 Angiospermes", from:130e6, to:null, color:"#f0abfc", children:[] },
+        ]},
+      { id:"inv",  label:"🦑 Invertébrés", from:600e6,  to:null,  color:"#f59e0b",
+        children:[
+          { id:"cnid", label:"🪸 Cnidaires",    from:580e6, to:null, color:"#fb923c", children:[] },
+          { id:"moll", label:"🐙 Mollusques",   from:540e6, to:null, color:"#e879f9",
+            children:[
+              { id:"ammo", label:"💀 Ammonites", from:400e6, to:66e6, color:"#6b7280", eteint:true, children:[] },
+              { id:"naut", label:"🐚 Nautile",   from:500e6, to:null, color:"#c026d3", children:[] },
+              { id:"piev", label:"🐙 Pieuvre",   from:300e6, to:null, color:"#9333ea", children:[] },
+            ]},
+          { id:"arth", label:"🦀 Arthropodes",  from:540e6, to:null, color:"#ea580c",
+            children:[
+              { id:"tril", label:"💀 Trilobites",from:521e6, to:252e6, color:"#6b7280", eteint:true, children:[] },
+              { id:"inse", label:"🪲 Insectes",  from:385e6, to:null, color:"#d97706", children:[] },
+              { id:"arac", label:"🕷️ Arachnides",from:420e6, to:null, color:"#92400e", children:[] },
+            ]},
+          { id:"echi", label:"⭐ Échinodermes", from:520e6, to:null, color:"#f472b6", children:[] },
+        ]},
+      { id:"vert", label:"🐟 Vertébrés",   from:525e6,  to:null,  color:"#0ea5e9",
+        children:[
+          { id:"requin",label:"🦈 Requins",      from:450e6, to:null, color:"#1e3a5f", children:[
+            { id:"megalo",label:"💀 Mégalodon",  from:23e6, to:3.6e6, color:"#6b7280", eteint:true, children:[] },
+          ]},
+          { id:"actino",label:"🐠 Poissons osseux",from:400e6,to:null,color:"#38bdf8",children:[]},
+          { id:"amphi", label:"🐸 Amphibiens",   from:370e6, to:null, color:"#0f766e",
+            children:[
+              { id:"greno",label:"🐸 Grenouilles",from:250e6,to:null,color:"#10b981",children:[]},
+              { id:"salam",label:"🦎 Salamandres",from:160e6,to:null,color:"#059669",children:[]},
+            ]},
+          { id:"amnio", label:"🥚 Amniotes",     from:320e6, to:null, color:"#b45309",
+            children:[
+              { id:"ichth", label:"💀 Ichthyosaures",from:250e6,to:90e6,color:"#6b7280",eteint:true,children:[]},
+              { id:"plesi", label:"💀 Plésiosaures",from:205e6,to:66e6,color:"#6b7280",eteint:true,children:[]},
+              { id:"tortu", label:"🐢 Tortues",   from:230e6, to:null, color:"#65a30d", children:[] },
+              { id:"squa",  label:"🐍 Squamates", from:200e6, to:null, color:"#ca8a04",
+                children:[
+                  { id:"lezer",label:"🦎 Lézards",from:200e6,to:null,color:"#84cc16",children:[]},
+                  { id:"serp", label:"🐍 Serpents",from:150e6,to:null,color:"#a3e635",children:[]},
+                  { id:"mosa", label:"💀 Mosasaures",from:98e6,to:66e6,color:"#6b7280",eteint:true,children:[]},
+                ]},
+              { id:"archo", label:"🦖 Archosaures",from:252e6,to:null,color:"#dc2626",
+                children:[
+                  { id:"croco",label:"🐊 Crocodiliens",from:230e6,to:null,color:"#166534",children:[]},
+                  { id:"ptero",label:"💀 Ptérosaures 🦅",from:228e6,to:66e6,color:"#7c3aed",eteint:true,children:[
+                    { id:"quetz",label:"💀 Quetzalcoatlus",from:72e6,to:66e6,color:"#6b7280",eteint:true,children:[]},
+                  ]},
+                  { id:"dino", label:"🦕 Dinosaures",from:230e6,to:null,color:"#b91c1c",
+                    children:[
+                      { id:"sauro",label:"🦕 Sauropodes",from:200e6,to:66e6,color:"#b45309",eteint:true,
+                        children:[
+                          { id:"diplo",label:"💀 Diplodocus",from:154e6,to:152e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"arge", label:"💀 Argentinosaurus",from:96e6,to:92e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"patag",label:"💀 Patagotitan",from:101e6,to:98e6,color:"#6b7280",eteint:true,children:[]},
+                        ]},
+                      { id:"ornit",label:"🦴 Ornithischiens",from:235e6,to:66e6,color:"#92400e",eteint:true,
+                        children:[
+                          { id:"stego",label:"💀 Stegosaurus",from:155e6,to:150e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"ankyl",label:"💀 Ankylosaurus",from:68e6,to:66e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"trice",label:"💀 Triceratops",from:68e6,to:66e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"paras",label:"💀 Parasaurolophus",from:76e6,to:73e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"igua", label:"💀 Iguanodon",from:130e6,to:120e6,color:"#6b7280",eteint:true,children:[]},
+                        ]},
+                      { id:"therop",label:"🦖 Théropodes",from:230e6,to:null,color:"#dc2626",
+                        children:[
+                          { id:"allosa",label:"💀 Allosaurus",from:155e6,to:145e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"spino",label:"💀 Spinosaurus",from:99e6,to:93e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"trex",label:"💀 T-Rex",from:68e6,to:66e6,color:"#7f1d1d",eteint:true,children:[]},
+                          { id:"velo",label:"💀 Velociraptor",from:75e6,to:71e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"archeo",label:"💀 Archaeopteryx",from:152e6,to:148e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"oiseau",label:"🐦 Oiseaux",from:150e6,to:null,color:"#0369a1",
+                            children:[
+                              { id:"moa",label:"💀 Moa",from:19e6,to:0.6e3,color:"#6b7280",eteint:true,children:[]},
+                              { id:"epyo",label:"💀 Aepyornis",from:26e6,to:0.3e3,color:"#6b7280",eteint:true,children:[]},
+                            ]},
+                        ]},
+                    ]},
+                ]},
+              { id:"mamm",  label:"🦁 Mammifères",from:225e6,to:null,color:"#be185d",
+                children:[
+                  { id:"monot",label:"🦆 Monotrèmes",from:170e6,to:null,color:"#9d174d",children:[]},
+                  { id:"marsu",label:"🦘 Marsupiaux",from:100e6,to:null,color:"#be185d",
+                    children:[
+                      { id:"thyla",label:"💀 Thylacine",from:4e6,to:0.089,color:"#6b7280",eteint:true,children:[]},
+                      { id:"dipro",label:"💀 Diprotodon",from:1.6e6,to:46e3,color:"#6b7280",eteint:true,children:[]},
+                    ]},
+                  { id:"plac", label:"🐘 Placentaires",from:100e6,to:null,color:"#db2777",
+                    children:[
+                      { id:"cetac",label:"🐋 Cétacés",from:50e6,to:null,color:"#0e7490",
+                        children:[
+                          { id:"pakic",label:"💀 Pakicetus",from:53e6,to:48e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"basil",label:"💀 Basilosaurus",from:41e6,to:34e6,color:"#6b7280",eteint:true,children:[]},
+                          { id:"blein",label:"🐋 Baleine bleue",from:5e6,to:null,color:"#0ea5e9",children:[]},
+                        ]},
+                      { id:"probo",label:"🐘 Proboscidiens",from:55e6,to:null,color:"#78716c",
+                        children:[
+                          { id:"mammo",label:"💀 Mammouth laineux",from:400e3,to:4e3,color:"#6b7280",eteint:true,children:[]},
+                          { id:"masto",label:"💀 Mastodonte",from:5e6,to:10e3,color:"#6b7280",eteint:true,children:[]},
+                          { id:"eleph",label:"🐘 Éléphant d'Afrique",from:6e6,to:null,color:"#57534e",children:[]},
+                        ]},
+                      { id:"carni",label:"🦁 Carnivores",from:60e6,to:null,color:"#dc2626",
+                        children:[
+                          { id:"smilo",label:"💀 Smilodon",from:2.5e6,to:10e3,color:"#6b7280",eteint:true,children:[]},
+                          { id:"cave",label:"💀 Lion des cavernes",from:370e3,to:13e3,color:"#6b7280",eteint:true,children:[]},
+                          { id:"lion", label:"🦁 Lion",from:3e6,to:null,color:"#ca8a04",children:[]},
+                          { id:"loup", label:"🐺 Loup",from:1e6,to:null,color:"#78716c",children:[]},
+                        ]},
+                      { id:"chirop",label:"🦇 Chauves-souris",from:55e6,to:null,color:"#44403c",children:[]},
+                      { id:"primat",label:"🐒 Primates",from:58e6,to:null,color:"#9333ea",
+                        children:[
+                          { id:"prosim",label:"🦥 Prosimiens",from:55e6,to:null,color:"#7c3aed",children:[]},
+                          { id:"plat",label:"🐒 Singes NM",from:40e6,to:null,color:"#8b5cf6",children:[]},
+                          { id:"catar",label:"🐵 Singes AM",from:30e6,to:null,color:"#7c3aed",children:[]},
+                          { id:"gibbo",label:"🦧 Gibbons",from:20e6,to:null,color:"#6d28d9",children:[]},
+                          { id:"grand",label:"🦍 Grands singes",from:15e6,to:null,color:"#5b21b6",
+                            children:[
+                              { id:"orang",label:"🦧 Orang-outan",from:15e6,to:null,color:"#c2410c",children:[]},
+                              { id:"goril",label:"🦍 Gorille",from:10e6,to:null,color:"#374151",children:[]},
+                              { id:"chimp",label:"🐒 Chimpanzé",from:7e6,to:null,color:"#713f12",children:[]},
+                              { id:"sahel",label:"💀 Sahelanthropus",from:7e6,to:6e6,color:"#6b7280",eteint:true,children:[]},
+                              { id:"ardip",label:"💀 Ardipithèque",from:5.8e6,to:4.4e6,color:"#6b7280",eteint:true,children:[]},
+                              { id:"lucy", label:"💀 Australopithèque",from:4e6,to:2e6,color:"#6b7280",eteint:true,children:[]},
+                              { id:"parant",label:"💀 Paranthropus",from:2.7e6,to:1.2e6,color:"#6b7280",eteint:true,children:[]},
+                              { id:"habit",label:"💀 H. habilis",from:2.4e6,to:1.4e6,color:"#6b7280",eteint:true,children:[]},
+                              { id:"erect",label:"💀 H. erectus",from:1.9e6,to:110e3,color:"#6b7280",eteint:true,children:[]},
+                              { id:"heidel",label:"💀 H. heidelbergensis",from:700e3,to:200e3,color:"#6b7280",eteint:true,children:[]},
+                              { id:"nean", label:"💀 Néandertal",from:400e3,to:40e3,color:"#7c3aed",eteint:true,children:[]},
+                              { id:"deniso",label:"💀 Denisoviens",from:500e3,to:30e3,color:"#7c3aed",eteint:true,children:[]},
+                              { id:"flore",label:"💀 H. floresiensis",from:100e3,to:50e3,color:"#6b7280",eteint:true,children:[]},
+                              { id:"sap",  label:"🧠 Homo sapiens",from:300e3,to:null,color:"#92400e",children:[]},
+                            ]},
+                        ]},
+                    ]},
+                ]},
+            ]},
+        ]},
+    ]},
+];
