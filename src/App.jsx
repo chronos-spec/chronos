@@ -490,7 +490,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                   style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
                     border:`1px solid ${c.id==="all"?"rgba(23,20,18,.2)":c.color+"66"}`,
                     background:filterCat===c.id?(c.id==="all"?"#fff":c.color):"transparent",
-                    color:filterCat===c.id?"#000":(c.id==="all"?"rgba(255,255,255,.45)":c.color),"
+                    color:filterCat===c.id?"#000":(c.id==="all"?"rgba(255,255,255,.45)":c.color),
                     transition:"all .15s"}}>
                   {c.label}
                 </button>
