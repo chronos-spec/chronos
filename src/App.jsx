@@ -12,7 +12,7 @@ import { EventPanel } from "./components/EventPanel.jsx";
 import { ExploreCards } from "./components/ExploreCards.jsx";
 import { LifeTree } from "./components/LifeTree.jsx";
 import { THEMES } from "./canvas/civilisations.js";
-import { LIFE_TREE_DATA } from "./canvas/lifeTree.js";
+import { LIFE_TREE_DATA } from "./canvas/lifeTree.jsx";
 import { flattenTree } from "./canvas/drawTimeline.js";
 
 // ── ÉTAPES DE LA VISITE GUIDÉE ────────────────────────────────────────────────
