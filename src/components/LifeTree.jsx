@@ -1,7 +1,22 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, createContext, useContext } from "react";
 
 const MAX_AGE = 540e6;
 const pct = (v) => Math.min(100, Math.max(0, (v / MAX_AGE) * 100));
+
+// Lien Arbre de vie <-> Frise chronologique
+// Contexte permettant aux noeuds (rendus recursivement) de declencher un zoom
+// de la frise sur la periode d'apparition de l'espece cliquee.
+const FocusCtx = createContext(null);
+function useFocusOnTimeline() {
+  const onFocus = useContext(FocusCtx);
+  return (node) => {
+    if (!onFocus || !node || node.from == null) return;
+    onFocus({ from: node.from, to: node.to });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // DONNÉES — Arbre complet avec relations phylogénétiques
@@ -425,6 +440,7 @@ function CousinBadge({cousinIds}) {
 }
 
 function Node({node, depth=0, highlight=false}) {
+  const focusTimeline = useFocusOnTimeline();
   const [open, setOpen]   = useState(depth < 1);
   const [desc, setDesc]   = useState(false);
   const hasKids = node.children?.length > 0;
@@ -439,7 +455,7 @@ function Node({node, depth=0, highlight=false}) {
             ? "rgba(250,204,21,.25)"
             : open&&hasKids ? `${node.color}0e` : "transparent",
           outline: highlight ? "2px solid rgba(250,204,21,.6)" : "none"}}
-        onClick={()=>{if(hasKids)setOpen(o=>!o);setDesc(d=>!d);}}
+        onClick={()=>{focusTimeline(node);if(hasKids)setOpen(o=>!o);setDesc(d=>!d);}}
         onMouseEnter={e=>e.currentTarget.style.background=highlight?"rgba(250,204,21,.3)":`${node.color}15`}
         onMouseLeave={e=>e.currentTarget.style.background=highlight?"rgba(250,204,21,.25)":open&&hasKids?`${node.color}0e`:"transparent"}
       >
@@ -501,12 +517,13 @@ function Node({node, depth=0, highlight=false}) {
 
 // Résultat de recherche
 function SearchResult({node, onClose}) {
+  const focusTimeline = useFocusOnTimeline();
   const [desc, setDesc] = useState(true);
   return (
     <div style={{marginBottom:8,padding:"10px 14px",borderRadius:8,
       background:"rgba(250,204,21,.1)",border:"2px solid rgba(250,204,21,.5)",
       cursor:"pointer"}}
-      onClick={()=>setDesc(d=>!d)}>
+      onClick={()=>{focusTimeline(node);setDesc(d=>!d);}}>
       <div style={{display:"flex",alignItems:"center",gap:6}}>
         <div style={{width:9,height:9,borderRadius:"50%",background:node.color,flexShrink:0}}/>
         <span style={{fontWeight:600,fontSize:14,color:"#37352f"}}>{node.label}</span>
@@ -536,6 +553,7 @@ function SearchResult({node, onClose}) {
 // NŒUD avec ref pour la navigation
 // ══════════════════════════════════════════════════════════════════════════════
 function NodeWithRef({node, depth=0, targetId=null, nodeRefs}) {
+  const focusTimeline = useFocusOnTimeline();
   const hasTarget = (n, id) => {
     if (n.id === id) return true;
     return n.children?.some(c => hasTarget(c, id)) || false;
@@ -571,7 +589,7 @@ function NodeWithRef({node, depth=0, targetId=null, nodeRefs}) {
             : open&&hasKids ? `${node.color}0e` : "transparent",
           outline: isTarget ? "2px solid rgba(250,204,21,.7)" : "none",
         }}
-        onClick={()=>{if(hasKids)setOpen(o=>!o);setDesc(d=>!d);}}
+        onClick={()=>{focusTimeline(node);if(hasKids)setOpen(o=>!o);setDesc(d=>!d);}}
         onMouseEnter={e=>e.currentTarget.style.background=isTarget?"rgba(250,204,21,.3)":`${node.color}15`}
         onMouseLeave={e=>e.currentTarget.style.background=isTarget?"rgba(250,204,21,.2)":open&&hasKids?`${node.color}0e`:"transparent"}
       >
@@ -697,7 +715,7 @@ function SidePanel({node, onClose}) {
 // ══════════════════════════════════════════════════════════════════════════════
 // EXPORT PRINCIPAL
 // ══════════════════════════════════════════════════════════════════════════════
-export function LifeTree() {
+export function LifeTree({ onFocusTimeline } = {}) {
   const [search, setSearch]     = useState("");
   const [targetId, setTargetId] = useState(null);
   const [panel, setPanel]       = useState(null); // nœud affiché en fiche
@@ -731,6 +749,7 @@ export function LifeTree() {
   };
 
   return (
+    <FocusCtx.Provider value={onFocusTimeline}>
     <div style={{fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
       background:"#fff",padding:"48px 32px 80px",
       borderTop:"4px solid rgba(55,53,47,.06)",
@@ -833,5 +852,6 @@ export function LifeTree() {
         </div>
       </div>
     </div>
+    </FocusCtx.Provider>
   );
 }
