@@ -797,7 +797,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           {/* ── ARBRE DE LA VIE ── */}
           {!fullscreen&&(
             <div id="arbre-de-vie">
-              <LifeTree/>
+              <LifeTree onFocusTimeline={navigateToEpoch} />
             </div>
           )}
 
