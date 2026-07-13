@@ -234,8 +234,8 @@ export default function Chronos() {
     const s=S.current;
     // Appliquer filtre catégorie
     const filteredEvents=filterCat==="all"?s.aiEvents:s.aiEvents.filter(e=>e.cat===filterCat);
-    const flatBands=flattenTree(LIFE_TREE_DATA,expandedBands);
-    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:filteredEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,filterCat,expandedBands,linearScale,activeThemes,flatBands});
+    // L'arbre de la vie a quitté le canvas : il vit dans son propre bloc sous la frise.
+    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:filteredEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,filterCat,expandedBands,linearScale,activeThemes,flatBands:[]});
     s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;s.bandRects=r.bandRects||[];s.chronoRects=r.chronoRects||[];
     const mid=makeCoord(s.vs,s.ve,cnv.width).toYa(cnv.width/2);
     const ep=epochAt(mid);
@@ -552,9 +552,18 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
         @keyframes dp{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.5)}}
         @keyframes bw{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
         @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes floaty{0%,100%{transform:translateY(0);opacity:.7}50%{transform:translateY(4px);opacity:1}}
         ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#d8d0c3;border-radius:999px}
         .srch-item:hover{background:#f5f0e8!important}
-        button:active{opacity:.85}`}
+        button:active{opacity:.85}
+        html{scroll-behavior:smooth}
+        .chronos-explore button:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(23,20,18,.13)!important}
+        @media (max-width:900px){
+          .chronos-explore{grid-template-columns:repeat(3,1fr)!important}
+        }
+        @media (max-width:560px){
+          .chronos-explore{grid-template-columns:repeat(2,1fr)!important}
+        }`}
       </style>
 
       {/* ── BOUTON SIDEBAR ── */}
@@ -680,7 +689,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           )}
 
           {/* ── FRISE ── */}
-          <section style={{...css.timelineCard,height:fullscreen?"calc(100vh - 88px)":"70vh",minHeight:fullscreen?400:480,margin:fullscreen?"0":"0 18px 18px",borderRadius:fullscreen?0:10,border:fullscreen?"none":"1px solid rgba(23,20,18,.10)",flexShrink:0}}>
+          <section id="frise-chronologique" style={{...css.timelineCard,height:fullscreen?"calc(100vh - 88px)":"76vh",minHeight:fullscreen?400:520,margin:fullscreen?"0":"0 18px 18px",borderRadius:fullscreen?0:12,border:fullscreen?"none":"1px solid rgba(23,20,18,.10)",boxShadow:fullscreen?"none":"0 18px 50px rgba(12,10,26,.16)",flexShrink:0}}>
             {/* Toolbar frise */}
             <div style={{position:"absolute",top:0,left:0,right:0,zIndex:10,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 12px",background:"rgba(250,247,242,.95)",borderBottom:"1px solid rgba(23,20,18,.07)"}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -793,6 +802,30 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
               </aside>
             </div>
           </section>
+
+          {/* ── PONT FRISE → ARBRE DE LA VIE ── */}
+          {!fullscreen&&(
+            <button
+              onClick={()=>{const t=document.getElementById("arbre-de-vie");if(t)t.scrollIntoView({behavior:"smooth",block:"start"});}}
+              style={{
+                display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
+                width:"100%",border:"none",cursor:"pointer",fontFamily:"inherit",
+                padding:"22px 18px 24px",
+                background:"linear-gradient(180deg, #0a0c14 0%, #14161f 45%, #ffffff 100%)",
+                color:"#e8e2d4",
+              }}>
+              <span style={{fontSize:10,letterSpacing:".18em",textTransform:"uppercase",color:"rgba(232,226,212,.55)"}}>
+                La même échelle du temps, déployée
+              </span>
+              <span style={{fontFamily:"Georgia,serif",fontSize:22,color:"#f4efe4"}}>
+                🌿 L'arbre de la vie
+              </span>
+              <span style={{fontSize:12,color:"rgba(120,110,90,.9)"}}>
+                Chaque espèce renvoie à son époque sur la frise ↑&nbsp;&nbsp;·&nbsp;&nbsp;cliquer pour explorer ↓
+              </span>
+              <span style={{fontSize:18,color:"rgba(120,110,90,.7)",marginTop:2,animation:"floaty 1.8s ease-in-out infinite"}}>⌄</span>
+            </button>
+          )}
 
           {/* ── ARBRE DE LA VIE ── */}
           {!fullscreen&&(

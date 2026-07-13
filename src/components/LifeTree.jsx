@@ -12,8 +12,10 @@ function useFocusOnTimeline() {
   return (node) => {
     if (!onFocus || !node || node.from == null) return;
     onFocus({ from: node.from, to: node.to });
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    // Le conteneur scrollable est <main>, pas la fenêtre : on cible la frise.
+    if (typeof document !== "undefined") {
+      const frise = document.getElementById("frise-chronologique");
+      if (frise) frise.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 }
@@ -751,19 +753,17 @@ export function LifeTree({ onFocusTimeline } = {}) {
   return (
     <FocusCtx.Provider value={onFocusTimeline}>
     <div style={{fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
-      background:"#fff",padding:"48px 32px 80px",
-      borderTop:"4px solid rgba(55,53,47,.06)",
-      marginTop:80, // espace sous la frise
+      background:"#fff",padding:"8px 32px 80px",
+      marginTop:0, // l'arbre est désormais accolé à la frise, via le pont
     }}>
       {/* Fiche latérale */}
       {panel&&<SidePanel node={panel} onClose={()=>{setPanel(null);setTargetId(null);}}/>}
 
       {/* En-tête */}
       <div style={{maxWidth:900,margin:"0 auto"}}>
-        <div style={{display:"flex",alignItems:"baseline",gap:12,marginBottom:8}}>
-          <h2 style={{fontSize:26,fontWeight:700,color:"#37352f",margin:0}}>🌿 Arbre de la vie</h2>
-          <span style={{fontSize:13,color:"rgba(55,53,47,.45)"}}>
-            Cliquer pour déplier · cliquer encore pour la description
+        <div style={{display:"flex",alignItems:"baseline",gap:12,marginBottom:8,flexWrap:"wrap"}}>
+          <span style={{fontSize:13,color:"rgba(55,53,47,.5)"}}>
+            Cliquer une espèce pour la déplier · re-cliquer pour sa fiche · <strong style={{color:"#0a7848"}}>elle vous ramène à son époque sur la frise ↑</strong>
           </span>
         </div>
 

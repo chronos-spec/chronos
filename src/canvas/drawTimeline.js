@@ -121,30 +121,29 @@ export function drawAll(canvas, miniCanvas, params) {
   const zl = linearScale ? 3 : zoomLvl(vs,ve);
 
   // ── LAYOUT ────────────────────────────────────────────────────────────────
-  const CHRONO_H  = Math.round(H * 0.10);  // rectangles ChronoZoom
+  // L'arbre de la vie n'est plus dessiné dans le canvas : tout l'espace sous
+  // les bandeaux supérieurs est rendu aux événements, qui respirent enfin.
+  const CHRONO_H  = Math.round(H * 0.11);   // rectangles ChronoZoom
   const CIVILS_H  = activeThemes.size * 18; // couches civilisations
-  const PERIOD_H  = Math.round(H * 0.045);
+  const PERIOD_H  = Math.round(H * 0.05);
   const PERIOD_Y  = CHRONO_H;
   const CIVILS_Y  = PERIOD_Y + PERIOD_H;
-  const LINE_Y    = CIVILS_Y + CIVILS_H + Math.round(H * 0.012);
-  const EVT_FRAC  = linearScale ? 0.04 : 0.26;
-  const EVT_H     = Math.round(H * EVT_FRAC);
-  const TREE_Y    = Math.min(LINE_Y + EVT_H, H - 40);
-  const TREE_H    = H - TREE_Y;
-  const N_ROWS    = flatBands.length || 1;
-  const ROW_H     = Math.max(Math.floor((TREE_H - 20) / N_ROWS), 6);
-  const EVT_BOT   = TREE_Y - 20;
+  const TOP_STRUCT= CIVILS_Y + CIVILS_H + Math.round(H * 0.02);
+  // Ligne de vie placée pour laisser respirer les événements au-dessus ET dessous.
+  const LINE_Y    = linearScale
+    ? TOP_STRUCT + Math.round(H * 0.06)
+    : Math.max(TOP_STRUCT + Math.round(H * 0.30), Math.round(H * 0.48));
+  const EVT_H     = linearScale ? Math.round(H * 0.06) : Math.round(H * 0.40);
+  const EVT_BOT   = H - 24;                  // bas réservé aux labels de dates
 
   // ── FOND SOMBRE ───────────────────────────────────────────────────────────
-  // Gradient subtil du fond
-  const grd=ctx.createLinearGradient(0,0,0,TREE_Y);
+  // Gradient profond, unifié sur toute la hauteur (ciel → nuit).
+  const grd=ctx.createLinearGradient(0,0,0,H);
   grd.addColorStop(0,"#0c0a1a");
   grd.addColorStop(0.5,"#0f1117");
-  grd.addColorStop(1,"#111827");
+  grd.addColorStop(1,"#0a0c14");
   ctx.fillStyle=grd;
-  ctx.fillRect(0,0,W,TREE_Y);
-  ctx.fillStyle="#0a0c10";
-  ctx.fillRect(0,TREE_Y,W,TREE_H);
+  ctx.fillRect(0,0,W,H);
 
   // ── GRILLE ────────────────────────────────────────────────────────────────
   const span=vs-ve;
@@ -394,61 +393,7 @@ export function drawAll(canvas, miniCanvas, params) {
     ctx.fillText("AUJOURD'HUI",nowX,LINE_Y-43);
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── ARBRE DE VIE DÉPLIABLE ────────────────────────────────────────────────
-  // ══════════════════════════════════════════════════════════════════════════
-  ctx.fillStyle="rgba(200,150,60,.85)";
-  ctx.font="700 9px -apple-system,'Segoe UI',system-ui,sans-serif";
-  ctx.textAlign="left";
-  ctx.fillText("▸ ARBRE DE LA VIE — cliquer les barres pour déplier",10,TREE_Y+13);
-  ctx.fillStyle="rgba(255,255,255,.22)";ctx.textAlign="right";
-  ctx.font="8px -apple-system";
-  ctx.fillText("💀=éteint  ●=vivant  ▶=enfants",W-8,TREE_Y+13);
-  ctx.strokeStyle="rgba(200,150,60,.35)";ctx.lineWidth=1;ctx.setLineDash([]);
-  ctx.beginPath();ctx.moveTo(0,TREE_Y);ctx.lineTo(W,TREE_Y);ctx.stroke();
-
-  const bandRects=[];
-  for(const band of flatBands){
-    const fromX=toX(band.from),toXv=band.to?toX(band.to):toX(0.5);
-    const rx=Math.max(0,Math.min(fromX,toXv)),rx2=Math.min(W,Math.max(fromX,toXv)),rw=rx2-rx;
-    const ry=TREE_Y+18+band.row*ROW_H,rh=Math.max(ROW_H-2,5);
-    const hasKids=band.children?.length>0,isExpanded=expandedBands.has(band.id);
-    bandRects.push({id:band.id,rx,ry,rw,rh,hasKids});
-    if(rw<0.5)continue;
-
-    // Barre avec gradient interne
-    const barGrd=ctx.createLinearGradient(rx,ry,rx,ry+rh);
-    barGrd.addColorStop(0,band.color+(band.eteint?"66":"cc"));
-    barGrd.addColorStop(1,band.color+(band.eteint?"44":"99"));
-    ctx.fillStyle=barGrd;
-    ctx.beginPath();if(ctx.roundRect)ctx.roundRect(rx,ry,rw,rh,3);else ctx.rect(rx,ry,rw,rh);ctx.fill();
-
-    // Bordure subtile
-    ctx.strokeStyle=band.color+(band.eteint?"33":"66");ctx.lineWidth=0.6;
-    ctx.beginPath();if(ctx.roundRect)ctx.roundRect(rx,ry,rw,rh,3);else ctx.rect(rx,ry,rw,rh);ctx.stroke();
-
-    // Extinction
-    if(band.eteint&&band.to){const ex=toX(band.to);if(ex>2&&ex<W-2){ctx.fillStyle="#ef4444";ctx.beginPath();ctx.moveTo(ex-4,ry+1);ctx.lineTo(ex+1,ry+rh/2);ctx.lineTo(ex-4,ry+rh-1);ctx.closePath();ctx.fill();}}
-
-    // Cercle apparition
-    if(fromX>2&&fromX<W-2){ctx.beginPath();ctx.arc(fromX,ry+rh/2,Math.min(rh/2-1,3.5),0,Math.PI*2);ctx.fillStyle=band.color;ctx.fill();ctx.strokeStyle="rgba(255,255,255,.4)";ctx.lineWidth=0.8;ctx.stroke();}
-
-    // Chevron déploiement
-    if(hasKids){const chevX=Math.min(rx+8,rx+rw-10);ctx.fillStyle="rgba(255,255,255,.65)";ctx.font=`700 ${Math.min(rh-2,9)}px -apple-system`;ctx.textAlign="left";ctx.fillText(isExpanded?"▼":"▶",chevX,ry+rh/2+3.5);}
-
-    // Label
-    if(rw>25){
-      const indX=band.depth*6+(hasKids?13:4);
-      ctx.save();ctx.beginPath();ctx.rect(rx+indX,ry,rw-indX-4,rh);ctx.clip();
-      const fs=Math.min(rh-1,band.depth===0?11:band.depth<=2?10:9);
-      ctx.font=`${band.depth<=1?"600":"500"} ${fs}px -apple-system,'Segoe UI',system-ui,sans-serif`;
-      ctx.fillStyle=band.eteint?"rgba(255,255,255,.4)":"rgba(255,255,255,.92)";
-      ctx.textAlign="left";ctx.fillText(band.label,rx+indX+2,ry+rh/2+fs*0.38);ctx.restore();
-    }
-  }
-
-  // Ligne Aujourd'hui dans l'arbre
-  if(nowX>2&&nowX<W-2){ctx.strokeStyle="rgba(239,68,68,.25)";ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(nowX,TREE_Y+16);ctx.lineTo(nowX,H);ctx.stroke();ctx.setLineDash([]);}
+  const bandRects=[]; // l'arbre de vie vit désormais dans son propre bloc, sous la frise
 
   // ── MINIMAP ───────────────────────────────────────────────────────────────
   if(miniCanvas){
@@ -474,5 +419,5 @@ export function drawAll(canvas, miniCanvas, params) {
     mctx.strokeRect(Math.max(0,vx1),0,vx2-vx1,mh);
   }
 
-  return {placed, LINE_Y, PERIOD_Y, PERIOD_H:PERIOD_H+CIVILS_H, TREE_TOP:TREE_Y, bandRects, chronoRects};
+  return {placed, LINE_Y, PERIOD_Y, PERIOD_H:PERIOD_H+CIVILS_H, TREE_TOP:H, bandRects, chronoRects};
 }
