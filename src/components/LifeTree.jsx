@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, createContext, useContext } from "react";
 import { fmt } from "../utils/time.js";
 import { SPECIES_GEO } from "../data/speciesGeo.js";
+import { INK, ink, SURFACE, PANEL, ALIVE, alive, DANGER, MAX_AGE as MAX_AGE_THEME } from "../theme.js";
 
 const MAX_AGE = 540e6;
 const pct = (v) => Math.min(100, Math.max(0, (v / MAX_AGE) * 100));
@@ -439,14 +440,22 @@ const MAX_AGE_TREE = 540e6;
 const pctTree = (v) => Math.min(100, Math.max(0, (v / MAX_AGE_TREE) * 100));
 
 function TimeBar({from, to, color, vivant}) {
+  const focusYa = useContext(FocusYaCtx);
   const left  = 100 - pctTree(from);
-  const right = to  ? 100 - pctTree(to) : 0;
+  const right = to ? 100 - pctTree(to) : 0;
   const width = Math.max(100 - left - right, 0.4);
+  const showCursor = focusYa != null && focusYa > 0 && focusYa <= MAX_AGE_TREE;
+  const cursorLeft = showCursor ? 100 - pctTree(focusYa) : null;
   return (
-    <div style={{position:"relative",height:5,background:"rgba(55,53,47,.07)",
-      borderRadius:3,margin:"4px 0 1px",overflow:"hidden"}}>
-      <div style={{position:"absolute",left:`${left}%`,width:`${width}%`,height:"100%",
+    <div style={{position:"relative",height:5,background:ink(.07),
+      borderRadius:3,margin:"4px 0 1px",overflow:"visible"}}>
+      <div style={{position:"absolute",left:`${left}%`,width:`${width}%`,height:5,
         background:vivant?color:color+"77",borderRadius:3}}/>
+      {showCursor && (
+        <div style={{position:"absolute",left:`${cursorLeft}%`,top:-2,bottom:-2,width:1,
+          background:alive(.55),transform:"translateX(-.5px)",pointerEvents:"none"}}
+          title="Instant sélectionné sur la frise"/>
+      )}
     </div>
   );
 }
@@ -456,12 +465,12 @@ function ScaleBar() {
     {l:"250 Ma",p:100-pctTree(250e6)},{l:"400 Ma",p:100-pctTree(400e6)},{l:"540 Ma",p:0}];
   return (
     <div style={{position:"relative",height:20,margin:"2px 0 12px",
-      fontSize:10,color:"rgba(55,53,47,.38)",fontFamily:"inherit"}}>
-      <div style={{position:"absolute",left:0,right:0,top:9,height:1,background:"rgba(55,53,47,.08)"}}/>
+      fontSize:10,color:ink(.38),fontFamily:"inherit"}}>
+      <div style={{position:"absolute",left:0,right:0,top:9,height:1,background:ink(.08)}}/>
       {marks.map(m=>(
         <div key={m.l} style={{position:"absolute",left:`${m.p}%`,top:0,
           transform:"translateX(-50%)",textAlign:"center",whiteSpace:"nowrap"}}>
-          <div style={{width:1,height:5,background:"rgba(55,53,47,.2)",margin:"0 auto 2px"}}/>
+          <div style={{width:1,height:5,background:ink(.2),margin:"0 auto 2px"}}/>
           {m.l}
         </div>
       ))}
@@ -507,7 +516,7 @@ function Node({node, depth=0, highlight=false}) {
         onMouseLeave={e=>e.currentTarget.style.background=highlight?"rgba(250,204,21,.25)":open&&hasKids?`${node.color}0e`:"transparent"}
       >
         {/* Chevron */}
-        <span style={{fontSize:10,color:"rgba(55,53,47,.3)",width:12,textAlign:"center",
+        <span style={{fontSize:10,color:ink(.3),width:12,textAlign:"center",
           flexShrink:0,transform:open?"rotate(90deg)":"none",transition:"transform .15s",
           visibility:hasKids?"visible":"hidden"}}>▶</span>
         {/* Dot */}
@@ -517,12 +526,12 @@ function Node({node, depth=0, highlight=false}) {
         {/* Label */}
         <span style={{fontWeight:depth===0?700:depth<=2?600:500,
           fontSize:depth===0?15:depth<=2?14:13,
-          color:node.eteint?"rgba(55,53,47,.4)":"#37352f",
+          color:node.eteint?ink(.4):INK,
           textDecoration:node.eteint?"line-through":"none",lineHeight:1.3}}>
           {node.label}
         </span>
         {/* Période */}
-        <span style={{fontSize:11,color:"rgba(55,53,47,.38)",marginLeft:3,flexShrink:0}}>
+        <span style={{fontSize:11,color:ink(.38),marginLeft:3,flexShrink:0}}>
           {node.period}
         </span>
         {/* Badge cousin */}
@@ -532,7 +541,7 @@ function Node({node, depth=0, highlight=false}) {
         {/* Badge vivant/éteint */}
         <span style={{marginLeft:"auto",flexShrink:0,fontSize:10,padding:"1px 6px",borderRadius:3,
           background:node.eteint?"rgba(239,68,68,.08)":"rgba(22,163,74,.08)",
-          color:node.eteint?"#dc2626":"#15803d",fontWeight:500}}>
+          color:node.eteint?DANGER:"#15803d",fontWeight:500}}>
           {node.eteint?"Éteint":"Vivant"}
         </span>
       </div>
@@ -545,15 +554,15 @@ function Node({node, depth=0, highlight=false}) {
       {/* Description */}
       {desc&&node.desc&&(
         <div style={{marginLeft:22,marginRight:6,marginBottom:5,marginTop:1,
-          padding:"8px 12px",background:"rgba(55,53,47,.03)",
+          padding:"8px 12px",background:ink(.03),
           borderLeft:`3px solid ${node.color}55`,borderRadius:"0 5px 5px 0",
-          fontSize:12,color:"rgba(55,53,47,.62)",lineHeight:1.6,fontFamily:"inherit"}}>
+          fontSize:12,color:ink(.62),lineHeight:1.6,fontFamily:"inherit"}}>
           {node.desc}
         </div>
       )}
       {/* Enfants */}
       {open&&hasKids&&(
-        <div style={{borderLeft:"1.5px solid rgba(55,53,47,.08)",
+        <div style={{borderLeft:"1.5px solid " + ink(.08),
           marginLeft:13,paddingLeft:3,marginTop:1}}>
           {node.children.map(c=>
             <Node key={c.id} node={c} depth={depth+1} highlight={highlight&&c.id===node.id}/>
@@ -575,11 +584,11 @@ function SearchResult({node, onClose}) {
       onClick={()=>{focusTimeline(node);setDesc(d=>!d);}}>
       <div style={{display:"flex",alignItems:"center",gap:6}}>
         <div style={{width:9,height:9,borderRadius:"50%",background:node.color,flexShrink:0}}/>
-        <span style={{fontWeight:600,fontSize:14,color:"#37352f"}}>{node.label}</span>
-        <span style={{fontSize:11,color:"rgba(55,53,47,.45)",marginLeft:4}}>{node.period}</span>
+        <span style={{fontWeight:600,fontSize:14,color:INK}}>{node.label}</span>
+        <span style={{fontSize:11,color:ink(.45),marginLeft:4}}>{node.period}</span>
         <span style={{marginLeft:"auto",fontSize:10,padding:"1px 6px",borderRadius:3,
           background:node.eteint?"rgba(239,68,68,.08)":"rgba(22,163,74,.08)",
-          color:node.eteint?"#dc2626":"#15803d",fontWeight:500}}>
+          color:node.eteint?DANGER:"#15803d",fontWeight:500}}>
           {node.eteint?"Éteint":"Vivant"}
         </span>
       </div>
@@ -589,7 +598,7 @@ function SearchResult({node, onClose}) {
         </div>
       )}
       {desc&&node.desc&&(
-        <div style={{marginTop:8,fontSize:12,color:"rgba(55,53,47,.65)",lineHeight:1.6}}>
+        <div style={{marginTop:8,fontSize:12,color:ink(.65),lineHeight:1.6}}>
           {node.desc}
         </div>
       )}
@@ -639,7 +648,7 @@ function NodeWithRef({node, depth=0, targetId=null, nodeRefs}) {
           borderRadius:5,cursor:"pointer",transition:"background .1s",
           background: isTarget
             ? "rgba(250,204,21,.2)"
-            : present===true ? "rgba(10,120,72,.08)"
+            : present===true ? alive(.08)
             : open&&hasKids ? `${node.color}0e` : "transparent",
           outline: isTarget ? "2px solid rgba(250,204,21,.7)"
             : present===true ? "1px solid rgba(10,120,72,.25)" : "none",
@@ -648,25 +657,25 @@ function NodeWithRef({node, depth=0, targetId=null, nodeRefs}) {
         onMouseEnter={e=>e.currentTarget.style.background=isTarget?"rgba(250,204,21,.3)":`${node.color}15`}
         onMouseLeave={e=>e.currentTarget.style.background=isTarget?"rgba(250,204,21,.2)":open&&hasKids?`${node.color}0e`:"transparent"}
       >
-        <span style={{fontSize:10,color:"rgba(55,53,47,.3)",width:12,textAlign:"center",
+        <span style={{fontSize:10,color:ink(.3),width:12,textAlign:"center",
           flexShrink:0,transform:open?"rotate(90deg)":"none",transition:"transform .15s",
           visibility:hasKids?"visible":"hidden"}}>▶</span>
         <div style={{width:9,height:9,borderRadius:"50%",background:node.color,
           flexShrink:0,opacity:node.eteint?.45:1}}/>
         <span style={{fontWeight:depth===0?700:depth<=2?600:500,
           fontSize:depth===0?15:depth<=2?14:13,
-          color:node.eteint?"rgba(55,53,47,.4)":"#37352f",
+          color:node.eteint?ink(.4):INK,
           textDecoration:node.eteint?"line-through":"none",lineHeight:1.3}}>
           {node.label}
         </span>
-        <span style={{fontSize:11,color:"rgba(55,53,47,.38)",marginLeft:3,flexShrink:0}}>
+        <span style={{fontSize:11,color:ink(.38),marginLeft:3,flexShrink:0}}>
           {node.period}
         </span>
         <CousinBadge cousinIds={node.cousin}/>
         <LocateButton node={node}/>
         <span style={{marginLeft:"auto",flexShrink:0,fontSize:10,padding:"1px 6px",borderRadius:3,
           background:node.eteint?"rgba(239,68,68,.08)":"rgba(22,163,74,.08)",
-          color:node.eteint?"#dc2626":"#15803d",fontWeight:500}}>
+          color:node.eteint?DANGER:"#15803d",fontWeight:500}}>
           {node.eteint?"Éteint":"Vivant"}
         </span>
       </div>
@@ -677,14 +686,14 @@ function NodeWithRef({node, depth=0, targetId=null, nodeRefs}) {
       )}
       {desc&&node.desc&&(
         <div style={{marginLeft:22,marginRight:6,marginBottom:5,marginTop:1,
-          padding:"8px 12px",background:"rgba(55,53,47,.03)",
+          padding:"8px 12px",background:ink(.03),
           borderLeft:`3px solid ${node.color}55`,borderRadius:"0 5px 5px 0",
-          fontSize:12,color:"rgba(55,53,47,.62)",lineHeight:1.6}}>
+          fontSize:12,color:ink(.62),lineHeight:1.6}}>
           {node.desc}
         </div>
       )}
       {open&&hasKids&&(
-        <div style={{borderLeft:"1.5px solid rgba(55,53,47,.08)",marginLeft:13,paddingLeft:3,marginTop:1}}>
+        <div style={{borderLeft:"1.5px solid " + ink(.08),marginLeft:13,paddingLeft:3,marginTop:1}}>
           {node.children.map(c=>(
             <NodeWithRef key={c.id} node={c} depth={depth+1} targetId={targetId} nodeRefs={nodeRefs}/>
           ))}
@@ -701,38 +710,38 @@ function SidePanel({node, onClose}) {
   return (
     <div style={{
       position:"fixed",right:0,top:0,bottom:0,width:"min(420px,90vw)",
-      background:"#fff",borderLeft:"1px solid rgba(55,53,47,.12)",
+      background:PANEL,borderLeft:"1px solid " + ink(.12),
       boxShadow:"-8px 0 32px rgba(0,0,0,.12)",zIndex:500,
       display:"flex",flexDirection:"column",
       fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
     }}>
       {/* Header */}
-      <div style={{padding:"20px 24px 16px",borderBottom:"1px solid rgba(55,53,47,.09)",flexShrink:0}}>
+      <div style={{padding:"20px 24px 16px",borderBottom:"1px solid " + ink(.09),flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <div style={{width:12,height:12,borderRadius:"50%",background:node.color,opacity:node.eteint?.5:1}}/>
             <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,
               background:node.eteint?"rgba(239,68,68,.1)":"rgba(22,163,74,.1)",
-              color:node.eteint?"#dc2626":"#15803d",fontWeight:600}}>
+              color:node.eteint?DANGER:"#15803d",fontWeight:600}}>
               {node.eteint?"Espèce éteinte":"Espèce vivante"}
             </span>
             <LocateButton node={node}/>
           </div>
           <button onClick={onClose} style={{width:28,height:28,borderRadius:7,
-            background:"rgba(55,53,47,.06)",border:"none",cursor:"pointer",
-            fontSize:14,color:"rgba(55,53,47,.6)",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+            background:ink(.06),border:"none",cursor:"pointer",
+            fontSize:14,color:ink(.6),display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
         </div>
-        <h2 style={{fontSize:20,fontWeight:700,color:"#37352f",margin:"0 0 4px",lineHeight:1.2}}>
+        <h2 style={{fontSize:20,fontWeight:700,color:INK,margin:"0 0 4px",lineHeight:1.2}}>
           {node.label.replace(/💀|⭐|🔀/g,"").trim()}
         </h2>
-        <div style={{fontSize:12,color:"rgba(55,53,47,.45)"}}>{node.period}</div>
+        <div style={{fontSize:12,color:ink(.45)}}>{node.period}</div>
       </div>
       {/* Barre temporelle */}
       {node.from&&(
-        <div style={{padding:"12px 24px",borderBottom:"1px solid rgba(55,53,47,.06)",flexShrink:0}}>
-          <div style={{fontSize:11,color:"rgba(55,53,47,.4)",marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Durée d'existence</div>
+        <div style={{padding:"12px 24px",borderBottom:"1px solid " + ink(.06),flexShrink:0}}>
+          <div style={{fontSize:11,color:ink(.4),marginBottom:6,letterSpacing:".08em",textTransform:"uppercase"}}>Durée d'existence</div>
           <TimeBar from={node.from} to={node.to} color={node.color} vivant={node.vivant}/>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"rgba(55,53,47,.35)",marginTop:4}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:ink(.35),marginTop:4}}>
             <span>Apparition : {node.period?.split("–")[0]||"?"}</span>
             <span>{node.to?"Extinction : "+node.period?.split("–")[1]||"?":"Vivant aujourd'hui"}</span>
           </div>
@@ -742,13 +751,13 @@ function SidePanel({node, onClose}) {
       <div style={{flex:1,overflowY:"auto",padding:"20px 24px"}}>
         {node.desc&&(
           <>
-            <div style={{fontSize:11,color:"rgba(55,53,47,.4)",letterSpacing:".08em",textTransform:"uppercase",marginBottom:10}}>Description</div>
-            <p style={{fontSize:14,lineHeight:1.7,color:"#37352f",margin:"0 0 20px"}}>{node.desc}</p>
+            <div style={{fontSize:11,color:ink(.4),letterSpacing:".08em",textTransform:"uppercase",marginBottom:10}}>Description</div>
+            <p style={{fontSize:14,lineHeight:1.7,color:INK,margin:"0 0 20px"}}>{node.desc}</p>
           </>
         )}
         {cousins.length>0&&(
           <>
-            <div style={{fontSize:11,color:"rgba(55,53,47,.4)",letterSpacing:".08em",textTransform:"uppercase",marginBottom:10}}>
+            <div style={{fontSize:11,color:ink(.4),letterSpacing:".08em",textTransform:"uppercase",marginBottom:10}}>
               🔀 Espèces cousines (lignées parallèles)
             </div>
             {cousins.map(c=>(
@@ -756,10 +765,10 @@ function SidePanel({node, onClose}) {
                 background:"rgba(99,102,241,.06)",border:"1px solid rgba(99,102,241,.15)",marginBottom:8}}>
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
                   <div style={{width:8,height:8,borderRadius:"50%",background:c.color}}/>
-                  <span style={{fontWeight:600,fontSize:13,color:"#37352f"}}>{c.label.replace(/💀|⭐|🔀/g,"").trim()}</span>
-                  <span style={{fontSize:11,color:"rgba(55,53,47,.4)"}}>{c.period}</span>
+                  <span style={{fontWeight:600,fontSize:13,color:INK}}>{c.label.replace(/💀|⭐|🔀/g,"").trim()}</span>
+                  <span style={{fontSize:11,color:ink(.4)}}>{c.period}</span>
                 </div>
-                {c.desc&&<p style={{fontSize:12,color:"rgba(55,53,47,.6)",margin:0,lineHeight:1.5}}>{c.desc}</p>}
+                {c.desc&&<p style={{fontSize:12,color:ink(.6),margin:0,lineHeight:1.5}}>{c.desc}</p>}
               </div>
             ))}
           </>
@@ -823,7 +832,7 @@ export function LifeTree({ onFocusTimeline, onLocateSpecies, focusYa = null } = 
     <LocateCtx.Provider value={onLocateSpecies}>
     <FocusYaCtx.Provider value={activeFocus}>
     <div style={{fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
-      background:"#fff",padding:"8px 32px 80px",
+      background:SURFACE,padding:"8px 32px 80px",
       marginTop:0, // l'arbre est désormais accolé à la frise, via le pont
     }}>
       {/* Fiche latérale */}
@@ -832,8 +841,8 @@ export function LifeTree({ onFocusTimeline, onLocateSpecies, focusYa = null } = 
       {/* En-tête */}
       <div style={{maxWidth:900,margin:"0 auto"}}>
         <div style={{display:"flex",alignItems:"baseline",gap:12,marginBottom:8,flexWrap:"wrap"}}>
-          <span style={{fontSize:13,color:"rgba(55,53,47,.5)"}}>
-            Cliquer une espèce pour la déplier · re-cliquer pour sa fiche · <strong style={{color:"#0a7848"}}>elle vous ramène à son époque sur la frise ↑</strong>
+          <span style={{fontSize:13,color:ink(.5)}}>
+            Cliquer une espèce pour la déplier · re-cliquer pour sa fiche · <strong style={{color:ALIVE}}>elle vous ramène à son époque sur la frise ↑</strong>
           </span>
         </div>
 
@@ -842,16 +851,16 @@ export function LifeTree({ onFocusTimeline, onLocateSpecies, focusYa = null } = 
           <div style={{marginBottom:20,padding:"14px 16px",borderRadius:14,
             border:"1px solid rgba(10,120,72,.2)",background:"linear-gradient(180deg,#f1faf4,#ffffff)"}}>
             <div style={{display:"flex",alignItems:"baseline",gap:10,flexWrap:"wrap",marginBottom:10}}>
-              <span style={{fontFamily:"Georgia,serif",fontSize:16,color:"#0a7848"}}>🧬 À cette époque</span>
-              <span style={{fontSize:12.5,color:"rgba(55,53,47,.6)"}}>il y a {fmt(activeFocus)}</span>
-              <span style={{fontSize:11,color:"rgba(55,53,47,.4)"}}>· {contemporaries.length>0?`${contemporaries.length} lignées présentes`:"aucune lignée référencée"}</span>
+              <span style={{fontFamily:"Georgia,serif",fontSize:16,color:ALIVE}}>🧬 À cette époque</span>
+              <span style={{fontSize:12.5,color:ink(.6)}}>il y a {fmt(activeFocus)}</span>
+              <span style={{fontSize:11,color:ink(.4)}}>· {contemporaries.length>0?`${contemporaries.length} lignées présentes`:"aucune lignée référencée"}</span>
             </div>
             {contemporaries.length>0 ? (
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                 {contemporaries.map(n=>(
                   <button key={n.id} onClick={()=>handleSelect(n)}
                     style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius:999,
-                      cursor:"pointer",fontFamily:"inherit",fontSize:12,color:"#37352f",
+                      cursor:"pointer",fontFamily:"inherit",fontSize:12,color:INK,
                       border:`1px solid ${n.color}44`,background:`${n.color}12`}}
                     title="Voir dans l'arbre + situer sur la frise">
                     <span style={{width:7,height:7,borderRadius:"50%",background:n.color,opacity:n.eteint?.5:1}}/>
@@ -860,7 +869,7 @@ export function LifeTree({ onFocusTimeline, onLocateSpecies, focusYa = null } = 
                 ))}
               </div>
             ) : (
-              <div style={{fontSize:12.5,color:"rgba(55,53,47,.5)"}}>
+              <div style={{fontSize:12.5,color:ink(.5)}}>
                 Déplacez-vous vers une période plus récente sur la frise pour voir apparaître le vivant.
               </div>
             )}
@@ -869,7 +878,7 @@ export function LifeTree({ onFocusTimeline, onLocateSpecies, focusYa = null } = 
 
         {/* Légende */}
         <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20,
-          fontSize:12,color:"rgba(55,53,47,.45)",flexWrap:"wrap"}}>
+          fontSize:12,color:ink(.45),flexWrap:"wrap"}}>
           <span>⭐ = ancêtre direct</span>
           <span>🔀 = cousin (lignée parallèle)</span>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -882,60 +891,60 @@ export function LifeTree({ onFocusTimeline, onLocateSpecies, focusYa = null } = 
         {/* Barre de recherche */}
         <div style={{position:"relative",marginBottom:24}}>
           <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",
-            fontSize:16,color:"rgba(55,53,47,.35)"}}>🔍</span>
+            fontSize:16,color:ink(.35)}}>🔍</span>
           <input type="text" value={search} onChange={e=>setSearch(e.target.value)}
             placeholder="Rechercher : T-Rex, Homo sapiens, Jurassique..."
             style={{width:"100%",height:46,borderRadius:10,
-              border:"1.5px solid rgba(55,53,47,.15)",background:"#fafafa",
+              border:"1.5px solid " + ink(.15),background:"#fafafa",
               padding:"0 40px 0 42px",fontSize:14,fontFamily:"inherit",
-              color:"#37352f",outline:"none",boxSizing:"border-box",
+              color:INK,outline:"none",boxSizing:"border-box",
               boxShadow:"0 2px 8px rgba(0,0,0,.04)"}}
           />
           {search&&(
             <button onClick={()=>setSearch("")}
               style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
                 background:"none",border:"none",cursor:"pointer",fontSize:16,
-                color:"rgba(55,53,47,.4)"}}>✕</button>
+                color:ink(.4)}}>✕</button>
           )}
         </div>
 
         {/* Résultats de recherche */}
         {search.trim()&&(
           <div style={{marginBottom:24,background:"#f9f9f8",borderRadius:10,
-            border:"1px solid rgba(55,53,47,.1)",overflow:"hidden"}}>
+            border:"1px solid " + ink(.1),overflow:"hidden"}}>
             {results.length===0?(
-              <div style={{padding:"20px",textAlign:"center",color:"rgba(55,53,47,.45)",fontSize:13}}>
+              <div style={{padding:"20px",textAlign:"center",color:ink(.45),fontSize:13}}>
                 Aucun résultat pour «&nbsp;{search}&nbsp;»
               </div>
             ):(
               <>
-                <div style={{padding:"10px 16px 6px",fontSize:11,color:"rgba(55,53,47,.4)",
-                  letterSpacing:".1em",textTransform:"uppercase",borderBottom:"1px solid rgba(55,53,47,.07)"}}>
+                <div style={{padding:"10px 16px 6px",fontSize:11,color:ink(.4),
+                  letterSpacing:".1em",textTransform:"uppercase",borderBottom:"1px solid " + ink(.07)}}>
                   {results.length} résultat{results.length>1?"s":""}
                 </div>
                 {results.map(n=>(
                   <div key={n.id}
                     onClick={()=>handleSelect(n)}
                     style={{display:"flex",alignItems:"center",gap:10,padding:"12px 16px",
-                      cursor:"pointer",borderBottom:"1px solid rgba(55,53,47,.06)",
+                      cursor:"pointer",borderBottom:"1px solid " + ink(.06),
                       transition:"background .1s"}}
-                    onMouseEnter={e=>e.currentTarget.style.background="rgba(55,53,47,.04)"}
+                    onMouseEnter={e=>e.currentTarget.style.background=ink(.04)}
                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}
                   >
                     <div style={{width:10,height:10,borderRadius:"50%",background:n.color,
                       flexShrink:0,opacity:n.eteint?.5:1}}/>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontWeight:600,fontSize:14,color:"#37352f",marginBottom:2}}>
+                      <div style={{fontWeight:600,fontSize:14,color:INK,marginBottom:2}}>
                         {n.label.replace(/💀|⭐|🔀/g,"").trim()}
                       </div>
-                      <div style={{fontSize:12,color:"rgba(55,53,47,.45)"}}>{n.period}</div>
+                      <div style={{fontSize:12,color:ink(.45)}}>{n.period}</div>
                     </div>
                     <span style={{fontSize:10,padding:"2px 8px",borderRadius:4,flexShrink:0,
                       background:n.eteint?"rgba(239,68,68,.08)":"rgba(22,163,74,.08)",
-                      color:n.eteint?"#dc2626":"#15803d",fontWeight:500}}>
+                      color:n.eteint?DANGER:"#15803d",fontWeight:500}}>
                       {n.eteint?"Éteint":"Vivant"}
                     </span>
-                    <span style={{fontSize:12,color:"rgba(55,53,47,.3)",flexShrink:0}}>→</span>
+                    <span style={{fontSize:12,color:ink(.3),flexShrink:0}}>→</span>
                   </div>
                 ))}
               </>

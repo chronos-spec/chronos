@@ -1,9 +1,4 @@
-const SURFACE = "#fbfaf7";
-const PANEL = "#ffffff";
-const INK = "#171412";
-const MUTED = "rgba(23,20,18,.58)";
-const LINE = "rgba(23,20,18,.10)";
-const GOLD = "#b9822f";
+import { SURFACE, PANEL, INK, MUTED, LINE, GOLD } from "./theme.js";
 
 export const css = {
   app:{
