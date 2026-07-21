@@ -1,0 +1,167 @@
+// ══════════════════════════════════════════════════════════════════════════
+// GÉOGRAPHIE DES ESPÈCES — zones curées manuellement
+// ──────────────────────────────────────────────────────────────────────────
+// Pour chaque espèce notable de l'Arbre de la vie (voir components/LifeTree.jsx),
+// un ou plusieurs points d'ancrage : {plate, lon, lat, note}.
+// `plate` = plaque tectonique (voir geography.js) qui porte ce point ;
+// `lon/lat` = coordonnées actuelles (site fossile ou aire de répartition).
+// À l'affichage, le point est projeté puis transformé par la dérive de sa
+// plaque pour l'époque choisie — inutile de refaire les coordonnées par ère.
+// ══════════════════════════════════════════════════════════════════════════
+
+export const SPECIES_GEO = {
+  // ── Fossiles emblématiques (vie ancienne) ──────────────────────────────
+  ginkgo:    [{ plate:"eurasia",       lon:108,  lat:34,   note:"Chine" }],
+  ediac:     [{ plate:"australia",     lon:138,  lat:-30,  note:"Ediacara, Australie" }],
+  ammo:      [{ plate:"eurasia",       lon:1,    lat:49,   note:"France" }],
+  naut:      [{ plate:"australia",     lon:121,  lat:13,   note:"Pacifique ouest" }],
+  trilo:     [{ plate:"africa",        lon:-4,   lat:31.9, note:"Maroc" }],
+  megalo:    [{ plate:"north_america", lon:-79,  lat:33,   note:"Caroline du Sud" }],
+  placode:   [{ plate:"north_america", lon:-81.7,lat:41.5, note:"Ohio (Dunkleosteus)" }],
+  coela:     [{ plate:"africa",        lon:43.3, lat:-11.7,note:"Comores" }],
+  tiktaalik: [{ plate:"north_america", lon:-75,  lat:78,   note:"Île d'Ellesmere, Arctique" }],
+  ichthyo_a: [{ plate:"north_america", lon:-25,  lat:70,   note:"Groenland" }],
+  dimetro:   [{ plate:"north_america", lon:-101, lat:33,   note:"Texas" }],
+  lystro:    [
+    { plate:"africa",      lon:25,  lat:-31, note:"Karoo, Afrique du Sud" },
+    { plate:"antarctica",  lon:160, lat:-84, note:"Antarctique" },
+    { plate:"eurasia",     lon:80,  lat:30,  note:"Inde" },
+  ],
+  cynogna:   [{ plate:"africa", lon:26, lat:-32, note:"Afrique du Sud" }],
+
+  // ── Mammifères ──────────────────────────────────────────────────────────
+  monot:     [{ plate:"australia", lon:145, lat:-37, note:"Australie" }],
+  thyla:     [{ plate:"australia", lon:146, lat:-42, note:"Tasmanie" }],
+  dipro:     [{ plate:"australia", lon:140, lat:-34, note:"Australie" }],
+  thylaleo:  [{ plate:"australia", lon:135, lat:-30, note:"Australie" }],
+  pakice:    [{ plate:"eurasia", lon:71, lat:33, note:"Pakistan" }],
+  ambulo:    [{ plate:"eurasia", lon:71, lat:33, note:"Pakistan" }],
+  basilos:   [{ plate:"africa", lon:30, lat:29.2, note:"Wadi Al-Hitan, Égypte" }],
+  bbleine:   [{ plate:"antarctica", lon:10, lat:-65, note:"Océan Austral" }],
+  moerit:    [{ plate:"africa", lon:30, lat:29, note:"Égypte" }],
+  mammouth:  [
+    { plate:"eurasia",       lon:130,  lat:65, note:"Sibérie" },
+    { plate:"north_america", lon:-135, lat:64, note:"Yukon" },
+  ],
+  mastodon:  [{ plate:"north_america", lon:-85, lat:40, note:"Amérique du Nord" }],
+  elephas:   [{ plate:"africa", lon:35, lat:-2, note:"Afrique de l'Est" }],
+  eohippus:  [{ plate:"north_america", lon:-108, lat:43, note:"Wyoming" }],
+  indrico:   [{ plate:"eurasia", lon:75, lat:47, note:"Asie centrale" }],
+  cheval:    [{ plate:"eurasia", lon:60, lat:48, note:"Steppes d'Asie centrale" }],
+  smilodon:  [{ plate:"north_america", lon:-118.3, lat:34.05, note:"La Brea, Californie" }],
+  cave_lion: [{ plate:"eurasia", lon:10, lat:48, note:"Europe" }],
+  direwolf:  [{ plate:"north_america", lon:-118.3, lat:34.05, note:"La Brea, Californie" }],
+  lion:      [
+    { plate:"africa",  lon:35, lat:-2, note:"Serengeti, Afrique" },
+    { plate:"eurasia", lon:50, lat:32, note:"Perse (historique)" },
+  ],
+
+  // ── Primates & lignée humaine ────────────────────────────────────────────
+  prosim:    [{ plate:"africa", lon:47, lat:-19, note:"Madagascar" }],
+  platyr:    [{ plate:"south_america", lon:-60, lat:-5, note:"Amazonie" }],
+  catarr:    [{ plate:"africa", lon:35, lat:0,  note:"Afrique de l'Est" }],
+  gibbon:    [{ plate:"eurasia", lon:100, lat:10, note:"Asie du Sud-Est" }],
+  orang:     [{ plate:"eurasia", lon:114, lat:0.5, note:"Bornéo" }],
+  gorille:   [{ plate:"africa", lon:15, lat:0, note:"Bassin du Congo" }],
+  dryo:      [{ plate:"eurasia", lon:14, lat:48, note:"Europe" }],
+  chimp:     [{ plate:"africa", lon:30, lat:-5, note:"Tanzanie" }],
+  sahel:     [{ plate:"africa", lon:15, lat:16, note:"Tchad" }],
+  orrorin:   [{ plate:"africa", lon:35, lat:0, note:"Kenya" }],
+  ardipith:  [{ plate:"africa", lon:40.5, lat:10, note:"Éthiopie" }],
+  anam:      [{ plate:"africa", lon:36, lat:3, note:"Kenya" }],
+  afarensis: [{ plate:"africa", lon:40.6, lat:11.1, note:"Hadar, Éthiopie (Lucy)" }],
+  africanus: [{ plate:"africa", lon:24.8, lat:-27.5, note:"Taung, Afrique du Sud" }],
+  sediba:    [{ plate:"africa", lon:27.7, lat:-25.9, note:"Afrique du Sud" }],
+  garrhi:    [{ plate:"africa", lon:41, lat:11, note:"Éthiopie" }],
+  paranthr:  [{ plate:"africa", lon:29, lat:-24, note:"Afrique australe/orientale" }],
+  parobust:  [{ plate:"africa", lon:27.5, lat:-25.9, note:"Afrique du Sud" }],
+  paboisei:  [{ plate:"africa", lon:35.35, lat:-2.99, note:"Olduvai, Tanzanie" }],
+  paethio:   [{ plate:"africa", lon:36, lat:4, note:"Éthiopie/Kenya" }],
+  kenyanthr: [{ plate:"africa", lon:36, lat:3.5, note:"Lac Turkana, Kenya" }],
+  habilis:   [{ plate:"africa", lon:35.35, lat:-2.99, note:"Olduvai, Tanzanie" }],
+  rudolfensis:[{ plate:"africa", lon:36, lat:3.5, note:"Kenya" }],
+  erectus:   [
+    { plate:"africa",  lon:36,  lat:3.5, note:"Kenya" },
+    { plate:"eurasia", lon:110, lat:-7,  note:"Java, Indonésie" },
+    { plate:"eurasia", lon:115.9, lat:39.7, note:"Zhoukoudian, Chine" },
+  ],
+  ergaster:  [{ plate:"africa", lon:36, lat:3.9, note:"Turkana, Kenya" }],
+  georgi:    [{ plate:"eurasia", lon:44.3, lat:41.4, note:"Dmanisi, Géorgie" }],
+  peking:    [{ plate:"eurasia", lon:115.9, lat:39.7, note:"Pékin, Chine" }],
+  java:      [{ plate:"eurasia", lon:110.4, lat:-7.5, note:"Java, Indonésie" }],
+  antecessor:[{ plate:"eurasia", lon:-3.5, lat:42.4, note:"Atapuerca, Espagne" }],
+  heidel:    [
+    { plate:"eurasia", lon:9,  lat:51,  note:"Allemagne" },
+    { plate:"africa",  lon:28, lat:-13, note:"Zambie" },
+  ],
+  nean:      [
+    { plate:"eurasia", lon:2,  lat:47, note:"France" },
+    { plate:"eurasia", lon:35, lat:32, note:"Levant" },
+    { plate:"eurasia", lon:60, lat:55, note:"Sibérie" },
+  ],
+  deniso:    [
+    { plate:"eurasia", lon:84, lat:51.4, note:"Grotte de Denisova, Sibérie" },
+    { plate:"eurasia", lon:91, lat:31,   note:"Plateau tibétain" },
+  ],
+  naledi:    [{ plate:"africa", lon:27.7, lat:-25.9, note:"Rising Star, Afrique du Sud" }],
+  longi:     [{ plate:"eurasia", lon:126.6, lat:45.8, note:"Harbin, Chine" }],
+  luzon:     [{ plate:"eurasia", lon:121, lat:16.4, note:"Luçon, Philippines" }],
+  floresi:   [{ plate:"eurasia", lon:120.8, lat:-8.6, note:"Florès, Indonésie" }],
+  sapiens_a: [
+    { plate:"africa", lon:-8.7, lat:31.9, note:"Jebel Irhoud, Maroc" },
+    { plate:"africa", lon:36,   lat:-3,   note:"Rift est-africain" },
+  ],
+  archaiq:   [{ plate:"africa", lon:40, lat:9, note:"Éthiopie" }],
+  idaltu:    [{ plate:"africa", lon:40.5, lat:11, note:"Herto, Éthiopie" }],
+  cromagnon: [{ plate:"eurasia", lon:1, lat:45, note:"Dordogne, France" }],
+  sapiens_mod:[
+    { plate:"africa",        lon:20,   lat:5,   note:"Afrique" },
+    { plate:"eurasia",       lon:10,   lat:50,  note:"Europe" },
+    { plate:"eurasia",       lon:100,  lat:30,  note:"Asie" },
+    { plate:"australia",     lon:135,  lat:-25, note:"Océanie" },
+    { plate:"north_america", lon:-100, lat:40,  note:"Amérique du Nord" },
+    { plate:"south_america", lon:-60,  lat:-15, note:"Amérique du Sud" },
+  ],
+
+  // ── Reptiles marins & volants ────────────────────────────────────────────
+  mosamoss:  [{ plate:"eurasia", lon:5.7, lat:50.8, note:"Maastricht, Pays-Bas" }],
+  ophtha:    [{ plate:"eurasia", lon:-2.5, lat:50.7, note:"Côte jurassique, Angleterre" }],
+  elasmosaur:[{ plate:"north_america", lon:-99, lat:39, note:"Kansas" }],
+  liopleuro: [{ plate:"eurasia", lon:-1.5, lat:51.8, note:"Oxford Clay, Angleterre" }],
+  croco:     [
+    { plate:"africa",        lon:31,  lat:15, note:"Nil" },
+    { plate:"north_america", lon:-81, lat:27, note:"Floride" },
+  ],
+  dimo_pt:   [{ plate:"eurasia", lon:-2, lat:51, note:"Angleterre" }],
+  ptero_pt:  [{ plate:"eurasia", lon:11.1, lat:48.9, note:"Solnhofen, Allemagne" }],
+  quetz:     [{ plate:"north_america", lon:-103.3, lat:29.3, note:"Big Bend, Texas" }],
+
+  // ── Dinosaures & oiseaux ──────────────────────────────────────────────────
+  herrer:    [{ plate:"south_america", lon:-68, lat:-29.6, note:"Argentine" }],
+  diloph:    [{ plate:"north_america", lon:-110, lat:36.7, note:"Arizona" }],
+  allosaur:  [{ plate:"north_america", lon:-109, lat:39, note:"Colorado/Utah" }],
+  spinosaur: [{ plate:"africa", lon:-4, lat:31.5, note:"Maroc" }],
+  carcharo:  [{ plate:"africa", lon:-4, lat:32, note:"Maroc" }],
+  giganoto:  [{ plate:"south_america", lon:-69, lat:-40.8, note:"Patagonie, Argentine" }],
+  tyranno:   [{ plate:"north_america", lon:-106, lat:47.5, note:"Hell Creek, Montana" }],
+  yuty:      [{ plate:"eurasia", lon:120.7, lat:41.5, note:"Liaoning, Chine" }],
+  velo:      [{ plate:"eurasia", lon:103.8, lat:44, note:"Désert de Gobi, Mongolie" }],
+  deinony:   [{ plate:"north_america", lon:-108, lat:45.8, note:"Montana" }],
+  therizia:  [{ plate:"eurasia", lon:104, lat:43.5, note:"Mongolie" }],
+  archaeo:   [{ plate:"eurasia", lon:11.1, lat:48.9, note:"Bavière, Allemagne" }],
+  moa:       [{ plate:"australia", lon:173, lat:-41, note:"Nouvelle-Zélande" }],
+  epyornis:  [{ plate:"africa", lon:47, lat:-19, note:"Madagascar" }],
+  gastorn:   [
+    { plate:"eurasia",       lon:2,    lat:49, note:"France" },
+    { plate:"north_america", lon:-108, lat:42, note:"Wyoming" },
+  ],
+  brachios:  [{ plate:"north_america", lon:-108.5, lat:39.1, note:"Colorado" }],
+  diplo:     [{ plate:"north_america", lon:-109, lat:39, note:"Colorado/Utah" }],
+  argentin:  [{ plate:"south_america", lon:-68, lat:-38.7, note:"Patagonie, Argentine" }],
+  patagot:   [{ plate:"south_america", lon:-68.5, lat:-42, note:"Patagonie, Argentine" }],
+  stego:     [{ plate:"north_america", lon:-108, lat:40.6, note:"Colorado" }],
+  ankylo:    [{ plate:"north_america", lon:-106, lat:47.5, note:"Montana" }],
+  tricera:   [{ plate:"north_america", lon:-105, lat:44.8, note:"Montana/Wyoming" }],
+  parasaur:  [{ plate:"north_america", lon:-107, lat:36.5, note:"Nouveau-Mexique" }],
+  igua:      [{ plate:"eurasia", lon:0.1, lat:50.9, note:"Sussex, Angleterre" }],
+};

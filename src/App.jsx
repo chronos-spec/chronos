@@ -11,6 +11,7 @@ import { BookmarksPanel } from "./components/BookmarksPanel.jsx";
 import { EventPanel } from "./components/EventPanel.jsx";
 import { ExploreCards } from "./components/ExploreCards.jsx";
 import { LifeTree } from "./components/LifeTree.jsx";
+import { Planisphere } from "./components/Planisphere.jsx";
 import { THEMES, flattenTree } from "./canvas/drawTimeline.js";
 import { Landing } from "./components/Landing.jsx";
 import { EpochBubbles } from "./components/EpochBubbles.jsx";
@@ -215,6 +216,7 @@ function Chronos() {
   const [annotInput,setAnnotInput]=useState("");
   const [annotTarget,setAnnotTarget]=useState(null);
   const [showLegendBar,setShowLegendBar]=useState(true);  // légende permanente
+  const [selectedSpecies,setSelectedSpecies]=useState(null); // espèce localisée sur le planisphère
 
   // ── STORAGE ───────────────────────────────────────────────────────────────
   useEffect(()=>{
@@ -416,6 +418,10 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
   },[scheduleRedraw,fetchRich]);
 
   const closePanel=useCallback(()=>{S.current.selectedId=null;scheduleRedraw();setUi(u=>({...u,panelOpen:false}));},[scheduleRedraw]);
+
+  // ── PLANISPHÈRE ───────────────────────────────────────────────────────────
+  const locateSpecies=useCallback((node)=>{setSelectedSpecies(node);},[]);
+  const clearSpecies=useCallback(()=>{setSelectedSpecies(null);},[]);
 
   // ── RECHERCHE ─────────────────────────────────────────────────────────────
   const searchDebRef=useRef(null);
@@ -914,7 +920,38 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           {/* ── ARBRE DE LA VIE ── */}
           {!fullscreen&&(
             <div id="arbre-de-vie">
-              <LifeTree onFocusTimeline={navigateToEpoch} focusYa={focusYa} />
+              <LifeTree onFocusTimeline={navigateToEpoch} onLocateSpecies={locateSpecies} focusYa={focusYa} />
+            </div>
+          )}
+
+          {/* ── PONT ARBRE → PLANISPHÈRE ── */}
+          {!fullscreen&&(
+            <button
+              onClick={()=>{const t=document.getElementById("planisphere");if(t)t.scrollIntoView({behavior:"smooth",block:"start"});}}
+              style={{
+                display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
+                width:"100%",border:"none",cursor:"pointer",fontFamily:"inherit",
+                padding:"22px 18px 24px",
+                background:"linear-gradient(180deg, #ffffff 0%, #eef3f2 55%, #e2eae7 100%)",
+                color:"#1c1917",
+              }}>
+              <span style={{fontSize:10,letterSpacing:".18em",textTransform:"uppercase",color:"rgba(28,25,23,.45)"}}>
+                Où tout cela s'est-il passé ?
+              </span>
+              <span style={{fontFamily:"'Fraunces',Georgia,serif",fontSize:23,color:"#1c1917"}}>
+                🌍 Le planisphère
+              </span>
+              <span style={{fontSize:12,color:"rgba(28,25,23,.6)"}}>
+                Les continents dérivent avec le temps · cliquez 🌍 sur une espèce pour la situer ↓
+              </span>
+              <span style={{fontSize:18,color:"#0e7490",marginTop:2,animation:"floaty 1.8s ease-in-out infinite"}}>⌄</span>
+            </button>
+          )}
+
+          {/* ── PLANISPHÈRE ── */}
+          {!fullscreen&&(
+            <div id="planisphere">
+              <Planisphere focusYa={focusYa} selectedSpecies={selectedSpecies} onSelectSpecies={locateSpecies} onClearSpecies={clearSpecies} />
             </div>
           )}
 

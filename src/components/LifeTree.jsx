@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect, createContext, useContext } from "react";
 import { fmt } from "../utils/time.js";
+import { SPECIES_GEO } from "../data/speciesGeo.js";
 
 const MAX_AGE = 540e6;
 const pct = (v) => Math.min(100, Math.max(0, (v / MAX_AGE) * 100));
@@ -30,6 +31,35 @@ function useFocusOnTimeline() {
       if (frise) frise.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
+}
+
+// Lien Arbre de vie -> Planisphère : localiser une espèce sur le globe.
+const LocateCtx = createContext(null);
+function useLocateOnMap() {
+  const onLocate = useContext(LocateCtx);
+  return (node) => {
+    if (!onLocate || !node || !SPECIES_GEO[node.id]) return;
+    onLocate(node);
+    if (typeof document !== "undefined") {
+      const map = document.getElementById("planisphere");
+      if (map) map.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+}
+function LocateButton({node}) {
+  const locate = useLocateOnMap();
+  if (!SPECIES_GEO[node.id]) return null;
+  return (
+    <button
+      onClick={(e)=>{e.stopPropagation();locate(node);}}
+      title="Situer sur le planisphère"
+      style={{marginLeft:6,flexShrink:0,width:18,height:18,borderRadius:"50%",
+        border:"1px solid rgba(14,116,144,.3)",background:"rgba(14,116,144,.08)",
+        color:"#0e7490",fontSize:10,lineHeight:1,cursor:"pointer",
+        display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>
+      🌍
+    </button>
+  );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -497,6 +527,8 @@ function Node({node, depth=0, highlight=false}) {
         </span>
         {/* Badge cousin */}
         <CousinBadge cousinIds={node.cousin}/>
+        {/* Localiser sur le planisphère */}
+        <LocateButton node={node}/>
         {/* Badge vivant/éteint */}
         <span style={{marginLeft:"auto",flexShrink:0,fontSize:10,padding:"1px 6px",borderRadius:3,
           background:node.eteint?"rgba(239,68,68,.08)":"rgba(22,163,74,.08)",
@@ -631,6 +663,7 @@ function NodeWithRef({node, depth=0, targetId=null, nodeRefs}) {
           {node.period}
         </span>
         <CousinBadge cousinIds={node.cousin}/>
+        <LocateButton node={node}/>
         <span style={{marginLeft:"auto",flexShrink:0,fontSize:10,padding:"1px 6px",borderRadius:3,
           background:node.eteint?"rgba(239,68,68,.08)":"rgba(22,163,74,.08)",
           color:node.eteint?"#dc2626":"#15803d",fontWeight:500}}>
@@ -683,6 +716,7 @@ function SidePanel({node, onClose}) {
               color:node.eteint?"#dc2626":"#15803d",fontWeight:600}}>
               {node.eteint?"Espèce éteinte":"Espèce vivante"}
             </span>
+            <LocateButton node={node}/>
           </div>
           <button onClick={onClose} style={{width:28,height:28,borderRadius:7,
             background:"rgba(55,53,47,.06)",border:"none",cursor:"pointer",
@@ -738,7 +772,9 @@ function SidePanel({node, onClose}) {
 // ══════════════════════════════════════════════════════════════════════════════
 // EXPORT PRINCIPAL
 // ══════════════════════════════════════════════════════════════════════════════
-export function LifeTree({ onFocusTimeline, focusYa = null } = {}) {
+export { ALL_NODES };
+
+export function LifeTree({ onFocusTimeline, onLocateSpecies, focusYa = null } = {}) {
   const [search, setSearch]     = useState("");
   const [targetId, setTargetId] = useState(null);
   // On n'active la synchronisation que si l'instant visé tombe dans l'ère du
@@ -784,6 +820,7 @@ export function LifeTree({ onFocusTimeline, focusYa = null } = {}) {
 
   return (
     <FocusCtx.Provider value={onFocusTimeline}>
+    <LocateCtx.Provider value={onLocateSpecies}>
     <FocusYaCtx.Provider value={activeFocus}>
     <div style={{fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
       background:"#fff",padding:"8px 32px 80px",
@@ -916,6 +953,7 @@ export function LifeTree({ onFocusTimeline, focusYa = null } = {}) {
       </div>
     </div>
     </FocusYaCtx.Provider>
+    </LocateCtx.Provider>
     </FocusCtx.Provider>
   );
 }
