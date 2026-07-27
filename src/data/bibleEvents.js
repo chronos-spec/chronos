@@ -107,7 +107,7 @@ const AT = [
     savoir:"Le nom « Moïse » (Moshè) est rapproché en hébreu du verbe « tirer (des eaux) », mais il dérive plus probablement de la racine égyptienne <em>mose</em> (« né de », que l'on retrouve dans Thoutmôsis ou Ramsès) — cohérent avec un cadre égyptien authentique."
   },
   {
-    id:"bib09", yearsAgo:3471, uncertain:[3471,3275], title:"L'Exode et les dix plaies d'Égypte", date_label:"~1446 av. J.-C. (calcul de 1 Rois 6:1) ou ~1250 av. J.-C. (hypothèse « Ramsès »)",
+    id:"bib09", yearsAgo:3471, related:["bib10"], uncertain:[3471,3275], title:"L'Exode et les dix plaies d'Égypte", date_label:"~1446 av. J.-C. (calcul de 1 Rois 6:1) ou ~1250 av. J.-C. (hypothèse « Ramsès »)",
     desc:"Moïse réclame la libération des Hébreux ; dix plaies frappent l'Égypte jusqu'au départ du peuple.", importance:1, tier:"debattu",
     ref:"Exode 7–14",
     recit:"Moïse et son frère Aaron exigent de Pharaon qu'il laisse partir le peuple hébreu asservi. Devant son refus, dix plaies s'abattent sur l'Égypte — sang, grenouilles, moustiques, mort des premiers-nés... Pharaon finit par céder, puis change d'avis et poursuit les Hébreux ; la mer Rouge s'ouvre pour laisser passer le peuple et se referme sur l'armée égyptienne.",
@@ -115,7 +115,7 @@ const AT = [
     savoir:"Le Papyrus Ipuwer, parfois cité comme preuve « externe » des plaies, date en réalité de plusieurs siècles avant la période supposée de l'Exode et décrit un chaos social générique, sans lien démontré avec le récit biblique."
   },
   {
-    id:"bib10", yearsAgo:3471, uncertain:[3471,3275], title:"Les Dix Commandements au Sinaï", date_label:"~1446 av. J.-C. (chronologie traditionnelle, peu après l'Exode)",
+    id:"bib10", yearsAgo:3471, related:["bib09","bib11"], uncertain:[3471,3275], title:"Les Dix Commandements au Sinaï", date_label:"~1446 av. J.-C. (chronologie traditionnelle, peu après l'Exode)",
     desc:"Dieu remet à Moïse les Dix Commandements gravés sur des tables de pierre, au sommet du Sinaï.", importance:1, tier:"theologique",
     ref:"Exode 19–20",
     recit:"Trois mois après la sortie d'Égypte, le peuple campe au pied du mont Sinaï. Moïse y monte seul et reçoit de Dieu, dans le tonnerre et la fumée, les Dix Commandements gravés sur deux tables de pierre, fondement de l'Alliance entre Dieu et Israël.",
@@ -123,7 +123,7 @@ const AT = [
     savoir:"La localisation exacte du « mont Sinaï » biblique reste débattue : la tradition chrétienne l'identifie depuis le IVe siècle au Djebel Moussa, dans le Sinaï égyptien actuel, mais rien dans le texte ne permet de le confirmer avec certitude."
   },
   {
-    id:"bib11", yearsAgo:3431, uncertain:[3431,3225], title:"Josué et la bataille de Jéricho", date_label:"~1406 av. J.-C. (chronologie traditionnelle) ou ~1200 av. J.-C. (hypothèse basse)",
+    id:"bib11", yearsAgo:3431, related:["bib10"], uncertain:[3431,3225], title:"Josué et la bataille de Jéricho", date_label:"~1406 av. J.-C. (chronologie traditionnelle) ou ~1200 av. J.-C. (hypothèse basse)",
     desc:"Les murailles de Jéricho s'effondrent après que les Hébreux en ont fait le tour sept fois.", importance:2, tier:"legendaire",
     ref:"Josué 6",
     recit:"Après la mort de Moïse, Josué mène les Hébreux à la conquête de Canaan. À Jéricho, sur ordre divin, l'armée fait le tour de la ville pendant six jours, puis sept fois le septième jour, au son des trompettes de bélier. Les murailles s'effondrent alors miraculeusement, livrant la ville.",
@@ -163,7 +163,7 @@ const AT = [
     savoir:"La stèle de Tel Dan, brisée en plusieurs fragments retrouvés entre 1993 et 1994 dans le nord d'Israël, est encore aujourd'hui la seule mention connue de David en dehors de la Bible et des textes qui en dépendent."
   },
   {
-    id:"bib16", yearsAgo:2991, uncertain:[2991,2875], title:"Salomon et la construction du Temple", date_label:"~966 av. J.-C. (4e année du règne de Salomon)",
+    id:"bib16", yearsAgo:2991, related:["bib17","bib20"], uncertain:[2991,2875], title:"Salomon et la construction du Temple", date_label:"~966 av. J.-C. (4e année du règne de Salomon)",
     desc:"Le roi Salomon, réputé pour sa sagesse, fait construire le premier Temple de Jérusalem.", importance:1, tier:"debattu",
     ref:"1 Rois 5–8",
     recit:"Fils et successeur de David, Salomon est réputé pour sa sagesse proverbiale (le jugement du partage de l'enfant, 1 Rois 3) et sa richesse extraordinaire. Il fait construire à Jérusalem, avec l'aide du roi Hiram de Tyr, un Temple somptueux destiné à abriter l'Arche d'alliance — cœur du culte israélite pour près de quatre siècles.",
@@ -171,7 +171,7 @@ const AT = [
     savoir:"La légende de la reine de Saba venant éprouver la sagesse de Salomon (1 Rois 10) a inspiré d'immenses traditions parallèles, notamment en Éthiopie, où la dynastie royale a longtemps revendiqué une descendance directe de leur union."
   },
   {
-    id:"bib17", yearsAgo:2956, title:"Le schisme du royaume d'Israël", date_label:"~931 av. J.-C.",
+    id:"bib17", yearsAgo:2956, related:["bib16","bib19"], title:"Le schisme du royaume d'Israël", date_label:"~931 av. J.-C.",
     desc:"À la mort de Salomon, le royaume se scinde en deux : Israël au nord, Juda au sud.", importance:2, tier:"historique",
     ref:"1 Rois 12",
     recit:"À la mort de Salomon, son fils Roboam refuse d'alléger les charges fiscales imposées au peuple. Dix tribus du nord se révoltent, font sécession sous Jéroboam et fondent le royaume d'Israël, tandis que Roboam ne conserve que Juda et Benjamin au sud, autour de Jérusalem.",
@@ -187,7 +187,7 @@ const AT = [
     savoir:"Le mont Carmel, site du défi, est aujourd'hui encore un lieu de pèlerinage ; un monastère carmélite y commémore la tradition d'Élie, considéré comme le père spirituel de cet ordre religieux fondé bien plus tard, au XIIe siècle."
   },
   {
-    id:"bib19", yearsAgo:2747, title:"La chute de Samarie et l'exil d'Israël", date_label:"722 av. J.-C.",
+    id:"bib19", yearsAgo:2747, related:["bib17"], title:"La chute de Samarie et l'exil d'Israël", date_label:"722 av. J.-C.",
     desc:"L'Empire assyrien détruit Samarie et déporte les tribus du royaume d'Israël — les « tribus perdues ».", importance:1, tier:"historique",
     ref:"2 Rois 17",
     recit:"Après un siège de trois ans, le roi assyrien Sargon II s'empare de Samarie, capitale du royaume d'Israël, et déporte une large partie de sa population vers d'autres régions de l'empire, tandis que des populations étrangères sont installées à sa place. Le texte biblique interprète cette catastrophe comme le châtiment de l'infidélité d'Israël envers Dieu.",
@@ -195,7 +195,7 @@ const AT = [
     savoir:"La légende des « dix tribus perdues d'Israël », dispersées et jamais retrouvées après cette déportation, a inspiré d'innombrables théories — parfois farfelues — cherchant à leur attribuer une descendance dans des peuples aussi variés que les Pachtounes, les Japonais ou les Amérindiens."
   },
   {
-    id:"bib20", yearsAgo:2611, title:"La chute de Jérusalem et l'exil à Babylone", date_label:"586 av. J.-C.",
+    id:"bib20", yearsAgo:2611, related:["bib16","bib22"], title:"La chute de Jérusalem et l'exil à Babylone", date_label:"586 av. J.-C.",
     desc:"Nabuchodonosor II détruit Jérusalem et son Temple, déportant l'élite de Juda à Babylone.", importance:1, tier:"historique",
     ref:"2 Rois 25",
     recit:"Après plusieurs rébellions de Juda, le roi babylonien Nabuchodonosor II assiège et détruit Jérusalem, rase le Temple de Salomon et déporte une grande partie de l'élite politique, religieuse et intellectuelle à Babylone. C'est le début de l'Exil, période de deuil et de profonde réflexion théologique qui façonnera une large partie de la Bible hébraïque telle que nous la connaissons.",
@@ -211,7 +211,7 @@ const AT = [
     savoir:"Le livre de Daniel est en partie rédigé en araméen et non en hébreu — un indice supplémentaire, avec son style littéraire, qui pousse les spécialistes à situer sa composition plusieurs siècles après les événements qu'il prétend rapporter."
   },
   {
-    id:"bib22", yearsAgo:2563, title:"L'édit de Cyrus et le retour d'exil", date_label:"538 av. J.-C.",
+    id:"bib22", yearsAgo:2563, related:["bib20","bib23"], title:"L'édit de Cyrus et le retour d'exil", date_label:"538 av. J.-C.",
     desc:"Le roi perse Cyrus le Grand autorise les Juifs exilés à rentrer à Jérusalem et à reconstruire le Temple.", importance:1, tier:"historique",
     ref:"Esdras 1",
     recit:"Après avoir conquis Babylone, le roi perse Cyrus le Grand publie un édit autorisant tous les peuples déportés par les Babyloniens, dont les Juifs, à retourner dans leur pays d'origine et à y reconstruire leurs sanctuaires. Une partie des exilés juifs rentre alors à Jérusalem, emportant les objets sacrés du Temple emportés par Nabuchodonosor.",
@@ -219,7 +219,7 @@ const AT = [
     savoir:"Le Cylindre de Cyrus est parfois présenté, de façon anachronique, comme la « première déclaration des droits de l'homme » — une lecture moderne discutable d'un texte de propagande royale antique, mais qui témoigne de sa portée symbolique durable."
   },
   {
-    id:"bib23", yearsAgo:2541, title:"La reconstruction du second Temple", date_label:"516 av. J.-C.",
+    id:"bib23", yearsAgo:2541, related:["bib22","bib37"], title:"La reconstruction du second Temple", date_label:"516 av. J.-C.",
     desc:"Le second Temple de Jérusalem est achevé, 70 ans après la destruction du premier.", importance:2, tier:"historique",
     ref:"Esdras 6",
     recit:"Malgré l'opposition de populations locales et des difficultés de financement, les Juifs rentrés d'exil achèvent la reconstruction du Temple de Jérusalem, sous l'impulsion des gouverneurs Zorobabel et des prophètes Aggée et Zacharie — accomplissant, selon le texte, la prophétie de Jérémie annonçant 70 ans d'exil.",
@@ -235,7 +235,7 @@ const AT = [
     savoir:"Le livre d'Esther est le seul livre de la Bible hébraïque qui ne mentionne jamais explicitement le nom de Dieu — une particularité littéraire qui a nourri des siècles de débats sur sa place dans le canon biblique."
   },
   {
-    id:"bib25", yearsAgo:2192, title:"La révolte des Maccabées", date_label:"167 av. J.-C.",
+    id:"bib25", yearsAgo:2192, related:["bib23"], title:"La révolte des Maccabées", date_label:"167 av. J.-C.",
     desc:"La famille des Maccabées mène une révolte victorieuse contre l'hellénisation forcée de la Judée.", importance:1, tier:"historique",
     ref:"1 Maccabées",
     recit:"Le roi séleucide Antiochos IV Épiphane interdit le culte juif et profane le Temple de Jérusalem en y dressant une statue de Zeus. Le prêtre Mattathias et ses fils, dont Judas surnommé « Maccabée » (le marteau), lèvent une révolte armée, reconquièrent Jérusalem et purifient le Temple — événement commémoré par la fête de Hanoucca.",
@@ -263,7 +263,7 @@ const NT = [
     savoir:"Bethléem étant un village de quelques centaines d'habitants à l'époque, le nombre d'enfants tués aurait été, dans les faits, de l'ordre d'une dizaine — bien loin des « milliers d'innocents » de la tradition artistique postérieure."
   },
   {
-    id:"bib28", yearsAgo:1997, title:"Le baptême de Jésus", date_label:"~28 apr. J.-C.",
+    id:"bib28", yearsAgo:1997, related:["bib29"], title:"Le baptême de Jésus", date_label:"~28 apr. J.-C.",
     desc:"Jean-Baptiste baptise Jésus dans le Jourdain ; une voix céleste le proclame « Fils bien-aimé ».", importance:1, tier:"probable",
     ref:"Marc 1:9-11",
     recit:"Jean-Baptiste prêche un baptême de repentance dans le Jourdain. Jésus, alors âgé d'environ trente ans, se fait baptiser par lui ; les cieux s'ouvrent, l'Esprit descend « comme une colombe », et une voix proclame : « Tu es mon Fils bien-aimé ». Cet événement marque le début du ministère public de Jésus.",
@@ -271,7 +271,7 @@ const NT = [
     savoir:"Le « critère de gêne » est un outil classique de l'analyse historico-critique : un événement embarrassant pour la cause que défend un texte a plus de chances d'être authentique, car un auteur n'a normalement aucun intérêt à l'inventer."
   },
   {
-    id:"bib29", yearsAgo:1995, uncertain:[1995,1992], title:"La crucifixion de Jésus", date_label:"~30 apr. J.-C. (ou 33 selon certaines chronologies)",
+    id:"bib29", yearsAgo:1995, related:["bib28","bib30"], uncertain:[1995,1992], title:"La crucifixion de Jésus", date_label:"~30 apr. J.-C. (ou 33 selon certaines chronologies)",
     desc:"Jésus est condamné par Ponce Pilate et crucifié à Jérusalem à l'occasion de la Pâque juive.", importance:1, tier:"historique",
     ref:"Marc 15, Matthieu 27, Luc 23, Jean 19",
     recit:"Arrêté après la Cène, jugé par le Sanhédrin puis livré au préfet romain Ponce Pilate, Jésus est condamné à la crucifixion — le supplice réservé aux esclaves et aux rebelles — sous l'accusation de se prétendre « roi des Juifs ». Il meurt sur la croix au mont du Golgotha, à l'occasion de la fête juive de la Pâque.",
@@ -279,7 +279,7 @@ const NT = [
     savoir:"La Pierre de Pilate, découverte par des archéologues italiens, est aujourd'hui le seul artefact archéologique connu portant le nom de Ponce Pilate — elle est exposée au Musée d'Israël à Jérusalem, une réplique demeurant sur le site de Césarée."
   },
   {
-    id:"bib30", yearsAgo:1995, uncertain:[1995,1992], title:"La résurrection", date_label:"~30 apr. J.-C., trois jours après la crucifixion",
+    id:"bib30", yearsAgo:1995, related:["bib29","bib31"], uncertain:[1995,1992], title:"La résurrection", date_label:"~30 apr. J.-C., trois jours après la crucifixion",
     desc:"Selon les évangiles, Jésus ressuscite le troisième jour et apparaît à ses disciples.", importance:1, tier:"theologique",
     ref:"Matthieu 28, Marc 16, Luc 24, Jean 20",
     recit:"Le troisième jour après sa mort, des femmes venues embaumer le corps de Jésus trouvent le tombeau vide. Jésus ressuscité apparaît ensuite à plusieurs reprises à ses disciples, leur parle, mange avec eux, avant de « monter au ciel ». Cet événement fonde la proclamation chrétienne selon laquelle la mort a été vaincue.",
@@ -287,7 +287,7 @@ const NT = [
     savoir:"Le tombeau vide, à lui seul, ne prouve rien pour les historiens : c'est un fait qui admet plusieurs explications naturelles concurrentes, ce qui explique pourquoi le débat reste avant tout d'ordre théologique et philosophique plutôt que strictement historique."
   },
   {
-    id:"bib31", yearsAgo:1995, uncertain:[1995,1992], title:"La Pentecôte", date_label:"~30 apr. J.-C., 50 jours après Pâque",
+    id:"bib31", yearsAgo:1995, related:["bib30","bib32"], uncertain:[1995,1992], title:"La Pentecôte", date_label:"~30 apr. J.-C., 50 jours après Pâque",
     desc:"L'Esprit Saint descend sur les apôtres réunis à Jérusalem, qui se mettent à parler en d'autres langues.", importance:2, tier:"theologique",
     ref:"Actes des Apôtres 2",
     recit:"Cinquante jours après Pâque, les apôtres sont réunis à Jérusalem pour la fête juive de Chavouot lorsqu'un bruit de vent violent se fait entendre et que des « langues de feu » se posent sur chacun d'eux. Remplis de l'Esprit Saint, ils se mettent à parler en des langues étrangères, compréhensibles par les pèlerins venus de tout le bassin méditerranéen — épisode fondateur de l'Église chrétienne et de sa vocation universelle.",
@@ -295,7 +295,7 @@ const NT = [
     savoir:"La fête chrétienne de la Pentecôte tire directement son nom du grec <em>pentekostē</em> (« cinquantième »), désignant le cinquantième jour après Pâque — un héritage direct du calendrier festif juif."
   },
   {
-    id:"bib32", yearsAgo:1991, title:"La conversion de Paul sur le chemin de Damas", date_label:"~34-36 apr. J.-C.",
+    id:"bib32", yearsAgo:1991, related:["bib31","bib34"], title:"La conversion de Paul sur le chemin de Damas", date_label:"~34-36 apr. J.-C.",
     desc:"Saul de Tarse, persécuteur des chrétiens, est terrassé par une vision de Jésus et devient l'apôtre Paul.", importance:1, tier:"probable",
     ref:"Actes des Apôtres 9",
     recit:"Saul de Tarse, pharisien zélé, persécute activement les premiers disciples de Jésus. Sur la route de Damas, où il se rend pour arrêter des chrétiens, une lumière éblouissante le terrasse et il entend la voix de Jésus lui demander : « Pourquoi me persécutes-tu ? ». Aveuglé puis guéri trois jours plus tard, il se convertit et devient Paul, le plus grand missionnaire du christianisme naissant.",
@@ -303,7 +303,7 @@ const NT = [
     savoir:"Paul ne raconte jamais lui-même être « tombé de cheval », détail resté célèbre grâce à la peinture et à l'iconographie postérieures : le texte des Actes précise seulement qu'il « tomba par terre »."
   },
   {
-    id:"bib33", yearsAgo:1981, title:"Le martyre de Jacques et l'emprisonnement de Pierre", date_label:"~44 apr. J.-C.",
+    id:"bib33", yearsAgo:1981, related:["bib34"], title:"Le martyre de Jacques et l'emprisonnement de Pierre", date_label:"~44 apr. J.-C.",
     desc:"Le roi Hérode Agrippa Ier fait exécuter l'apôtre Jacques et emprisonne Pierre, miraculeusement libéré.", importance:2, tier:"probable",
     ref:"Actes des Apôtres 12",
     recit:"Le roi Hérode Agrippa Ier, petit-fils d'Hérode le Grand, fait exécuter par l'épée l'apôtre Jacques, frère de Jean, pour plaire aux autorités juives. Voyant que cela est bien accueilli, il fait aussi arrêter Pierre, qui est délivré de sa prison la nuit même par un ange, ses chaînes tombant miraculeusement.",
@@ -311,7 +311,7 @@ const NT = [
     savoir:"Jacques, fils de Zébédée et frère de l'apôtre Jean, est ainsi le tout premier des douze apôtres dont la mort soit relatée dans le Nouveau Testament lui-même."
   },
   {
-    id:"bib34", yearsAgo:1975, title:"Les voyages missionnaires de Paul", date_label:"~46-57 apr. J.-C.",
+    id:"bib34", yearsAgo:1975, related:["bib32","bib35"], title:"Les voyages missionnaires de Paul", date_label:"~46-57 apr. J.-C.",
     desc:"Paul parcourt l'Asie Mineure, la Grèce et fonde des communautés chrétiennes autour de la Méditerranée.", importance:1, tier:"historique",
     ref:"Actes des Apôtres 13–21",
     recit:"Envoyé par l'Église d'Antioche, Paul entreprend plusieurs longs voyages missionnaires à travers l'Asie Mineure (actuelle Turquie) puis la Grèce — Philippes, Thessalonique, Athènes, Corinthe — fondant des communautés chrétiennes, souvent en butte à l'hostilité des autorités locales, juives comme romaines, et correspondant ensuite avec elles par lettres.",
@@ -319,7 +319,7 @@ const NT = [
     savoir:"L'inscription de Delphes, découverte au XXe siècle, mentionne le proconsul Gallion — cité en Actes 18:12 lors du passage de Paul à Corinthe — permettant de dater cet épisode avec une précision rare, autour de l'an 51-52 apr. J.-C."
   },
   {
-    id:"bib35", yearsAgo:1976, title:"Le concile de Jérusalem", date_label:"~48-50 apr. J.-C.",
+    id:"bib35", yearsAgo:1976, related:["bib34"], title:"Le concile de Jérusalem", date_label:"~48-50 apr. J.-C.",
     desc:"Les apôtres se réunissent à Jérusalem pour trancher si les chrétiens non juifs doivent suivre la loi mosaïque.", importance:2, tier:"probable",
     ref:"Actes des Apôtres 15",
     recit:"Une controverse éclate : les nouveaux convertis venus du paganisme doivent-ils être circoncis et observer la loi juive pour devenir chrétiens ? Réunis à Jérusalem, Pierre, Jacques (le « frère du Seigneur ») et Paul débattent et tranchent en faveur d'une ouverture aux non-Juifs sans obligation de la loi mosaïque complète — décision fondatrice pour l'expansion universelle du christianisme.",
@@ -327,7 +327,7 @@ const NT = [
     savoir:"Ce concile est considéré comme le prototype de tous les conciles chrétiens ultérieurs, jusqu'à ceux, bien plus tardifs et institutionnels, de Nicée (325) ou de Vatican II (1962-1965)."
   },
   {
-    id:"bib36", yearsAgo:1961, title:"L'incendie de Rome et la persécution de Néron", date_label:"64 apr. J.-C.",
+    id:"bib36", yearsAgo:1961, related:["bib37"], title:"L'incendie de Rome et la persécution de Néron", date_label:"64 apr. J.-C.",
     desc:"Après le grand incendie de Rome, l'empereur Néron fait porter le chapeau aux chrétiens et les persécute.", importance:2, tier:"historique",
     ref:"Tradition chrétienne (1 Pierre, tradition patristique)",
     recit:"La tradition chrétienne rapporte qu'après le grand incendie de Rome de 64 apr. J.-C., l'empereur Néron, cherchant un bouc émissaire, désigne les chrétiens comme coupables et déclenche une persécution d'une extrême violence à leur encontre dans la capitale de l'empire.",
@@ -335,7 +335,7 @@ const NT = [
     savoir:"Tacite précise que la population romaine, bien qu'hostile aux chrétiens, en vint à éprouver de la pitié devant l'ampleur des supplices — preuve que même des observateurs hostiles jugeaient la répression excessive."
   },
   {
-    id:"bib37", yearsAgo:1955, title:"La destruction du Temple de Jérusalem", date_label:"70 apr. J.-C.",
+    id:"bib37", yearsAgo:1955, related:["bib23","bib36","bib38"], title:"La destruction du Temple de Jérusalem", date_label:"70 apr. J.-C.",
     desc:"Les légions romaines de Titus détruisent Jérusalem et son Temple après un long siège.", importance:1, tier:"historique",
     ref:"Contexte historique évoqué en Matthieu 24 et Luc 21",
     recit:"Les évangiles rapportent une prophétie de Jésus annonçant qu'il ne resterait pas pierre sur pierre du Temple de Jérusalem. Quarante ans plus tard, lors de la Première guerre judéo-romaine, les légions du futur empereur Titus assiègent et détruisent Jérusalem, rasant le second Temple — jamais reconstruit depuis.",
@@ -343,7 +343,7 @@ const NT = [
     savoir:"Le Mur des Lamentations, lieu saint majeur du judaïsme aujourd'hui, n'est pas un vestige du Temple lui-même mais un mur de soutènement extérieur de son esplanade, l'une des rares parties ayant subsisté à la destruction de 70."
   },
   {
-    id:"bib38", yearsAgo:1930, uncertain:[1955,1930], title:"L'Apocalypse de Jean à Patmos", date_label:"~95 apr. J.-C. (règne de Domitien)",
+    id:"bib38", yearsAgo:1930, related:["bib37"], uncertain:[1955,1930], title:"L'Apocalypse de Jean à Patmos", date_label:"~95 apr. J.-C. (règne de Domitien)",
     desc:"Exilé sur l'île de Patmos, Jean rédige le dernier livre du Nouveau Testament, riche en visions symboliques.", importance:2, tier:"debattu",
     ref:"Apocalypse 1:9",
     recit:"Exilé sur l'île grecque de Patmos « à cause de la parole de Dieu », l'auteur qui se présente comme Jean reçoit une série de visions spectaculaires — sceaux, trompettes, bêtes, cavaliers, nouvelle Jérusalem — annonçant le triomphe final de Dieu sur le mal, dans un langage symbolique dense destiné à encourager des communautés chrétiennes en butte à la persécution.",

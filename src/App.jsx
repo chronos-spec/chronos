@@ -268,12 +268,12 @@ function Chronos() {
     const s=S.current;
     const timeRangeYa=[rangePToYa(timeRangeP[1]),rangePToYa(timeRangeP[0])]; // [minYa,maxYa]
     // L'arbre de la vie a quitté le canvas : il vit dans son propre bloc sous la frise.
-    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:s.aiEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,activeCats,timeRangeYa,expandedBands,linearScale,activeThemes,flatBands:[],bibleMode,filterChangedAt:s.filterChangedAt,lanesMode});
-    s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;s.bandRects=r.bandRects||[];s.chronoRects=r.chronoRects||[];s.laneRects=r.laneRects||[];
+    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:s.aiEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,activeCats,timeRangeYa,expandedBands,linearScale,activeThemes,flatBands:[],bibleMode,filterChangedAt:s.filterChangedAt,lanesMode,hoveredLifeline:s.hoveredLifeline||null});
+    s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;s.bandRects=r.bandRects||[];s.chronoRects=r.chronoRects||[];s.laneRects=r.laneRects||[];s.themeBarRects=r.themeBarRects||[];
     const mid=makeCoord(s.vs,s.ve,cnv.width).toYa(cnv.width/2);
     const ep=epochAt(mid);
     setUi(u=>({...u,epochLabel:ep.label+"  ·  "+fmt(s.vs)+" → "+fmt(Math.max(s.ve,0.1)),range:`zoom ×${Math.pow(10,zoomLvl(s.vs,s.ve)).toFixed(0)}`}));
-  },[activeCats,timeRangeP,bibleMode,lanesMode]);
+  },[activeCats,timeRangeP,bibleMode,lanesMode,activeThemes,expandedBands,linearScale]);
 
   const scheduleRedraw=useCallback(()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);rafRef.current=requestAnimationFrame(redraw);},[redraw]);
 
@@ -454,7 +454,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
   },[scheduleRedraw,fetchPeriodRich]);
 
   const openPanel=useCallback((ev)=>{
-    S.current._currentPanelEv=ev;scheduleRedraw();
+    S.current._currentPanelEv=ev;S.current.selectedId=ev.id;scheduleRedraw();
     setFocusYa(ev.yearsAgo); // l'arbre se cale sur l'instant de l'événement
     setUi(u=>({...u,panelOpen:true,panelCat:ev.cat.toUpperCase(),panelCatColor:cc(ev.cat),panelDate:ev.date_label,panelTitle:ev.title,panelContent:"loading",panelError:null,tooltip:null,panelEventId:ev.id,showBookmarkMenu:false}));
     fetchRich(ev);
@@ -586,8 +586,13 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
       for(const p of s.placed){const vTol=p.y!=null?26:110;if(Math.abs(p.x-mx)<22&&Math.abs((p.y??s.lineY)-my)<vTol){foundP=p;break;}}
       let foundBar=null;
       if(!foundP&&s.laneRects)foundBar=s.laneRects.find(b=>mx>=b.rx&&mx<=b.rx+b.rw&&my>=b.ry-4&&my<=b.ry+b.rh+4);
-      const nid=foundP?(foundP.isCluster?`cluster:${foundP.x.toFixed(1)}`:foundP.ev.id):(foundBar?`bar:${foundBar.rx}`:null);
-      if(nid!==s.hoveredId){s.hoveredId=nid;wrap.style.cursor=(foundP||foundBar)?"pointer":"grab";_sr.current();
+      let foundPerson=null;
+      if(!foundP&&!foundBar&&s.themeBarRects)foundPerson=s.themeBarRects.find(b=>mx>=b.rx&&mx<=b.rx+b.rw&&my>=b.ry-4&&my<=b.ry+b.rh+4);
+      // Ligne de vie : survoler un personnage estompe tout ce qui est hors de sa période.
+      const newLifeline=foundPerson?{from:foundPerson.from,to:foundPerson.to}:null;
+      if(s.hoveredLifeline?.from!==newLifeline?.from||s.hoveredLifeline?.to!==newLifeline?.to){s.hoveredLifeline=newLifeline;_sr.current();}
+      const nid=foundP?(foundP.isCluster?`cluster:${foundP.x.toFixed(1)}`:foundP.ev.id):(foundBar?`bar:${foundBar.rx}`:(foundPerson?`person:${foundPerson.rx}`:null));
+      if(nid!==s.hoveredId){s.hoveredId=nid;wrap.style.cursor=(foundP||foundBar||foundPerson)?"pointer":"grab";_sr.current();
         if(foundP){
           let tx=mx+16,ty=my-68;if(tx+220>cnv.width)tx=mx-226;if(ty<10)ty=my+20;
           if(foundP.isCluster)setUi(u=>({...u,tooltip:{x:tx,y:ty,date:`${fmt(foundP.toYa)} → ${fmt(foundP.fromYa)}`,title:`+${foundP.count} événements groupés`,hint:"Cliquer pour zoomer et les distinguer"}}));
@@ -596,6 +601,10 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
         else if(foundBar){
           let tx=mx+16,ty=my-68;if(tx+220>cnv.width)tx=mx-226;if(ty<10)ty=my+20;
           setUi(u=>({...u,tooltip:{x:tx,y:ty,date:foundBar.date,title:foundBar.label,hint:"Piste chronologique"}}));
+        }
+        else if(foundPerson){
+          let tx=mx+16,ty=my-68;if(tx+220>cnv.width)tx=mx-226;if(ty<10)ty=my+20;
+          setUi(u=>({...u,tooltip:{x:tx,y:ty,date:`${fmt(foundPerson.from)} → ${fmt(foundPerson.to)}`,title:foundPerson.label,hint:"Sa ligne de vie est mise en évidence"}}));
         }
         else setUi(u=>({...u,tooltip:null}));}
     };

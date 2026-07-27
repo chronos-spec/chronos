@@ -122,7 +122,10 @@ export function drawAll(canvas, miniCanvas, params) {
     activeCats=null, timeRangeYa=null, expandedBands=new Set(),
     linearScale=false, activeThemes=new Set(),
     flatBands=[], bibleMode=false, filterChangedAt=0, lanesMode=null,
+    hoveredLifeline=null,
   } = params;
+  // "Ligne de vie" : hors de la période du personnage survolé, tout s'estompe.
+  const inLifeline=ev=>!hoveredLifeline||(ev.yearsAgo<=hoveredLifeline.from&&ev.yearsAgo>=hoveredLifeline.to);
   // Fondu de transition court (~320ms) quand les filtres viennent de changer.
   const fadeT = filterChangedAt ? Math.min(1,(Date.now()-filterChangedAt)/320) : 1;
   const DIM_ALPHA = 0.14;
@@ -256,6 +259,7 @@ export function drawAll(canvas, miniCanvas, params) {
   // ── COUCHES CIVILISATIONS / THÈMES ────────────────────────────────────────
   // ══════════════════════════════════════════════════════════════════════════
   let civRow=0;
+  const themeBarRects=[]; // survol des personnages → surligne leur "ligne de vie"
   for(const themeKey of activeThemes){
     const theme=THEMES[themeKey];if(!theme) continue;
     const rowY=CIVILS_Y+civRow*18;
@@ -275,6 +279,7 @@ export function drawAll(canvas, miniCanvas, params) {
       if(rw<1) continue;
 
       const rh=14,ry=rowY+2;
+      if(themeKey==="personnages")themeBarRects.push({rx,ry,rw,rh,label:item.label,from:item.from,to:item.to??0});
 
       // Barre plate teintée — même logique que les barres de l'arbre de vie
       ctx.fillStyle=item.color+"22";
@@ -380,7 +385,7 @@ export function drawAll(canvas, miniCanvas, params) {
       const isBiblical=ev.cat==="biblique";
       // Estompage : mode biblique (tout sauf la Bible) OU filtres actifs
       // (catégorie / plage temporelle) qui excluent cet événement.
-      const smoked=bibleMode?!isBiblical:!passesFilters(ev);
+      const smoked=(bibleMode?!isBiblical:!passesFilters(ev))||!inLifeline(ev);
       const nearby=placed.filter(p=>Math.abs(p.x-x)<90);
       const side=nearby.length>0&&nearby[nearby.length-1].side===1?-1:1;
       placed.push({x,ev,side});
@@ -477,6 +482,32 @@ export function drawAll(canvas, miniCanvas, params) {
       ctx.fillStyle="#fbf8f2";ctx.textAlign="center";
       ctx.fillText(`+${items.length}`,x,LINE_Y+4);
       ctx.restore();
+    }
+
+    // ── LIENS DE CAUSALITÉ ────────────────────────────────────────────────
+    // Survoler/sélectionner un événement relié trace un arc vers chaque
+    // événement associé (cause → conséquence) actuellement visible.
+    const posById={};
+    for(const p of placed){
+      if(p.isCluster)for(const id of p.ids)posById[id]=p.x;
+      else if(p.ev)posById[p.ev.id]=p.x;
+    }
+    const activeLinkId=hoveredId||selectedId;
+    const activeLinkEv=activeLinkId&&(ALL_EVENTS.find(e=>e.id===activeLinkId)||aiEvents.find(e=>e.id===activeLinkId));
+    if(activeLinkEv?.related?.length&&posById[activeLinkId]!=null){
+      const x0=posById[activeLinkId],arcY=LINE_Y;
+      for(const relId of activeLinkEv.related){
+        const x1=posById[relId];
+        if(x1==null||x1===x0)continue;
+        const midX=(x0+x1)/2,arcTop=arcY-Math.min(120,40+Math.abs(x1-x0)*0.22);
+        ctx.save();
+        ctx.strokeStyle=alive(.6);ctx.lineWidth=1.6;ctx.setLineDash([2,4]);
+        ctx.beginPath();ctx.moveTo(x0,arcY-12);ctx.quadraticCurveTo(midX,arcTop,x1,arcY-12);ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();ctx.arc(x1,arcY-12,3.5,0,Math.PI*2);ctx.fillStyle=ALIVE;ctx.fill();
+        ctx.beginPath();ctx.arc(x0,arcY-12,3.5,0,Math.PI*2);ctx.fillStyle=ALIVE;ctx.fill();
+        ctx.restore();
+      }
     }
   }
   } // fin if(!lanesMode)
@@ -617,5 +648,5 @@ export function drawAll(canvas, miniCanvas, params) {
     mctx.strokeRect(Math.max(0,vx1),0,vx2-vx1,mh);
   }
 
-  return {placed, LINE_Y, PERIOD_Y, PERIOD_H:PERIOD_H+CIVILS_H, TREE_TOP:H, bandRects, chronoRects, laneRects};
+  return {placed, LINE_Y, PERIOD_Y, PERIOD_H:PERIOD_H+CIVILS_H, TREE_TOP:H, bandRects, chronoRects, laneRects, themeBarRects};
 }
