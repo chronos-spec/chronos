@@ -67,6 +67,17 @@ const THEMES = {
 };
 export { THEMES };
 
+// ── FRISES PARALLÈLES — Rome / Judée / monde grec ─────────────────────────────
+// Pas de champ « région » sur les événements existants : on les rattache à leur
+// fil civilisationnel par un simple filtre sur le titre, ce qui permet de
+// réutiliser tel quel tout le jeu de données déjà en place (dont la Bible).
+const PARALLEL_LANES = [
+  { id:"judee",  label:"Judée / Monde juif", icon:"✡", color:"#8b5e34", match:ev=>ev.cat==="biblique" },
+  { id:"rome",   label:"Rome",               icon:"🏛️", color:"#b03010", match:ev=>/rome|romain|césar|néron|pilate|titus|latin/i.test(ev.title) },
+  { id:"grece",  label:"Monde grec",         icon:"🏺", color:"#0868a8", match:ev=>/grèce|grec|athèn|alexandre|hellén|socrate|platon|aristote/i.test(ev.title) },
+];
+export { PARALLEL_LANES };
+
 // ── RECTANGLES CHRONOZOOM ─────────────────────────────────────────────────────
 // Imbriqués : Universe → Ère → Sous-période
 const CHRONO_RECTS = [
@@ -110,7 +121,7 @@ export function drawAll(canvas, miniCanvas, params) {
     vs, ve, aiEvents, selectedId, hoveredId,
     activeCats=null, timeRangeYa=null, expandedBands=new Set(),
     linearScale=false, activeThemes=new Set(),
-    flatBands=[], bibleMode=false, filterChangedAt=0,
+    flatBands=[], bibleMode=false, filterChangedAt=0, lanesMode=null,
   } = params;
   // Fondu de transition court (~320ms) quand les filtres viennent de changer.
   const fadeT = filterChangedAt ? Math.min(1,(Date.now()-filterChangedAt)/320) : 1;
@@ -293,6 +304,23 @@ export function drawAll(canvas, miniCanvas, params) {
   }
   ctx.restore(); // fin de l'atténuation du décor (bandeaux + périodes + civilisations)
 
+  // ── GRADUATIONS (puces de date, communes aux deux modes) ──────────────────
+  ctx.font="10px -apple-system,'Segoe UI',system-ui,sans-serif";
+  for(let ya=Math.ceil(ve/chosen)*chosen;ya<=vs;ya+=chosen){
+    if(ya<0.1)continue;const x=toX(ya);if(x<0||x>W)continue;
+    const lbl=fmt(ya),tw=ctx.measureText(lbl).width;
+    ctx.fillStyle=ink(.06);
+    ctx.beginPath();
+    if(ctx.roundRect)ctx.roundRect(x-tw/2-5,EVT_BOT-1,tw+10,15,8);
+    else ctx.rect(x-tw/2-5,EVT_BOT-1,tw+10,15);
+    ctx.fill();
+    ctx.fillStyle=ink(.6);ctx.textAlign="center";
+    ctx.fillText(lbl,x,EVT_BOT+10);
+  }
+
+  const placed=[]; // pour le survol/clic — pastilles simples ou pistes selon le mode
+
+  if(!lanesMode){
   // ── LIGNE DE FRISE ────────────────────────────────────────────────────────
   ctx.strokeStyle=ink(.32);ctx.lineWidth=1.4;ctx.setLineDash([]);
   ctx.beginPath();ctx.moveTo(0,LINE_Y);ctx.lineTo(W,LINE_Y);ctx.stroke();
@@ -304,24 +332,14 @@ export function drawAll(canvas, miniCanvas, params) {
   lineGrd.addColorStop(1,ink(.0));
   ctx.fillStyle=lineGrd;ctx.fillRect(0,LINE_Y-2,W,4);
 
-  // ── GRADUATIONS ───────────────────────────────────────────────────────────
-  ctx.font="10px -apple-system,'Segoe UI',system-ui,sans-serif";
+  // ── TRAITS DE GRADUATION SUR LA LIGNE ──────────────────────────────────────
   for(let ya=Math.ceil(ve/chosen)*chosen;ya<=vs;ya+=chosen){
     if(ya<0.1)continue;const x=toX(ya);if(x<0||x>W)continue;
     ctx.strokeStyle=ink(.18);ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(x,LINE_Y-5);ctx.lineTo(x,LINE_Y+5);ctx.stroke();
-    const lbl=fmt(ya),tw=ctx.measureText(lbl).width;
-    ctx.fillStyle=ink(.06);
-    ctx.beginPath();
-    if(ctx.roundRect)ctx.roundRect(x-tw/2-5,EVT_BOT-1,tw+10,15,8);
-    else ctx.rect(x-tw/2-5,EVT_BOT-1,tw+10,15);
-    ctx.fill();
-    ctx.fillStyle=ink(.6);ctx.textAlign="center";
-    ctx.fillText(lbl,x,EVT_BOT+10);
   }
 
   // ── ÉVÉNEMENTS ────────────────────────────────────────────────────────────
-  const placed=[];
   if(!linearScale){
     // En mode biblique, les événements bibliques restent visibles quel que
     // soit le niveau de zoom — ce sont eux que l'on est venu chercher.
@@ -461,16 +479,116 @@ export function drawAll(canvas, miniCanvas, params) {
       ctx.restore();
     }
   }
+  } // fin if(!lanesMode)
+
+  const laneRects=[]; // bandes de pistes (survol) — vide hors mode pistes
+  if(lanesMode){
+    // ── PISTES (swimlanes / frises parallèles) ───────────────────────────────
+    const laneDefs = lanesMode==="theme"
+      ? Object.entries(THEMES).map(([key,t])=>({id:key,label:t.label,icon:t.icon,color:t.color,
+          items:t.items.map(it=>({...it,_range:true}))}))
+      : PARALLEL_LANES.map(l=>({id:l.id,label:l.label,icon:l.icon,color:l.color,
+          items:[...ALL_EVENTS,...aiEvents].filter(l.match)}));
+
+    const LANES_Y=TOP_STRUCT,LANES_BOT=EVT_BOT-4;
+    const laneH=Math.max((LANES_BOT-LANES_Y)/laneDefs.length,34);
+
+    laneDefs.forEach((lane,li)=>{
+      const laneY=LANES_Y+li*laneH;
+      ctx.fillStyle=li%2===0?ink(.025):ink(.045);
+      ctx.fillRect(0,laneY,W,laneH);
+      ctx.strokeStyle=ink(.06);ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(0,laneY+laneH);ctx.lineTo(W,laneY+laneH);ctx.stroke();
+
+      // Étiquette sticky
+      ctx.save();
+      ctx.fillStyle=lane.color+"1c";
+      if(ctx.roundRect)ctx.roundRect(4,laneY+4,152,20,5);else ctx.rect(4,laneY+4,152,20);
+      ctx.fill();
+      ctx.font="700 11px -apple-system,'Segoe UI',system-ui,sans-serif";
+      ctx.fillStyle=lane.color;ctx.textAlign="left";
+      ctx.fillText(`${lane.icon} ${lane.label}`,10,laneY+18);
+      ctx.restore();
+
+      const midY=laneY+Math.max(laneH*0.62,28);
+
+      if(lanesMode==="theme"){
+        for(const item of lane.items){
+          const itemTo=item.to===null?0:item.to;
+          const x1=toX(item.from),x2=toX(Math.max(itemTo,0.1));
+          if(Math.min(x1,x2)>W||Math.max(x1,x2)<0)continue;
+          const rx=Math.max(0,Math.min(x1,x2)),rw=Math.min(W,Math.abs(x2-x1));
+          if(rw<1)continue;
+          const barH=Math.min(16,laneH-28),barY=midY;
+          ctx.fillStyle=item.color+"33";
+          ctx.beginPath();
+          if(ctx.roundRect)ctx.roundRect(rx,barY,Math.max(rw,2),barH,3);else ctx.rect(rx,barY,Math.max(rw,2),barH);
+          ctx.fill();
+          ctx.strokeStyle=item.color+"88";ctx.lineWidth=0.8;
+          ctx.beginPath();
+          if(ctx.roundRect)ctx.roundRect(rx,barY,Math.max(rw,2),barH,3);else ctx.rect(rx,barY,Math.max(rw,2),barH);
+          ctx.stroke();
+          if(rw>34){
+            ctx.save();ctx.beginPath();ctx.rect(rx+2,barY,rw-4,barH);ctx.clip();
+            ctx.font="500 9px -apple-system,'Segoe UI',system-ui,sans-serif";
+            ctx.fillStyle=ink(.75);ctx.textAlign="left";
+            ctx.fillText(item.label,rx+4,barY+barH/2+3);
+            ctx.restore();
+          }
+          laneRects.push({rx,ry:barY,rw,rh:barH,label:item.label,
+            date:`${fmt(item.from)} → ${item.to!=null?fmt(item.to):"aujourd'hui"}`});
+        }
+      }else{
+        const laneVis=lane.items.filter(ev=>{const x=toX(ev.yearsAgo);return x>=-80&&x<=W+80;});
+        const sorted=[...laneVis].sort((a,b)=>toX(a.yearsAgo)-toX(b.yearsAgo));
+        const laneClusters=[];
+        for(const ev of sorted){
+          const x=toX(ev.yearsAgo);
+          const last=laneClusters[laneClusters.length-1];
+          if(last&&x-last.cx<22){last.items.push(ev);last.cx=(last.cx*(last.items.length-1)+x)/last.items.length;}
+          else laneClusters.push({cx:x,items:[ev]});
+        }
+        for(const c of laneClusters){
+          const x=c.cx,dotY=midY+6;
+          if(c.items.length===1){
+            const ev=c.items[0];
+            const isHov=hoveredId===ev.id,isSel=selectedId===ev.id;
+            const smoked=bibleMode?ev.cat!=="biblique":!passesFilters(ev);
+            ctx.save();if(smoked)ctx.globalAlpha=1-fadeT*(1-DIM_ALPHA);
+            ctx.beginPath();ctx.arc(x,dotY,isSel||isHov?6.5:4.5,0,Math.PI*2);
+            ctx.fillStyle=lane.color;ctx.fill();
+            if(isSel||isHov){ctx.strokeStyle=lane.color+"66";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,dotY,9,0,Math.PI*2);ctx.stroke();}
+            ctx.font="500 10px -apple-system,'Segoe UI',system-ui,sans-serif";
+            ctx.fillStyle=isHov||isSel?INK_STRONG:ink(.68);ctx.textAlign="center";
+            ctx.fillText(ev.title,x,dotY+18);
+            ctx.restore();
+            placed.push({x,y:dotY,ev,side:1});
+          }else{
+            const r=Math.min(8+c.items.length*0.9,16);
+            ctx.beginPath();ctx.arc(x,dotY,r,0,Math.PI*2);
+            ctx.fillStyle=ink(.85);ctx.fill();
+            ctx.strokeStyle="#fbf8f2";ctx.lineWidth=1.2;ctx.stroke();
+            ctx.font="700 9px -apple-system,'Segoe UI',system-ui,sans-serif";
+            ctx.fillStyle="#fbf8f2";ctx.textAlign="center";
+            ctx.fillText(`+${c.items.length}`,x,dotY+3);
+            placed.push({x,y:dotY,ev:null,isCluster:true,ids:c.items.map(e=>e.id),count:c.items.length,
+              fromYa:Math.min(...c.items.map(e=>e.yearsAgo)),toYa:Math.max(...c.items.map(e=>e.yearsAgo)),side:1});
+          }
+        }
+      }
+    });
+  }
 
   // ── AUJOURD'HUI ───────────────────────────────────────────────────────────
   // Vert "vivant" (même code couleur que l'arbre de vie) plutôt qu'un accent rouge criard.
   const nowX=toX(0.5);
   if(nowX>2&&nowX<W-2){
+    const todayTop=lanesMode?TOP_STRUCT:LINE_Y-40;
     ctx.strokeStyle=alive(.4);ctx.lineWidth=1.2;ctx.setLineDash([4,4]);
-    ctx.beginPath();ctx.moveTo(nowX,LINE_Y-40);ctx.lineTo(nowX,H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(nowX,todayTop);ctx.lineTo(nowX,H);ctx.stroke();
     ctx.setLineDash([]);
     ctx.font="600 8px -apple-system,'Segoe UI',system-ui,sans-serif";ctx.fillStyle=ALIVE;ctx.textAlign="center";
-    ctx.fillText("AUJOURD'HUI",nowX,LINE_Y-43);
+    ctx.fillText("AUJOURD'HUI",nowX,todayTop-3);
   }
 
   const bandRects=[]; // l'arbre de vie vit désormais dans son propre bloc, sous la frise
@@ -499,5 +617,5 @@ export function drawAll(canvas, miniCanvas, params) {
     mctx.strokeRect(Math.max(0,vx1),0,vx2-vx1,mh);
   }
 
-  return {placed, LINE_Y, PERIOD_Y, PERIOD_H:PERIOD_H+CIVILS_H, TREE_TOP:H, bandRects, chronoRects};
+  return {placed, LINE_Y, PERIOD_Y, PERIOD_H:PERIOD_H+CIVILS_H, TREE_TOP:H, bandRects, chronoRects, laneRects};
 }

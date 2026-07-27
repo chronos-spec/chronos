@@ -214,6 +214,7 @@ function Chronos() {
   const [activeCats,setActiveCats]=useState(()=>new Set(ALL_CAT_IDS)); // filtre multi-catégories
   const [timeRangeP,setTimeRangeP]=useState([0,1]);        // plage temporelle (fractions 0..1, double curseur)
   const [bibleMode,setBibleMode]=useState(false);         // événements bibliques mis en avant, le reste enfumé
+  const [lanesMode,setLanesMode]=useState(null);          // null | "theme" (swimlanes) | "civ" (Rome/Judée/Grèce)
   const [tourStep,setTourStep]=useState(null);            // visite guidée (null = inactif)
   // Parcours narratifs + synchronisation frise ↔ arbre du vivant
   const [story,setStory]=useState(null);                  // parcours en cours (objet) ou null
@@ -267,17 +268,17 @@ function Chronos() {
     const s=S.current;
     const timeRangeYa=[rangePToYa(timeRangeP[1]),rangePToYa(timeRangeP[0])]; // [minYa,maxYa]
     // L'arbre de la vie a quitté le canvas : il vit dans son propre bloc sous la frise.
-    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:s.aiEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,activeCats,timeRangeYa,expandedBands,linearScale,activeThemes,flatBands:[],bibleMode,filterChangedAt:s.filterChangedAt});
-    s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;s.bandRects=r.bandRects||[];s.chronoRects=r.chronoRects||[];
+    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:s.aiEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,activeCats,timeRangeYa,expandedBands,linearScale,activeThemes,flatBands:[],bibleMode,filterChangedAt:s.filterChangedAt,lanesMode});
+    s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;s.bandRects=r.bandRects||[];s.chronoRects=r.chronoRects||[];s.laneRects=r.laneRects||[];
     const mid=makeCoord(s.vs,s.ve,cnv.width).toYa(cnv.width/2);
     const ep=epochAt(mid);
     setUi(u=>({...u,epochLabel:ep.label+"  ·  "+fmt(s.vs)+" → "+fmt(Math.max(s.ve,0.1)),range:`zoom ×${Math.pow(10,zoomLvl(s.vs,s.ve)).toFixed(0)}`}));
-  },[activeCats,timeRangeP,bibleMode]);
+  },[activeCats,timeRangeP,bibleMode,lanesMode]);
 
   const scheduleRedraw=useCallback(()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);rafRef.current=requestAnimationFrame(redraw);},[redraw]);
 
   // Re-dessiner quand les paramètres de dessin changent (sans transition de fondu)
-  useEffect(()=>scheduleRedraw(),[expandedBands,linearScale,activeThemes,scheduleRedraw]);
+  useEffect(()=>scheduleRedraw(),[expandedBands,linearScale,activeThemes,lanesMode,scheduleRedraw]);
 
   // Filtres (catégories / plage temporelle / mode biblique) : court fondu animé
   // plutôt qu'un basculement brutal — les événements exclus s'estompent en ~320ms.
@@ -582,13 +583,19 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
       const rect=cnv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;
       if(dragging){const s=S.current,lr=L(s.vs)-L(s.ve),sh=-(e.movementX/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);_sr.current();_tf.current();return;}
       const s=S.current;let foundP=null;
-      for(const p of s.placed)if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){foundP=p;break;}
-      const nid=foundP?(foundP.isCluster?`cluster:${foundP.x.toFixed(1)}`:foundP.ev.id):null;
-      if(nid!==s.hoveredId){s.hoveredId=nid;wrap.style.cursor=foundP?"pointer":"grab";_sr.current();
+      for(const p of s.placed){const vTol=p.y!=null?26:110;if(Math.abs(p.x-mx)<22&&Math.abs((p.y??s.lineY)-my)<vTol){foundP=p;break;}}
+      let foundBar=null;
+      if(!foundP&&s.laneRects)foundBar=s.laneRects.find(b=>mx>=b.rx&&mx<=b.rx+b.rw&&my>=b.ry-4&&my<=b.ry+b.rh+4);
+      const nid=foundP?(foundP.isCluster?`cluster:${foundP.x.toFixed(1)}`:foundP.ev.id):(foundBar?`bar:${foundBar.rx}`:null);
+      if(nid!==s.hoveredId){s.hoveredId=nid;wrap.style.cursor=(foundP||foundBar)?"pointer":"grab";_sr.current();
         if(foundP){
           let tx=mx+16,ty=my-68;if(tx+220>cnv.width)tx=mx-226;if(ty<10)ty=my+20;
           if(foundP.isCluster)setUi(u=>({...u,tooltip:{x:tx,y:ty,date:`${fmt(foundP.toYa)} → ${fmt(foundP.fromYa)}`,title:`+${foundP.count} événements groupés`,hint:"Cliquer pour zoomer et les distinguer"}}));
           else setUi(u=>({...u,tooltip:{x:tx,y:ty,date:foundP.ev.date_label,title:foundP.ev.title}}));
+        }
+        else if(foundBar){
+          let tx=mx+16,ty=my-68;if(tx+220>cnv.width)tx=mx-226;if(ty<10)ty=my+20;
+          setUi(u=>({...u,tooltip:{x:tx,y:ty,date:foundBar.date,title:foundBar.label,hint:"Piste chronologique"}}));
         }
         else setUi(u=>({...u,tooltip:null}));}
     };
@@ -619,7 +626,8 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
         }
       }
       for(const p of s.placed){
-        if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){
+        const vTol=p.y!=null?26:110;
+        if(Math.abs(p.x-mx)<22&&Math.abs((p.y??s.lineY)-my)<vTol){
           if(p.isCluster){
             // Zoom sémantique : déplier le cluster en zoomant sur sa fourchette.
             _cp.current();
@@ -813,6 +821,20 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
             </div>
             {/* Actions droite */}
             <div style={{display:"flex",gap:6,flexShrink:0}}>
+              {/* Vue : frise / pistes thématiques / frises parallèles */}
+              <div style={{display:"flex",borderRadius:12,overflow:"hidden",border:"1px solid rgba(23,20,18,.15)"}}>
+                {[{id:null,label:"Frise",title:"Vue frise normale"},
+                  {id:"theme",label:"🎚️ Pistes",title:"Pistes thématiques : civilisations, religions, sciences, guerres, arts, personnages"},
+                  {id:"civ",label:"🏛️ Rome/Judée/Grèce",title:"Frises parallèles synchronisées"}].map((v,i)=>(
+                  <button key={v.label} onClick={()=>setLanesMode(v.id)} title={v.title}
+                    style={{padding:"3px 9px",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"none",
+                      borderLeft:i>0?"1px solid rgba(23,20,18,.15)":"none",
+                      background:lanesMode===v.id?"#12100e":"transparent",
+                      color:lanesMode===v.id?"#fff":"rgba(23,20,18,.6)",whiteSpace:"nowrap"}}>
+                    {v.label}
+                  </button>
+                ))}
+              </div>
               {/* Événements bibliques */}
               <button onClick={toggleBibleMode} title="Enfume tous les autres événements pour ne laisser ressortir que ceux de la Bible"
                 style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
