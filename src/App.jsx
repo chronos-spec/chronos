@@ -206,6 +206,7 @@ function Chronos() {
   // Nouvelles fonctionnalités
   const [fullscreen,setFullscreen]=useState(false);       // mode plein écran frise
   const [filterCat,setFilterCat]=useState("all");         // filtre catégorie
+  const [bibleMode,setBibleMode]=useState(false);         // événements bibliques mis en avant, le reste enfumé
   const [tourStep,setTourStep]=useState(null);            // visite guidée (null = inactif)
   // Parcours narratifs + synchronisation frise ↔ arbre du vivant
   const [story,setStory]=useState(null);                  // parcours en cours (objet) ou null
@@ -260,17 +261,17 @@ function Chronos() {
     // Appliquer filtre catégorie
     const filteredEvents=filterCat==="all"?s.aiEvents:s.aiEvents.filter(e=>e.cat===filterCat);
     // L'arbre de la vie a quitté le canvas : il vit dans son propre bloc sous la frise.
-    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:filteredEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,filterCat,expandedBands,linearScale,activeThemes,flatBands:[]});
+    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:filteredEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,filterCat,expandedBands,linearScale,activeThemes,flatBands:[],bibleMode});
     s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;s.bandRects=r.bandRects||[];s.chronoRects=r.chronoRects||[];
     const mid=makeCoord(s.vs,s.ve,cnv.width).toYa(cnv.width/2);
     const ep=epochAt(mid);
     setUi(u=>({...u,epochLabel:ep.label+"  ·  "+fmt(s.vs)+" → "+fmt(Math.max(s.ve,0.1)),range:`zoom ×${Math.pow(10,zoomLvl(s.vs,s.ve)).toFixed(0)}`}));
-  },[filterCat]);
+  },[filterCat,bibleMode]);
 
   const scheduleRedraw=useCallback(()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);rafRef.current=requestAnimationFrame(redraw);},[redraw]);
 
   // Re-dessiner quand les paramètres de dessin changent
-  useEffect(()=>scheduleRedraw(),[filterCat,expandedBands,linearScale,activeThemes,scheduleRedraw]);
+  useEffect(()=>scheduleRedraw(),[filterCat,expandedBands,linearScale,activeThemes,bibleMode,scheduleRedraw]);
 
   const navigateToEpoch=useCallback((ep)=>{
     if(animRef.current)cancelAnimationFrame(animRef.current);
@@ -285,6 +286,27 @@ function Chronos() {
       if(step<steps)animRef.current=requestAnimationFrame(animate);};
     animRef.current=requestAnimationFrame(animate);
   },[scheduleRedraw]);
+
+  // ── MODE BIBLIQUE ─────────────────────────────────────────────────────────
+  // Enfume tous les événements non bibliques et recentre la frise sur la
+  // fenêtre couvrant l'Ancien et le Nouveau Testament.
+  const toggleBibleMode=useCallback(()=>{
+    setBibleMode(prev=>{
+      const next=!prev;
+      if(next)setFilterCat("all");
+      return next;
+    });
+  },[]);
+
+  // La navigation animée est déclenchée après le rendu (via useEffect), une
+  // fois que `redraw` a bien capturé le nouveau `bibleMode` — si on l'appelait
+  // directement dans le clic, l'animation tournerait avec la closure figée de
+  // l'ancien état pendant toute sa durée (bibleMode resterait "false" à l'écran).
+  const bibleModeMounted=useRef(false);
+  useEffect(()=>{
+    if(!bibleModeMounted.current){bibleModeMounted.current=true;return;}
+    if(bibleMode)navigateToEpoch({from:6200,to:0.1});
+  },[bibleMode,navigateToEpoch]);
 
   // ── PARCOURS NARRATIFS ────────────────────────────────────────────────────
   const goStoryStep=useCallback((st,idx)=>{
@@ -700,9 +722,11 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
               ))}
             </div>
             <div style={{width:1,background:"rgba(28,25,23,.1)",alignSelf:"stretch",flexShrink:0}}/>
-            {/* Filtres catégories événements */}
-            <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
-              {CATS.map(c=>(
+            {/* Filtres catégories événements — désactivés en mode biblique */}
+            <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap",alignItems:"center",opacity:bibleMode?.4:1,pointerEvents:bibleMode?"none":"auto",transition:"opacity .2s"}}>
+              {bibleMode?(
+                <span style={{fontSize:10,color:"rgba(28,25,23,.5)",fontStyle:"italic"}}>Filtres désactivés — mode biblique actif</span>
+              ):CATS.map(c=>(
                 <button key={c.id} onClick={()=>setFilterCat(c.id)}
                   style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
                     border:`1px solid ${c.id==="all"?"rgba(28,25,23,.22)":c.color+"66"}`,
@@ -715,6 +739,14 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
             </div>
             {/* Actions droite */}
             <div style={{display:"flex",gap:6,flexShrink:0}}>
+              {/* Événements bibliques */}
+              <button onClick={toggleBibleMode} title="Enfume tous les autres événements pour ne laisser ressortir que ceux de la Bible"
+                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                  border:`1px solid ${bibleMode?"#8b5e34":"rgba(139,94,52,.4)"}`,
+                  background:bibleMode?"#8b5e34":"transparent",
+                  color:bibleMode?"#fff":"#6b4423",transition:"all .15s"}}>
+                📖 {bibleMode?"Événements bibliques ✓":"Événements bibliques"}
+              </button>
               {/* Visite guidée */}
               <button onClick={()=>goTourStep(tourStep===null?0:null)}
                 style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(185,130,47,.4)",background:tourStep!==null?"rgba(185,130,47,.15)":"transparent",color:"#7a4b12"}}>
@@ -760,7 +792,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           {showLegendBar&&!fullscreen&&(
             <div style={{display:"flex",alignItems:"center",gap:16,padding:"5px 18px",background:"#faf7f2",borderBottom:"1px solid rgba(23,20,18,.06)",flexShrink:0,flexWrap:"wrap"}}>
               <span style={{fontSize:9,letterSpacing:".12em",textTransform:"uppercase",color:"rgba(23,20,18,.35)",fontWeight:600}}>Légende :</span>
-              {Object.entries({cosmique:"#5a3db8",geologique:"#0868a8",biologique:"#0a7848",prehistoire:"#b03010",histoire:"#8a6000"}).map(([k,v])=>(
+              {Object.entries({cosmique:"#5a3db8",geologique:"#0868a8",biologique:"#0a7848",prehistoire:"#b03010",histoire:"#8a6000",biblique:"#8b5e34"}).map(([k,v])=>(
                 <div key={k} style={{display:"flex",alignItems:"center",gap:4}}>
                   <div style={{width:8,height:8,borderRadius:"50%",background:v}}/>
                   <span style={{fontSize:10,color:"rgba(23,20,18,.55)",textTransform:"capitalize"}}>{k}</span>

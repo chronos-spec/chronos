@@ -110,7 +110,7 @@ export function drawAll(canvas, miniCanvas, params) {
     vs, ve, aiEvents, selectedId, hoveredId,
     filterCat="all", expandedBands=new Set(),
     linearScale=false, activeThemes=new Set(),
-    flatBands=[],
+    flatBands=[], bibleMode=false,
   } = params;
 
   const W=canvas.width, H=canvas.height;
@@ -161,6 +161,8 @@ export function drawAll(canvas, miniCanvas, params) {
   // ══════════════════════════════════════════════════════════════════════════
   const chronoRects = []; // pour hit-test
 
+  ctx.save();
+  if(bibleMode)ctx.globalAlpha=0.4; // le décor s'estompe pour laisser ressortir la Bible
   for(const rect of CHRONO_RECTS){
     const x1=toX(rect.from),x2=toX(Math.max(rect.to,0.1));
     if(Math.min(x1,x2)>W||Math.max(x1,x2)<0) continue;
@@ -278,6 +280,7 @@ export function drawAll(canvas, miniCanvas, params) {
     }
     civRow++;
   }
+  ctx.restore(); // fin de l'atténuation du décor (bandeaux + périodes + civilisations)
 
   // ── LIGNE DE FRISE ────────────────────────────────────────────────────────
   ctx.strokeStyle=ink(.32);ctx.lineWidth=1.4;ctx.setLineDash([]);
@@ -310,7 +313,10 @@ export function drawAll(canvas, miniCanvas, params) {
   const placed=[];
   if(!linearScale){
     const evFilter=ev=>filterCat==="all"||ev.cat===filterCat;
-    const all=[...ALL_EVENTS.filter(ev=>ev.minZoom<=zl&&evFilter(ev)),...aiEvents.filter(evFilter)];
+    // En mode biblique, les événements bibliques restent visibles quel que
+    // soit le niveau de zoom — ce sont eux que l'on est venu chercher.
+    const zoomOk=ev=>ev.minZoom<=zl||(bibleMode&&ev.cat==="biblique");
+    const all=[...ALL_EVENTS.filter(ev=>zoomOk(ev)&&evFilter(ev)),...aiEvents.filter(evFilter)];
     const vis=all.filter(ev=>{const x=toX(ev.yearsAgo);return x>=-80&&x<=W+80;});
     vis.sort((a,b)=>(a.importance||2)-(b.importance||2));
     const deduped=[];
@@ -320,14 +326,27 @@ export function drawAll(canvas, miniCanvas, params) {
     for(const {x,ev} of deduped){
       const col=cc(ev.cat),imp=ev.importance||2;
       const isHov=hoveredId===ev.id,isSel=selectedId===ev.id;
+      const isBiblical=ev.cat==="biblique";
+      // Effet « enfumé » : tout le reste s'estompe, la Bible ressort.
+      const smoked=bibleMode&&!isBiblical;
       const nearby=placed.filter(p=>Math.abs(p.x-x)<90);
       const side=nearby.length>0&&nearby[nearby.length-1].side===1?-1:1;
       placed.push({x,ev,side});
       const zThresh=imp===1?0:imp===2?1.5:2.5;
-      const sF=(isSel||isHov)?1:Math.min(1,0.35+Math.max(0,zl-zThresh)*0.35);
+      let sF=(isSel||isHov)?1:Math.min(1,0.35+Math.max(0,zl-zThresh)*0.35);
+      if(bibleMode&&isBiblical)sF=1; // toujours pleinement déployé, peu importe le zoom
       const maxStem=imp===1?EVT_H*0.75:imp===2?EVT_H*0.58:EVT_H*0.42;
       const stemLen=(side===1?maxStem:maxStem*0.72)*sF;
       const endY=LINE_Y-side*stemLen;
+
+      ctx.save();
+      if(smoked)ctx.globalAlpha=0.14; // fumé : très estompé mais jamais invisible
+
+      // Halo permanent discret pour signaler un événement biblique
+      if(bibleMode&&isBiblical&&!isHov&&!isSel){
+        ctx.beginPath();ctx.arc(x,LINE_Y,13,0,Math.PI*2);
+        ctx.fillStyle=col+"28";ctx.fill();
+      }
 
       // Anneau de sélection/survol — contour discret, pas de halo diffus
       if(isHov||isSel){
@@ -348,7 +367,7 @@ export function drawAll(canvas, miniCanvas, params) {
 
       // Label — texte en encre foncée, jamais dans la couleur (règle de l'arbre de vie)
       const minR=imp===1?1.5:imp===2?2:2.8;
-      if(r>=minR||isHov||isSel){
+      if(r>=minR||isHov||isSel||(bibleMode&&isBiblical)){
         const fs=Math.max(9,(imp===1?13:imp===2?12:11)*sF);
         const maxLW=imp===1?130:110;
         ctx.font=`${imp===1?"600":"500"} ${Math.round(fs)}px -apple-system,'Segoe UI',system-ui,sans-serif`;
@@ -369,6 +388,7 @@ export function drawAll(canvas, miniCanvas, params) {
           ctx.textAlign="center";ctx.fillText(l,x,startY+i*lh+fs);
         });
       }
+      ctx.restore();
     }
   }
 
