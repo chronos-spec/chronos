@@ -19,6 +19,10 @@ import { NarrativeBar } from "./components/NarrativeBar.jsx";
 import { STORIES, randomStory } from "./data/stories.js";
 import { BIBLE_SOURCES } from "./data/bibleEvents.js";
 
+// Respecte la préférence système "mouvement réduit" : les animations de zoom
+// passent alors en une seule image (saut direct) plutôt qu'un fondu progressif.
+const REDUCED_MOTION = typeof window!=="undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
 // Données arbre de vie — inline pour éviter les problèmes d'import
 const LIFE_TREE_DATA = [
   { id:"bact", label:"🦠 Bactéries", from:3500e6, to:null, color:"#64748b", children:[] },
@@ -300,7 +304,7 @@ function Chronos() {
   const navigateToEpoch=useCallback((ep)=>{
     if(animRef.current)cancelAnimationFrame(animRef.current);
     const s=S.current,targetVs=ep.from*1.05,targetVe=Math.max(ep.to*0.8,0.1);
-    const startVs=s.vs,startVe=s.ve,steps=28;let step=0;
+    const startVs=s.vs,startVe=s.ve,steps=REDUCED_MOTION?1:28;let step=0;
     // Synchroniser l'arbre du vivant sur le centre (ou le point focal) de la fenêtre visée.
     const centerYa=ep.focus??Math.pow(10,(L(ep.from)+L(Math.max(ep.to,0.1)))/2);
     setFocusYa(centerYa);
@@ -561,7 +565,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
     const targetYa=ev.yearsAgo,span=Math.max(targetYa*0.15,500);
     const targetVs=targetYa+span,targetVe=Math.max(targetYa-span,0.1);
     if(animRef.current)cancelAnimationFrame(animRef.current);
-    const startVs=s.vs,startVe=s.ve,steps=30;let step=0;
+    const startVs=s.vs,startVe=s.ve,steps=REDUCED_MOTION?1:30;let step=0;
     const animate=()=>{step++;const t=step/steps,ease=t<0.5?2*t*t:-1+(4-2*t)*t;
       const ls=L(startVs)+(L(targetVs)-L(startVs))*ease,le=L(startVe)+(L(targetVe)-L(startVe))*ease;
       s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);scheduleRedraw();
@@ -589,7 +593,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
     const step=TOUR_STEPS[idx];
     setTourStep(idx);
     if(animRef.current)cancelAnimationFrame(animRef.current);
-    const s=S.current,startVs=s.vs,startVe=s.ve,steps=30;let i=0;
+    const s=S.current,startVs=s.vs,startVe=s.ve,steps=REDUCED_MOTION?1:30;let i=0;
     const animate=()=>{i++;const t=i/steps,ease=t<0.5?2*t*t:-1+(4-2*t)*t;
       const ls=L(startVs)+(L(step.vs)-L(startVs))*ease,le=L(startVe)+(L(step.ve)-L(startVe))*ease;
       s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);scheduleRedraw();
@@ -674,7 +678,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           _cp.current();
           if(animRef.current)cancelAnimationFrame(animRef.current);
           const s2=S.current,targetVs=cRect.from*1.02,targetVe=Math.max(cRect.to*0.98,0.1);
-          const startVs=s2.vs,startVe=s2.ve,steps=32;let step=0;
+          const startVs=s2.vs,startVe=s2.ve,steps=REDUCED_MOTION?1:32;let step=0;
           const animate=()=>{step++;const t=step/steps,ease=t<0.5?2*t*t:-1+(4-2*t)*t;
             const ls=L(startVs)+(L(targetVs)-L(startVs))*ease,le=L(startVe)+(L(targetVe)-L(startVe))*ease;
             s2.vs=Math.pow(10,ls);s2.ve=Math.pow(10,le);_sr.current();
@@ -700,7 +704,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
             if(animRef.current)cancelAnimationFrame(animRef.current);
             const s2=S.current,span=Math.max(p.fromYa-p.toYa,0.1);
             const targetVs=p.fromYa+span*0.15,targetVe=Math.max(p.toYa-span*0.15,0.1);
-            const startVs=s2.vs,startVe=s2.ve,steps=28;let step=0;
+            const startVs=s2.vs,startVe=s2.ve,steps=REDUCED_MOTION?1:28;let step=0;
             const animate=()=>{step++;const t=step/steps,ease=t<0.5?2*t*t:-1+(4-2*t)*t;
               const ls=L(startVs)+(L(targetVs)-L(startVs))*ease,le=L(startVe)+(L(targetVe)-L(startVe))*ease;
               s2.vs=Math.pow(10,ls);s2.ve=Math.pow(10,le);_sr.current();
@@ -728,6 +732,47 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
     window.addEventListener("mousemove",onMM);window.addEventListener("mouseup",onMU);window.addEventListener("resize",onResize);
     _sr.current();_tf.current();
     return()=>{cnv.removeEventListener("wheel",onWheel);cnv.removeEventListener("mousedown",onMD);cnv.removeEventListener("click",onClick);cnv.removeEventListener("touchstart",onTS);cnv.removeEventListener("touchmove",onTM);cnv.removeEventListener("touchend",onTE);window.removeEventListener("mousemove",onMM);window.removeEventListener("mouseup",onMU);window.removeEventListener("resize",onResize);};
+  },[]);
+
+  // ── NAVIGATION CLAVIER (accessibilité) ──────────────────────────────────
+  // Effet indépendant du listener souris/tactile ci-dessus : ← → déplacent la
+  // frise, ↑ ↓ (ou +/-) zooment, Entrée ouvre l'événement survolé, Échap ferme
+  // la fiche. N'agit que quand le canvas a le focus, pour ne rien voler aux
+  // champs de recherche ou autres contrôles.
+  useEffect(()=>{
+    const cnv=canvasRef.current;if(!cnv)return;
+    const onKey=(e)=>{
+      const s=S.current;
+      switch(e.key){
+        case "ArrowLeft": case "ArrowRight": {
+          e.preventDefault();
+          const dir=e.key==="ArrowLeft"?1:-1;
+          const lr=L(s.vs)-L(s.ve),sh=dir*lr*0.12,ls=L(s.vs)+sh,le=L(s.ve)+sh;
+          if(ls>Math.log10(UA*1.1)||le<0)return;
+          s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);_sr.current();_tf.current();
+          break;
+        }
+        case "ArrowUp": case "+": case "=":
+          e.preventDefault();_za.current((s.vs+s.ve)/2,0.85);_sr.current();_tf.current();
+          break;
+        case "ArrowDown": case "-":
+          e.preventDefault();_za.current((s.vs+s.ve)/2,1.18);_sr.current();_tf.current();
+          break;
+        case "Enter": case " ":
+          if(s.hoveredId&&!/^(cluster|bar|person):/.test(s.hoveredId)){
+            e.preventDefault();
+            const ev=ALL_EVENTS.find(x=>x.id===s.hoveredId)||s.aiEvents.find(x=>x.id===s.hoveredId);
+            if(ev)_op.current(ev);
+          }
+          break;
+        case "Escape":
+          _cp.current();
+          break;
+        default: return;
+      }
+    };
+    cnv.addEventListener("keydown",onKey);
+    return()=>cnv.removeEventListener("keydown",onKey);
   },[]);
 
   // Compteur d'événements affichés — recalculé à chaque changement de filtre
@@ -765,6 +810,11 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
         }
         @media (max-width:560px){
           .chronos-explore{grid-template-columns:repeat(2,1fr)!important}
+        }
+        canvas:focus-visible{outline:3px solid #0e7490;outline-offset:-3px}
+        button:focus-visible{outline:2px solid #0e7490;outline-offset:2px}
+        @media (prefers-reduced-motion: reduce){
+          *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
         }`}
       </style>
 
@@ -785,7 +835,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
 
           {/* ── HEADER — masqué en plein écran ── */}
           {!fullscreen&&(
-            <header style={css.mainHeader}>
+            <header style={{...css.mainHeader,paddingLeft:sidebarOpen?18:54}}>
               <div>
                 <div style={css.eyebrow}>Chronos · frise du vivant &amp; de l'univers</div>
                 <h1 style={css.pageTitle}>Explorez librement le temps.</h1>
@@ -866,7 +916,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                   const active=activeCats.has(c.id);
                   return (
                     <button key={c.id} onClick={()=>setActiveCats(prev=>{const next=new Set(prev);active?next.delete(c.id):next.add(c.id);return next;})}
-                      title={active?`Masquer ${c.label}`:`Afficher ${c.label}`}
+                      title={active?`Masquer ${c.label}`:`Afficher ${c.label}`} role="checkbox" aria-checked={active}
                       style={{padding:"3px 10px 3px 7px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
                         display:"inline-flex",alignItems:"center",gap:5,
                         border:`1px solid ${c.color}${active?"":"66"}`,
@@ -880,7 +930,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                     </button>
                   );
                 })}
-                <span style={{marginLeft:"auto",fontSize:10,color:"rgba(28,25,23,.5)",fontWeight:600,whiteSpace:"nowrap"}}>
+                <span aria-live="polite" style={{marginLeft:"auto",fontSize:10,color:"rgba(28,25,23,.5)",fontWeight:600,whiteSpace:"nowrap"}}>
                   {filteredCount} événement{filteredCount!==1?"s":""} affiché{filteredCount!==1?"s":""}
                 </span>
               </>)}
@@ -892,7 +942,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                 {[{id:null,label:"Frise",title:"Vue frise normale"},
                   {id:"theme",label:"🎚️ Pistes",title:"Pistes thématiques : civilisations, religions, sciences, guerres, arts, personnages"},
                   {id:"civ",label:"🏛️ Rome/Judée/Grèce",title:"Frises parallèles synchronisées"}].map((v,i)=>(
-                  <button key={v.label} onClick={()=>setLanesMode(v.id)} title={v.title}
+                  <button key={v.label} onClick={()=>setLanesMode(v.id)} title={v.title} aria-pressed={lanesMode===v.id}
                     style={{padding:"3px 9px",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"none",
                       borderLeft:i>0?"1px solid rgba(23,20,18,.15)":"none",
                       background:lanesMode===v.id?"#12100e":"transparent",
@@ -902,7 +952,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                 ))}
               </div>
               {/* Événements bibliques */}
-              <button onClick={toggleBibleMode} title="Enfume tous les autres événements pour ne laisser ressortir que ceux de la Bible"
+              <button onClick={toggleBibleMode} title="Enfume tous les autres événements pour ne laisser ressortir que ceux de la Bible" aria-pressed={bibleMode}
                 style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
                   border:`1px solid ${bibleMode?"#8b5e34":"rgba(139,94,52,.4)"}`,
                   background:bibleMode?"#8b5e34":"transparent",
@@ -910,17 +960,17 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                 📖 {bibleMode?"Événements bibliques ✓":"Événements bibliques"}
               </button>
               {/* Visite guidée */}
-              <button onClick={()=>goTourStep(tourStep===null?0:null)}
+              <button onClick={()=>goTourStep(tourStep===null?0:null)} aria-pressed={tourStep!==null}
                 style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(185,130,47,.4)",background:tourStep!==null?"rgba(185,130,47,.15)":"transparent",color:"#7a4b12"}}>
                 {tourStep!==null?`🎯 Étape ${tourStep+1}/${TOUR_STEPS.length}`:"🎯 Visite guidée"}
               </button>
               {/* Échelle réelle */}
-              <button onClick={()=>{setLinearScale(l=>!l);}}
+              <button onClick={()=>{setLinearScale(l=>!l);}} aria-pressed={linearScale}
                 style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:`1px solid ${linearScale?"#0369a1":"rgba(23,20,18,.15)"}`,background:linearScale?"rgba(3,105,161,.12)":"transparent",color:linearScale?"#0369a1":"rgba(23,20,18,.6)"}}>
                 {linearScale?"📏 Échelle réelle ✓":"📏 Échelle réelle"}
               </button>
               {/* Plein écran */}
-              <button onClick={()=>setFullscreen(f=>!f)}
+              <button onClick={()=>setFullscreen(f=>!f)} aria-pressed={fullscreen}
                 style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:fullscreen?"#12100e":"transparent",color:fullscreen?"#fff":"rgba(23,20,18,.6)"}}>
                 {fullscreen?"⊡ Normal":"⊞ Plein écran"}
               </button>
@@ -942,7 +992,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
             </div>
           </div>
           {importMsg&&(
-            <div style={{padding:"5px 18px",background:"#f5f0e6",borderBottom:"1px solid rgba(28,25,23,.08)",fontSize:11,color:"#6b4423",flexShrink:0}}>
+            <div role="status" aria-live="polite" style={{padding:"5px 18px",background:"#f5f0e6",borderBottom:"1px solid rgba(28,25,23,.08)",fontSize:11,color:"#6b4423",flexShrink:0}}>
               {importMsg}
             </div>
           )}
@@ -1009,19 +1059,20 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           {/* ── FRISE ── */}
           <section id="frise-chronologique" style={{...css.timelineCard,height:fullscreen?"calc(100vh - 88px)":"76vh",minHeight:fullscreen?400:520,margin:fullscreen?"0":"0 18px 18px",borderRadius:fullscreen?0:12,border:fullscreen?"none":"1px solid rgba(23,20,18,.10)",boxShadow:fullscreen?"none":"0 18px 50px rgba(12,10,26,.16)",flexShrink:0}}>
             {/* Toolbar frise */}
-            <div style={{position:"absolute",top:0,left:0,right:0,zIndex:10,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 12px",background:"rgba(250,247,242,.95)",borderBottom:"1px solid rgba(23,20,18,.07)"}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,zIndex:10,display:"flex",alignItems:"center",justifyContent:"space-between",padding:`6px 12px 6px ${sidebarOpen?12:50}px`,background:"rgba(250,247,242,.95)",borderBottom:"1px solid rgba(23,20,18,.07)"}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <span style={css.metaLabel}>Navigation</span>
                 <span style={css.metaValue}>{ui.range||"zoom ×1"}</span>
                 <span style={{fontSize:11,color:"rgba(23,20,18,.35)",fontStyle:"italic"}}>{ui.epochLabel}</span>
               </div>
               <span style={{fontSize:10,color:"rgba(23,20,18,.32)",display:isMobile?"none":"block"}}>
-                Molette = zoom · Drag = déplacer · Clic = fiche
+                Molette = zoom · Drag = déplacer · Clic = fiche · ← → ↑ ↓ Entrée Échap au clavier
               </span>
             </div>
 
             <div ref={wrapRef} style={css.wrap}>
-              <canvas ref={canvasRef} style={css.cnv} aria-label="Frise chronologique interactive"/>
+              <canvas ref={canvasRef} style={css.cnv} tabIndex={0} role="application"
+                aria-label="Frise chronologique interactive. Flèches gauche et droite pour se déplacer dans le temps, flèches haut et bas pour zoomer, Entrée pour ouvrir la fiche de l'événement survolé, Échap pour la fermer."/>
               <Legend open={ui.legendOpen}/>
               <ZoomControls onZoomIn={()=>zoomFromCenter(.72)} onZoomOut={()=>zoomFromCenter(1.38)}/>
 

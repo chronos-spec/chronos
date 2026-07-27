@@ -5,6 +5,8 @@ import { JOURNEYS, positionAt } from "../data/journeys.js";
 import { ALL_NODES } from "./LifeTree.jsx";
 import { fmt } from "../utils/time.js";
 
+const REDUCED_MOTION = typeof window!=="undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
 const ERA_PRESETS = [
   { label:"Aujourd'hui",      ya:0 },
   { label:"Néogène",          ya:15e6 },
@@ -51,7 +53,7 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
       setDisplayedYa(prev => {
         const diff = localYa - prev;
         const eps = Math.max(1e3, Math.abs(localYa) * 0.0008);
-        if (Math.abs(diff) < eps) { done = true; return localYa; }
+        if (Math.abs(diff) < eps || REDUCED_MOTION) { done = true; return localYa; }
         return prev + diff * 0.1;
       });
       if (!done && alive) raf = requestAnimationFrame(tick);
