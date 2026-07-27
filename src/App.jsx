@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { ALL_EVENTS, EPOCHS, PERIODS, PERIOD_DESCRIPTIONS, STATIC_CONTENT, UA, cc } from "./data/timelineData.js";
 import { buildPrompt, epochAt, fmt, L, makeCoord, zoomLvl } from "./utils/time.js";
 import { drawAll } from "./canvas/drawTimeline.js";
@@ -157,13 +157,19 @@ const TOUR_STEPS = [
 
 // ── CATÉGORIES POUR LES FILTRES ───────────────────────────────────────────────
 const CATS = [
-  { id:"all",    label:"Tout",        color:"#555" },
   { id:"cosmique",label:"Cosmique",   color:"#5a3db8" },
   { id:"geologique",label:"Géologie", color:"#0868a8" },
   { id:"biologique",label:"Biologie", color:"#0a7848" },
   { id:"prehistoire",label:"Préhistoire",color:"#b03010" },
   { id:"histoire",label:"Histoire",   color:"#8a6000" },
+  { id:"biblique",label:"Biblique",   color:"#8b5e34" },
 ];
+const ALL_CAT_IDS = CATS.map(c=>c.id);
+
+// ── PLAGE TEMPORELLE (double curseur) — domaine log, 0 = plus ancien, 1 = aujourd'hui ──
+const RANGE_MIN_YA=0.1, RANGE_MAX_YA=UA*1.1;
+const RANGE_MIN_L=Math.log10(RANGE_MIN_YA), RANGE_MAX_L=Math.log10(RANGE_MAX_YA);
+const rangePToYa=(p)=>Math.pow(10,RANGE_MAX_L-p*(RANGE_MAX_L-RANGE_MIN_L));
 
 // ── RACINE : page d'accueil → expérience ─────────────────────────────────────
 export default function Root() {
@@ -181,7 +187,7 @@ export default function Root() {
 
 function Chronos() {
   const canvasRef=useRef(null),miniRef=useRef(null),wrapRef=useRef(null);
-  const S=useRef({vs:UA*1.04,ve:20,aiEvents:[],selectedId:null,hoveredId:null,fetchedZones:new Set(),fetching:false,fetchQueue:[],panelCache:{},placed:[],lineY:0,periodY:0,periodH:0,treeTop:0});
+  const S=useRef({vs:UA*1.04,ve:20,aiEvents:[],selectedId:null,hoveredId:null,fetchedZones:new Set(),fetching:false,fetchQueue:[],panelCache:{},placed:[],lineY:0,periodY:0,periodH:0,treeTop:0,filterChangedAt:0});
   const rafRef=useRef(null),fetchDebRef=useRef(null),animRef=useRef(null);
 
   // ── ÉTAT ──────────────────────────────────────────────────────────────────
@@ -205,7 +211,8 @@ function Chronos() {
 
   // Nouvelles fonctionnalités
   const [fullscreen,setFullscreen]=useState(false);       // mode plein écran frise
-  const [filterCat,setFilterCat]=useState("all");         // filtre catégorie
+  const [activeCats,setActiveCats]=useState(()=>new Set(ALL_CAT_IDS)); // filtre multi-catégories
+  const [timeRangeP,setTimeRangeP]=useState([0,1]);        // plage temporelle (fractions 0..1, double curseur)
   const [bibleMode,setBibleMode]=useState(false);         // événements bibliques mis en avant, le reste enfumé
   const [tourStep,setTourStep]=useState(null);            // visite guidée (null = inactif)
   // Parcours narratifs + synchronisation frise ↔ arbre du vivant
@@ -258,20 +265,33 @@ function Chronos() {
     if(cnv.height!==nextH)cnv.height=nextH;
     if(mcnv){if(mcnv.width!==200)mcnv.width=200;if(mcnv.height!==40)mcnv.height=40;}
     const s=S.current;
-    // Appliquer filtre catégorie
-    const filteredEvents=filterCat==="all"?s.aiEvents:s.aiEvents.filter(e=>e.cat===filterCat);
+    const timeRangeYa=[rangePToYa(timeRangeP[1]),rangePToYa(timeRangeP[0])]; // [minYa,maxYa]
     // L'arbre de la vie a quitté le canvas : il vit dans son propre bloc sous la frise.
-    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:filteredEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,filterCat,expandedBands,linearScale,activeThemes,flatBands:[],bibleMode});
+    const r=drawAll(cnv,mcnv,{vs:s.vs,ve:s.ve,aiEvents:s.aiEvents,selectedId:s.selectedId,hoveredId:s.hoveredId,activeCats,timeRangeYa,expandedBands,linearScale,activeThemes,flatBands:[],bibleMode,filterChangedAt:s.filterChangedAt});
     s.placed=r.placed;s.lineY=r.LINE_Y;s.periodY=r.PERIOD_Y;s.periodH=r.PERIOD_H;s.treeTop=r.TREE_TOP;s.bandRects=r.bandRects||[];s.chronoRects=r.chronoRects||[];
     const mid=makeCoord(s.vs,s.ve,cnv.width).toYa(cnv.width/2);
     const ep=epochAt(mid);
     setUi(u=>({...u,epochLabel:ep.label+"  ·  "+fmt(s.vs)+" → "+fmt(Math.max(s.ve,0.1)),range:`zoom ×${Math.pow(10,zoomLvl(s.vs,s.ve)).toFixed(0)}`}));
-  },[filterCat,bibleMode]);
+  },[activeCats,timeRangeP,bibleMode]);
 
   const scheduleRedraw=useCallback(()=>{if(rafRef.current)cancelAnimationFrame(rafRef.current);rafRef.current=requestAnimationFrame(redraw);},[redraw]);
 
-  // Re-dessiner quand les paramètres de dessin changent
-  useEffect(()=>scheduleRedraw(),[filterCat,expandedBands,linearScale,activeThemes,bibleMode,scheduleRedraw]);
+  // Re-dessiner quand les paramètres de dessin changent (sans transition de fondu)
+  useEffect(()=>scheduleRedraw(),[expandedBands,linearScale,activeThemes,scheduleRedraw]);
+
+  // Filtres (catégories / plage temporelle / mode biblique) : court fondu animé
+  // plutôt qu'un basculement brutal — les événements exclus s'estompent en ~320ms.
+  useEffect(()=>{
+    S.current.filterChangedAt=performance.now();
+    let raf,alive=true;
+    const start=performance.now();
+    const tick=()=>{
+      scheduleRedraw();
+      if(alive&&performance.now()-start<340)raf=requestAnimationFrame(tick);
+    };
+    raf=requestAnimationFrame(tick);
+    return()=>{alive=false;cancelAnimationFrame(raf);};
+  },[activeCats,timeRangeP,bibleMode,scheduleRedraw]);
 
   const navigateToEpoch=useCallback((ep)=>{
     if(animRef.current)cancelAnimationFrame(animRef.current);
@@ -293,7 +313,7 @@ function Chronos() {
   const toggleBibleMode=useCallback(()=>{
     setBibleMode(prev=>{
       const next=!prev;
-      if(next)setFilterCat("all");
+      if(next){setActiveCats(new Set(ALL_CAT_IDS));setTimeRangeP([0,1]);}
       return next;
     });
   },[]);
@@ -613,6 +633,13 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
     return()=>{cnv.removeEventListener("wheel",onWheel);cnv.removeEventListener("mousedown",onMD);cnv.removeEventListener("click",onClick);cnv.removeEventListener("touchstart",onTS);cnv.removeEventListener("touchmove",onTM);cnv.removeEventListener("touchend",onTE);window.removeEventListener("mousemove",onMM);window.removeEventListener("mouseup",onMU);window.removeEventListener("resize",onResize);};
   },[]);
 
+  // Compteur d'événements affichés — recalculé à chaque changement de filtre
+  const filteredCount=useMemo(()=>{
+    const maxYa=rangePToYa(timeRangeP[0]),minYa=rangePToYa(timeRangeP[1]);
+    return ALL_EVENTS.filter(ev=>activeCats.has(ev.cat)&&ev.yearsAgo>=minYa&&ev.yearsAgo<=maxYa).length;
+  },[activeCats,timeRangeP]);
+  const timeRangeActive=timeRangeP[0]>0.0005||timeRangeP[1]<0.9995;
+
   // ── JSX ───────────────────────────────────────────────────────────────────
   const currentEv=S.current._currentPanelEv;
 
@@ -627,6 +654,11 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes floaty{0%,100%{transform:translateY(0);opacity:.7}50%{transform:translateY(4px);opacity:1}}
         ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#d8d0c3;border-radius:999px}
+        .dual-range-thumb{-webkit-appearance:none;appearance:none;pointer-events:none;position:absolute;top:0;left:0;width:100%;height:20px;background:transparent;margin:0}
+        .dual-range-thumb::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:15px;height:15px;border-radius:50%;background:#8b5e34;border:2px solid #fff;box-shadow:0 1px 5px rgba(23,20,18,.35);cursor:pointer;margin-top:2px}
+        .dual-range-thumb::-moz-range-thumb{pointer-events:auto;width:15px;height:15px;border-radius:50%;background:#8b5e34;border:2px solid #fff;box-shadow:0 1px 5px rgba(23,20,18,.35);cursor:pointer}
+        .dual-range-thumb::-webkit-slider-runnable-track{background:transparent;height:20px}
+        .dual-range-thumb::-moz-range-track{background:transparent;height:20px}
         .srch-item:hover{background:#f5f0e8!important}
         button:active{opacity:.85}
         html{scroll-behavior:smooth}
@@ -722,20 +754,39 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
               ))}
             </div>
             <div style={{width:1,background:"rgba(28,25,23,.1)",alignSelf:"stretch",flexShrink:0}}/>
-            {/* Filtres catégories événements — désactivés en mode biblique */}
+            {/* Filtres catégories événements (multi-sélection) — désactivés en mode biblique */}
             <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap",alignItems:"center",opacity:bibleMode?.4:1,pointerEvents:bibleMode?"none":"auto",transition:"opacity .2s"}}>
               {bibleMode?(
                 <span style={{fontSize:10,color:"rgba(28,25,23,.5)",fontStyle:"italic"}}>Filtres désactivés — mode biblique actif</span>
-              ):CATS.map(c=>(
-                <button key={c.id} onClick={()=>setFilterCat(c.id)}
+              ):(<>
+                <button onClick={()=>setActiveCats(new Set(ALL_CAT_IDS))}
                   style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
-                    border:`1px solid ${c.id==="all"?"rgba(28,25,23,.22)":c.color+"66"}`,
-                    background:filterCat===c.id?(c.id==="all"?"#1f1c17":c.color):"transparent",
-                    color:filterCat===c.id?"#fff":(c.id==="all"?"rgba(28,25,23,.55)":c.color),
-                    transition:"all .15s"}}>
-                  {c.label}
+                    border:"1px solid rgba(28,25,23,.22)",background:activeCats.size===ALL_CAT_IDS.length?"#1f1c17":"transparent",
+                    color:activeCats.size===ALL_CAT_IDS.length?"#fff":"rgba(28,25,23,.55)",transition:"all .15s"}}>
+                  Tout
                 </button>
-              ))}
+                {CATS.map(c=>{
+                  const active=activeCats.has(c.id);
+                  return (
+                    <button key={c.id} onClick={()=>setActiveCats(prev=>{const next=new Set(prev);active?next.delete(c.id):next.add(c.id);return next;})}
+                      title={active?`Masquer ${c.label}`:`Afficher ${c.label}`}
+                      style={{padding:"3px 10px 3px 7px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+                        display:"inline-flex",alignItems:"center",gap:5,
+                        border:`1px solid ${c.color}${active?"":"66"}`,
+                        background:active?c.color:"transparent",
+                        color:active?"#fff":c.color,transition:"all .15s"}}>
+                      <span aria-hidden="true" style={{width:11,height:11,borderRadius:3,flexShrink:0,
+                        border:`1.5px solid ${active?"#fff":c.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,lineHeight:1,color:"#fff"}}>
+                        {active?"✓":""}
+                      </span>
+                      {c.label}
+                    </button>
+                  );
+                })}
+                <span style={{marginLeft:"auto",fontSize:10,color:"rgba(28,25,23,.5)",fontWeight:600,whiteSpace:"nowrap"}}>
+                  {filteredCount} événement{filteredCount!==1?"s":""} affiché{filteredCount!==1?"s":""}
+                </span>
+              </>)}
             </div>
             {/* Actions droite */}
             <div style={{display:"flex",gap:6,flexShrink:0}}>
@@ -770,6 +821,32 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
             </div>
           </div>
 
+          {/* ── PLAGE TEMPORELLE (double curseur) ── */}
+          {!bibleMode&&(
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"6px 18px",background:"#faf7f2",borderBottom:"1px solid rgba(28,25,23,.06)",flexShrink:0}}>
+              <span style={{fontSize:9,color:"rgba(28,25,23,.45)",letterSpacing:".1em",textTransform:"uppercase",fontWeight:600,flexShrink:0}}>Plage :</span>
+              <span style={{fontSize:10.5,color:"#8b5e34",fontWeight:600,width:70,flexShrink:0}}>{fmt(rangePToYa(timeRangeP[0]))}</span>
+              <div style={{position:"relative",height:20,flex:1,minWidth:160}}>
+                <div style={{position:"absolute",top:8,left:0,right:0,height:4,borderRadius:2,background:"rgba(28,25,23,.12)"}}/>
+                <div style={{position:"absolute",top:8,height:4,borderRadius:2,background:"#8b5e34",
+                  left:`${timeRangeP[0]*100}%`,width:`${(timeRangeP[1]-timeRangeP[0])*100}%`}}/>
+                <input type="range" className="dual-range-thumb" min={0} max={1000} value={timeRangeP[0]*1000}
+                  onChange={e=>{const v=Number(e.target.value)/1000;setTimeRangeP(([lo,hi])=>[Math.min(v,hi),hi]);}}
+                  aria-label="Borne ancienne de la plage temporelle"/>
+                <input type="range" className="dual-range-thumb" min={0} max={1000} value={timeRangeP[1]*1000}
+                  onChange={e=>{const v=Number(e.target.value)/1000;setTimeRangeP(([lo,hi])=>[lo,Math.max(v,lo)]);}}
+                  aria-label="Borne récente de la plage temporelle"/>
+              </div>
+              <span style={{fontSize:10.5,color:"#8b5e34",fontWeight:600,width:70,textAlign:"right",flexShrink:0}}>{fmt(rangePToYa(timeRangeP[1]))}</span>
+              {timeRangeActive&&(
+                <button onClick={()=>setTimeRangeP([0,1])}
+                  style={{fontSize:10,color:"rgba(28,25,23,.5)",background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0,textDecoration:"underline"}}>
+                  Réinitialiser
+                </button>
+              )}
+            </div>
+          )}
+
           {/* ── VISITE GUIDÉE — bandeau ── */}
           {tourStep!==null&&(
             <div style={{background:"#fff7e8",borderBottom:"1px solid rgba(185,130,47,.2)",padding:"8px 18px",display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
@@ -798,7 +875,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                   <span style={{fontSize:10,color:"rgba(23,20,18,.55)",textTransform:"capitalize"}}>{k}</span>
                 </div>
               ))}
-              <span style={{marginLeft:"auto",fontSize:9,color:"rgba(23,20,18,.3)"}}>● Majeur &nbsp; ◦ Notable &nbsp; · Contextuel</span>
+              <span style={{marginLeft:"auto",fontSize:9,color:"rgba(23,20,18,.3)"}}>● Majeur &nbsp; ◦ Notable &nbsp; · Contextuel &nbsp; ▨ Datation incertaine</span>
               <button onClick={()=>setShowLegendBar(false)} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"rgba(23,20,18,.3)"}}>✕</button>
             </div>
           )}

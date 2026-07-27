@@ -107,7 +107,7 @@ const AT = [
     savoir:"Le nom « Moïse » (Moshè) est rapproché en hébreu du verbe « tirer (des eaux) », mais il dérive plus probablement de la racine égyptienne <em>mose</em> (« né de », que l'on retrouve dans Thoutmôsis ou Ramsès) — cohérent avec un cadre égyptien authentique."
   },
   {
-    id:"bib09", yearsAgo:3471, title:"L'Exode et les dix plaies d'Égypte", date_label:"~1446 av. J.-C. (calcul de 1 Rois 6:1) ou ~1250 av. J.-C. (hypothèse « Ramsès »)",
+    id:"bib09", yearsAgo:3471, uncertain:[3471,3275], title:"L'Exode et les dix plaies d'Égypte", date_label:"~1446 av. J.-C. (calcul de 1 Rois 6:1) ou ~1250 av. J.-C. (hypothèse « Ramsès »)",
     desc:"Moïse réclame la libération des Hébreux ; dix plaies frappent l'Égypte jusqu'au départ du peuple.", importance:1, tier:"debattu",
     ref:"Exode 7–14",
     recit:"Moïse et son frère Aaron exigent de Pharaon qu'il laisse partir le peuple hébreu asservi. Devant son refus, dix plaies s'abattent sur l'Égypte — sang, grenouilles, moustiques, mort des premiers-nés... Pharaon finit par céder, puis change d'avis et poursuit les Hébreux ; la mer Rouge s'ouvre pour laisser passer le peuple et se referme sur l'armée égyptienne.",
@@ -115,7 +115,7 @@ const AT = [
     savoir:"Le Papyrus Ipuwer, parfois cité comme preuve « externe » des plaies, date en réalité de plusieurs siècles avant la période supposée de l'Exode et décrit un chaos social générique, sans lien démontré avec le récit biblique."
   },
   {
-    id:"bib10", yearsAgo:3471, title:"Les Dix Commandements au Sinaï", date_label:"~1446 av. J.-C. (chronologie traditionnelle, peu après l'Exode)",
+    id:"bib10", yearsAgo:3471, uncertain:[3471,3275], title:"Les Dix Commandements au Sinaï", date_label:"~1446 av. J.-C. (chronologie traditionnelle, peu après l'Exode)",
     desc:"Dieu remet à Moïse les Dix Commandements gravés sur des tables de pierre, au sommet du Sinaï.", importance:1, tier:"theologique",
     ref:"Exode 19–20",
     recit:"Trois mois après la sortie d'Égypte, le peuple campe au pied du mont Sinaï. Moïse y monte seul et reçoit de Dieu, dans le tonnerre et la fumée, les Dix Commandements gravés sur deux tables de pierre, fondement de l'Alliance entre Dieu et Israël.",
@@ -123,7 +123,7 @@ const AT = [
     savoir:"La localisation exacte du « mont Sinaï » biblique reste débattue : la tradition chrétienne l'identifie depuis le IVe siècle au Djebel Moussa, dans le Sinaï égyptien actuel, mais rien dans le texte ne permet de le confirmer avec certitude."
   },
   {
-    id:"bib11", yearsAgo:3431, title:"Josué et la bataille de Jéricho", date_label:"~1406 av. J.-C. (chronologie traditionnelle) ou ~1200 av. J.-C. (hypothèse basse)",
+    id:"bib11", yearsAgo:3431, uncertain:[3431,3225], title:"Josué et la bataille de Jéricho", date_label:"~1406 av. J.-C. (chronologie traditionnelle) ou ~1200 av. J.-C. (hypothèse basse)",
     desc:"Les murailles de Jéricho s'effondrent après que les Hébreux en ont fait le tour sept fois.", importance:2, tier:"legendaire",
     ref:"Josué 6",
     recit:"Après la mort de Moïse, Josué mène les Hébreux à la conquête de Canaan. À Jéricho, sur ordre divin, l'armée fait le tour de la ville pendant six jours, puis sept fois le septième jour, au son des trompettes de bélier. Les murailles s'effondrent alors miraculeusement, livrant la ville.",
@@ -163,7 +163,7 @@ const AT = [
     savoir:"La stèle de Tel Dan, brisée en plusieurs fragments retrouvés entre 1993 et 1994 dans le nord d'Israël, est encore aujourd'hui la seule mention connue de David en dehors de la Bible et des textes qui en dépendent."
   },
   {
-    id:"bib16", yearsAgo:2991, title:"Salomon et la construction du Temple", date_label:"~966 av. J.-C. (4e année du règne de Salomon)",
+    id:"bib16", yearsAgo:2991, uncertain:[2991,2875], title:"Salomon et la construction du Temple", date_label:"~966 av. J.-C. (4e année du règne de Salomon)",
     desc:"Le roi Salomon, réputé pour sa sagesse, fait construire le premier Temple de Jérusalem.", importance:1, tier:"debattu",
     ref:"1 Rois 5–8",
     recit:"Fils et successeur de David, Salomon est réputé pour sa sagesse proverbiale (le jugement du partage de l'enfant, 1 Rois 3) et sa richesse extraordinaire. Il fait construire à Jérusalem, avec l'aide du roi Hiram de Tyr, un Temple somptueux destiné à abriter l'Arche d'alliance — cœur du culte israélite pour près de quatre siècles.",
@@ -247,7 +247,7 @@ const AT = [
 // ── NOUVEAU TESTAMENT ────────────────────────────────────────────────────
 const NT = [
   {
-    id:"bib26", yearsAgo:2030, title:"La naissance de Jésus à Bethléem", date_label:"~6-4 av. J.-C.",
+    id:"bib26", yearsAgo:2030, uncertain:[2031,2029], title:"La naissance de Jésus à Bethléem", date_label:"~6-4 av. J.-C.",
     desc:"Jésus naît à Bethléem, de Marie et Joseph, à l'occasion d'un recensement impérial.", importance:1, tier:"debattu",
     ref:"Matthieu 1–2, Luc 1–2",
     recit:"Marie, vierge fiancée à Joseph, conçoit Jésus par l'action de l'Esprit Saint, selon l'annonce de l'ange Gabriel. La naissance a lieu à Bethléem — Luc l'explique par un recensement impérial obligeant Joseph à s'y rendre — dans une étable, faute de place ailleurs. Des bergers puis des mages venus d'Orient, guidés par une étoile, viennent adorer l'enfant.",
@@ -271,7 +271,7 @@ const NT = [
     savoir:"Le « critère de gêne » est un outil classique de l'analyse historico-critique : un événement embarrassant pour la cause que défend un texte a plus de chances d'être authentique, car un auteur n'a normalement aucun intérêt à l'inventer."
   },
   {
-    id:"bib29", yearsAgo:1995, title:"La crucifixion de Jésus", date_label:"~30 apr. J.-C. (ou 33 selon certaines chronologies)",
+    id:"bib29", yearsAgo:1995, uncertain:[1995,1992], title:"La crucifixion de Jésus", date_label:"~30 apr. J.-C. (ou 33 selon certaines chronologies)",
     desc:"Jésus est condamné par Ponce Pilate et crucifié à Jérusalem à l'occasion de la Pâque juive.", importance:1, tier:"historique",
     ref:"Marc 15, Matthieu 27, Luc 23, Jean 19",
     recit:"Arrêté après la Cène, jugé par le Sanhédrin puis livré au préfet romain Ponce Pilate, Jésus est condamné à la crucifixion — le supplice réservé aux esclaves et aux rebelles — sous l'accusation de se prétendre « roi des Juifs ». Il meurt sur la croix au mont du Golgotha, à l'occasion de la fête juive de la Pâque.",
@@ -279,7 +279,7 @@ const NT = [
     savoir:"La Pierre de Pilate, découverte par des archéologues italiens, est aujourd'hui le seul artefact archéologique connu portant le nom de Ponce Pilate — elle est exposée au Musée d'Israël à Jérusalem, une réplique demeurant sur le site de Césarée."
   },
   {
-    id:"bib30", yearsAgo:1995, title:"La résurrection", date_label:"~30 apr. J.-C., trois jours après la crucifixion",
+    id:"bib30", yearsAgo:1995, uncertain:[1995,1992], title:"La résurrection", date_label:"~30 apr. J.-C., trois jours après la crucifixion",
     desc:"Selon les évangiles, Jésus ressuscite le troisième jour et apparaît à ses disciples.", importance:1, tier:"theologique",
     ref:"Matthieu 28, Marc 16, Luc 24, Jean 20",
     recit:"Le troisième jour après sa mort, des femmes venues embaumer le corps de Jésus trouvent le tombeau vide. Jésus ressuscité apparaît ensuite à plusieurs reprises à ses disciples, leur parle, mange avec eux, avant de « monter au ciel ». Cet événement fonde la proclamation chrétienne selon laquelle la mort a été vaincue.",
@@ -287,7 +287,7 @@ const NT = [
     savoir:"Le tombeau vide, à lui seul, ne prouve rien pour les historiens : c'est un fait qui admet plusieurs explications naturelles concurrentes, ce qui explique pourquoi le débat reste avant tout d'ordre théologique et philosophique plutôt que strictement historique."
   },
   {
-    id:"bib31", yearsAgo:1995, title:"La Pentecôte", date_label:"~30 apr. J.-C., 50 jours après Pâque",
+    id:"bib31", yearsAgo:1995, uncertain:[1995,1992], title:"La Pentecôte", date_label:"~30 apr. J.-C., 50 jours après Pâque",
     desc:"L'Esprit Saint descend sur les apôtres réunis à Jérusalem, qui se mettent à parler en d'autres langues.", importance:2, tier:"theologique",
     ref:"Actes des Apôtres 2",
     recit:"Cinquante jours après Pâque, les apôtres sont réunis à Jérusalem pour la fête juive de Chavouot lorsqu'un bruit de vent violent se fait entendre et que des « langues de feu » se posent sur chacun d'eux. Remplis de l'Esprit Saint, ils se mettent à parler en des langues étrangères, compréhensibles par les pèlerins venus de tout le bassin méditerranéen — épisode fondateur de l'Église chrétienne et de sa vocation universelle.",
@@ -343,7 +343,7 @@ const NT = [
     savoir:"Le Mur des Lamentations, lieu saint majeur du judaïsme aujourd'hui, n'est pas un vestige du Temple lui-même mais un mur de soutènement extérieur de son esplanade, l'une des rares parties ayant subsisté à la destruction de 70."
   },
   {
-    id:"bib38", yearsAgo:1930, title:"L'Apocalypse de Jean à Patmos", date_label:"~95 apr. J.-C. (règne de Domitien)",
+    id:"bib38", yearsAgo:1930, uncertain:[1955,1930], title:"L'Apocalypse de Jean à Patmos", date_label:"~95 apr. J.-C. (règne de Domitien)",
     desc:"Exilé sur l'île de Patmos, Jean rédige le dernier livre du Nouveau Testament, riche en visions symboliques.", importance:2, tier:"debattu",
     ref:"Apocalypse 1:9",
     recit:"Exilé sur l'île grecque de Patmos « à cause de la parole de Dieu », l'auteur qui se présente comme Jean reçoit une série de visions spectaculaires — sceaux, trompettes, bêtes, cavaliers, nouvelle Jérusalem — annonçant le triomphe final de Dieu sur le mal, dans un langage symbolique dense destiné à encourager des communautés chrétiennes en butte à la persécution.",

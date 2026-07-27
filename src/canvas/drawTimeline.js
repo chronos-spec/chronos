@@ -108,10 +108,14 @@ function makeLinearCoord(vs, ve, W) {
 export function drawAll(canvas, miniCanvas, params) {
   const {
     vs, ve, aiEvents, selectedId, hoveredId,
-    filterCat="all", expandedBands=new Set(),
+    activeCats=null, timeRangeYa=null, expandedBands=new Set(),
     linearScale=false, activeThemes=new Set(),
-    flatBands=[], bibleMode=false,
+    flatBands=[], bibleMode=false, filterChangedAt=0,
   } = params;
+  // Fondu de transition court (~320ms) quand les filtres viennent de changer.
+  const fadeT = filterChangedAt ? Math.min(1,(Date.now()-filterChangedAt)/320) : 1;
+  const DIM_ALPHA = 0.14;
+  const passesFilters = (ev) => (!activeCats||activeCats.has(ev.cat)) && (!timeRangeYa||(ev.yearsAgo>=timeRangeYa[0]&&ev.yearsAgo<=timeRangeYa[1]));
 
   const W=canvas.width, H=canvas.height;
   const ctx=canvas.getContext("2d");
@@ -196,13 +200,18 @@ export function drawAll(canvas, miniCanvas, params) {
       ctx.fillText("⤵",rx+rw-5,ry+13);
     }
 
-    // Label — texte toujours en encre foncée, jamais dans la couleur vive
-    if(rw>30){
+    // Label sticky — reste ancré au bord visible tant que la bande occupe l'écran,
+    // au lieu de disparaître dès que son origine défile hors champ. On exige une
+    // largeur réellement visible suffisante pour éviter qu'un fragment résiduel
+    // (bande presque sortie de l'écran) ne chevauche l'étiquette de la suivante.
+    const visW=Math.min(rx+rw,W)-Math.max(rx,0);
+    if(rw>30&&visW>50){
       ctx.save();ctx.beginPath();ctx.rect(rx+4,ry+1,rw-8,rh-2);ctx.clip();
       const fs=Math.min(rh-4, rw>200?13:rw>80?11:rw>40?9:7);
       ctx.font=`600 ${fs}px -apple-system,'Segoe UI',system-ui,sans-serif`;
       ctx.fillStyle=ink(.82);ctx.textAlign="left";
-      ctx.fillText(rect.label, rx+6, ry+rh/2+fs*0.38);
+      const labelX=Math.max(rx+6,6);
+      ctx.fillText(rect.label, labelX, ry+rh/2+fs*0.38);
       ctx.restore();
     }
 
@@ -224,7 +233,9 @@ export function drawAll(canvas, miniCanvas, params) {
         const fs=rw>80?10:rw>45?9:8;
         ctx.font=`600 ${fs}px -apple-system,'Segoe UI',system-ui,sans-serif`;
         ctx.fillStyle=ink(.78);ctx.textAlign="center";
-        ctx.fillText(per.label,rx+rw/2,PERIOD_Y+PERIOD_H/2+fs*0.38);
+        // Sticky : centré sur la portion réellement visible, pas sur la bande entière.
+        const visCenterX=(Math.max(rx,0)+Math.min(rx+rw,W))/2;
+        ctx.fillText(per.label,visCenterX,PERIOD_Y+PERIOD_H/2+fs*0.38);
         ctx.restore();
       }
     }
@@ -312,13 +323,20 @@ export function drawAll(canvas, miniCanvas, params) {
   // ── ÉVÉNEMENTS ────────────────────────────────────────────────────────────
   const placed=[];
   if(!linearScale){
-    const evFilter=ev=>filterCat==="all"||ev.cat===filterCat;
     // En mode biblique, les événements bibliques restent visibles quel que
     // soit le niveau de zoom — ce sont eux que l'on est venu chercher.
     const zoomOk=ev=>ev.minZoom<=zl||(bibleMode&&ev.cat==="biblique");
-    const all=[...ALL_EVENTS.filter(ev=>zoomOk(ev)&&evFilter(ev)),...aiEvents.filter(evFilter)];
+    const all=[...ALL_EVENTS.filter(zoomOk),...aiEvents];
     const vis=all.filter(ev=>{const x=toX(ev.yearsAgo);return x>=-80&&x<=W+80;});
-    vis.sort((a,b)=>(a.importance||2)-(b.importance||2));
+    const keeps=ev=>bibleMode?ev.cat==="biblique":passesFilters(ev);
+    // Les événements « conservés » gagnent toujours leur place face à un
+    // événement estompé occupant le même créneau — sinon un événement enfumé
+    // pourrait masquer celui qu'on cherche justement à faire ressortir.
+    vis.sort((a,b)=>{
+      const ak=keeps(a),bk=keeps(b);
+      if(ak!==bk)return ak?-1:1;
+      return (a.importance||2)-(b.importance||2);
+    });
     const deduped=[];
     for(const ev of vis){const x=toX(ev.yearsAgo);if(!deduped.find(p=>Math.abs(p.x-x)<28))deduped.push({x,ev});}
     deduped.sort((a,b)=>a.x-b.x);
@@ -327,8 +345,9 @@ export function drawAll(canvas, miniCanvas, params) {
       const col=cc(ev.cat),imp=ev.importance||2;
       const isHov=hoveredId===ev.id,isSel=selectedId===ev.id;
       const isBiblical=ev.cat==="biblique";
-      // Effet « enfumé » : tout le reste s'estompe, la Bible ressort.
-      const smoked=bibleMode&&!isBiblical;
+      // Estompage : mode biblique (tout sauf la Bible) OU filtres actifs
+      // (catégorie / plage temporelle) qui excluent cet événement.
+      const smoked=bibleMode?!isBiblical:!passesFilters(ev);
       const nearby=placed.filter(p=>Math.abs(p.x-x)<90);
       const side=nearby.length>0&&nearby[nearby.length-1].side===1?-1:1;
       placed.push({x,ev,side});
@@ -340,7 +359,22 @@ export function drawAll(canvas, miniCanvas, params) {
       const endY=LINE_Y-side*stemLen;
 
       ctx.save();
-      if(smoked)ctx.globalAlpha=0.14; // fumé : très estompé mais jamais invisible
+      if(smoked)ctx.globalAlpha=1-fadeT*(1-DIM_ALPHA); // fondu progressif vers l'estompage, jamais invisible
+
+      // Datation incertaine — bande hachurée couvrant la fourchette plausible
+      if(ev.uncertain){
+        const ux1=toX(Math.max(...ev.uncertain)),ux2=toX(Math.min(...ev.uncertain));
+        const urx=Math.max(0,Math.min(ux1,ux2)),urw=Math.min(W,Math.abs(ux2-ux1));
+        if(urw>1){
+          ctx.save();
+          ctx.beginPath();ctx.rect(urx,LINE_Y-3,urw,6);ctx.clip();
+          ctx.strokeStyle=col+"66";ctx.lineWidth=2;
+          for(let hx=urx-8;hx<urx+urw+8;hx+=6){
+            ctx.beginPath();ctx.moveTo(hx,LINE_Y-4);ctx.lineTo(hx+8,LINE_Y+4);ctx.stroke();
+          }
+          ctx.restore();
+        }
+      }
 
       // Halo permanent discret pour signaler un événement biblique
       if(bibleMode&&isBiblical&&!isHov&&!isSel){
@@ -371,7 +405,8 @@ export function drawAll(canvas, miniCanvas, params) {
         const fs=Math.max(9,(imp===1?13:imp===2?12:11)*sF);
         const maxLW=imp===1?130:110;
         ctx.font=`${imp===1?"600":"500"} ${Math.round(fs)}px -apple-system,'Segoe UI',system-ui,sans-serif`;
-        const words=ev.title.split(" ");let line="",lines=[];
+        const titleText=ev.uncertain?"▨ "+ev.title:ev.title;
+        const words=titleText.split(" ");let line="",lines=[];
         for(const w of words){const t=line+w+" ";if(ctx.measureText(t).width>maxLW&&line){lines.push(line.trim());line=w+" ";}else line=t;}
         lines.push(line.trim());
         const lh=Math.round(fs)+3;
