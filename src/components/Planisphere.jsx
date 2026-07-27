@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { PLATE_IDS, PLATES, PROJ_W, PROJ_H, transformsAt, platePathAt, projectPointAt, eraLabelAt } from "../data/geography.js";
 import { SPECIES_GEO } from "../data/speciesGeo.js";
+import { JOURNEYS, positionAt } from "../data/journeys.js";
 import { ALL_NODES } from "./LifeTree.jsx";
 import { fmt } from "../utils/time.js";
 
@@ -25,6 +26,10 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
   const [displayedYa, setDisplayedYa] = useState(0);
   const [search, setSearch]           = useState("");
   const [fade, setFade]               = useState(false);
+  const [journeyId, setJourneyId]     = useState(null);
+  const [journeyYa, setJourneyYa]     = useState(null);
+  const [playing, setPlaying]         = useState(false);
+  const journey = JOURNEYS.find(j => j.id === journeyId) || null;
 
   // La frise / l'arbre pilotent la carte via focusYa (navigation partagée).
   useEffect(() => { if (focusYa != null) setLocalYa(focusYa); }, [focusYa]);
@@ -55,6 +60,39 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
     return () => { alive = false; cancelAnimationFrame(raf); };
   }, [localYa]);
 
+  // Choisir un trajet : recentre la carte sur son point de départ.
+  useEffect(() => {
+    if (journey) {
+      setJourneyYa(journey.steps[0].yearsAgo);
+      setLocalYa(journey.steps[0].yearsAgo);
+      setPlaying(false);
+    } else {
+      setJourneyYa(null);
+      setPlaying(false);
+    }
+  }, [journeyId]);
+
+  // Lecture automatique : fait défiler le temps du début à la fin du trajet,
+  // durée perçue constante quelle que soit l'ampleur de l'écart de dates.
+  useEffect(() => {
+    if (!playing || !journey) return;
+    const start = journey.steps[0].yearsAgo;
+    const end = journey.steps[journey.steps.length - 1].yearsAgo;
+    const duration = 7000;
+    const t0 = performance.now();
+    let raf, alive = true;
+    function tick(now) {
+      const f = Math.min(1, (now - t0) / duration);
+      const ya = start + (end - start) * f;
+      setJourneyYa(ya);
+      setLocalYa(ya);
+      if (f >= 1) { setPlaying(false); return; }
+      if (alive) raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => { alive = false; cancelAnimationFrame(raf); };
+  }, [playing, journey]);
+
   const transforms = useMemo(() => transformsAt(displayedYa), [displayedYa]);
   const era = useMemo(() => eraLabelAt(displayedYa), [displayedYa]);
 
@@ -69,6 +107,16 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
     if (!geoPoints) return [];
     return geoPoints.map(p => ({ ...p, ...projectPointAt(p.plate, p.lon, p.lat, transforms) }));
   }, [geoPoints, transforms]);
+
+  const journeyPos = journey && journeyYa != null ? positionAt(journey, journeyYa) : null;
+  const journeyProjected = useMemo(() => {
+    if (!journey) return [];
+    return journey.steps.map(s => ({ ...s, ...projectPointAt(s.plate, s.lon, s.lat, transforms) }));
+  }, [journey, transforms]);
+  const journeyMarker = useMemo(() => {
+    if (!journey || !journeyPos) return null;
+    return projectPointAt(journeyPos.plate, journeyPos.lon, journeyPos.lat, transforms);
+  }, [journey, journeyPos, transforms]);
 
   // Petit fondu à chaque changement d'espèce plutôt qu'un pop-in brutal.
   useEffect(() => {
@@ -115,6 +163,37 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
             </button>
           );
         })}
+      </div>
+
+      {/* Trajets animés */}
+      <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center", marginBottom:12 }}>
+        <span style={{ fontSize:11, color:"rgba(28,25,23,.5)", marginRight:2 }}>Trajets :</span>
+        {JOURNEYS.map(j => {
+          const active = journeyId === j.id;
+          return (
+            <button key={j.id} onClick={() => setJourneyId(active ? null : j.id)}
+              style={{ padding:"5px 11px", borderRadius:999, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit",
+                border:`1px solid ${active ? j.color : "rgba(23,20,18,.15)"}`,
+                background: active ? j.color + "18" : "transparent",
+                color: active ? j.color : "rgba(23,20,18,.6)", transition:"all .15s" }}>
+              {j.label}
+            </button>
+          );
+        })}
+        {journey && (
+          <>
+            <button onClick={() => setPlaying(p => !p)}
+              style={{ padding:"5px 13px", borderRadius:999, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                border:`1px solid ${journey.color}`, background:journey.color, color:"#fff" }}>
+              {playing ? "⏸ Pause" : "▶ Lecture"}
+            </button>
+            <button onClick={() => setJourneyId(null)}
+              style={{ height:26, padding:"0 10px", borderRadius:999, border:"1px solid rgba(23,20,18,.15)",
+                background:"#fff", color:"rgba(23,20,18,.6)", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>
+              ✕
+            </button>
+          </>
+        )}
       </div>
 
       {/* Curseur temporel */}
@@ -197,9 +276,35 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
               <circle cx={p.x} cy={p.y} r={5.5} fill={speciesColor} stroke="#fff" strokeWidth={1.5} />
             </g>
           ))}
+
+          {/* Trajet animé */}
+          {journey && journeyProjected.length > 1 && (
+            <polyline points={journeyProjected.map(p => `${p.x},${p.y}`).join(" ")} fill="none"
+              stroke={journey.color} strokeWidth={1.4} strokeDasharray="5,4" opacity={0.55} />
+          )}
+          {journey && journeyProjected.map((p, i) => (
+            <g key={"jstep"+i}>
+              <circle cx={p.x} cy={p.y} r={3} fill={journey.color} opacity={0.6} />
+            </g>
+          ))}
+          {journey && journeyMarker && (
+            <g>
+              <circle cx={journeyMarker.x} cy={journeyMarker.y} r={13} fill={journey.color + "30"} />
+              <circle cx={journeyMarker.x} cy={journeyMarker.y} r={5.5} fill={journey.color} stroke="#fff" strokeWidth={1.6} />
+            </g>
+          )}
         </svg>
 
-        {selectedSpecies && (
+        {journey && journeyPos && (
+          <div style={{ position:"absolute", bottom:10, left:14, right:14, display:"flex", alignItems:"center", gap:8,
+            flexWrap:"wrap", pointerEvents:"none" }}>
+            <span style={{ width:9, height:9, borderRadius:"50%", background:journey.color, flexShrink:0 }} />
+            <strong style={{ fontFamily:"Georgia,serif", fontSize:14, color:"#1c1917" }}>{journeyPos.label}</strong>
+            <span style={{ fontSize:11, color:"rgba(28,25,23,.6)" }}>il y a {fmt(Math.max(journeyYa, 0.1))}</span>
+          </div>
+        )}
+
+        {!journey && selectedSpecies && (
           <div style={{ position:"absolute", bottom:10, left:14, right:14, display:"flex", alignItems:"center", gap:8,
             flexWrap:"wrap", opacity:fade?1:0, transition:"opacity .5s ease", pointerEvents:"none" }}>
             <span style={{ width:9, height:9, borderRadius:"50%", background:speciesColor, flexShrink:0 }} />
