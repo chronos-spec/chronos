@@ -17,6 +17,7 @@ import { Landing } from "./components/Landing.jsx";
 import { EpochBubbles } from "./components/EpochBubbles.jsx";
 import { NarrativeBar } from "./components/NarrativeBar.jsx";
 import { STORIES, randomStory } from "./data/stories.js";
+import { BIBLE_SOURCES } from "./data/bibleEvents.js";
 
 // Données arbre de vie — inline pour éviter les problèmes d'import
 const LIFE_TREE_DATA = [
@@ -220,6 +221,8 @@ function Chronos() {
   const [story,setStory]=useState(null);                  // parcours en cours (objet) ou null
   const [storyStep,setStoryStep]=useState(0);             // étape courante du parcours
   const [storyMenu,setStoryMenu]=useState(false);         // menu de choix de parcours
+  const [storyAuto,setStoryAuto]=useState(false);         // lecture automatique du parcours
+  const [importMsg,setImportMsg]=useState(null);          // retour de l'import JSON
   const [focusYa,setFocusYa]=useState(null);              // instant temporel partagé avec l'arbre
   const [annotations,setAnnotations]=useState({});        // {evId: texte}
   const [annotInput,setAnnotInput]=useState("");
@@ -338,9 +341,20 @@ function Chronos() {
     navigateToEpoch({from:s.from,to:s.to,focus:s.focus});
   },[navigateToEpoch]);
   const startStory=useCallback((st)=>{setStoryMenu(false);setStory(st);setUi(u=>({...u,panelOpen:false}));setTimeout(()=>goStoryStep(st,0),60);},[goStoryStep]);
-  const nextStory=useCallback(()=>{if(!story)return;if(storyStep>=story.steps.length-1){setStory(null);return;}goStoryStep(story,storyStep+1);},[story,storyStep,goStoryStep]);
+  const nextStory=useCallback(()=>{if(!story)return;if(storyStep>=story.steps.length-1){setStory(null);setStoryAuto(false);return;}goStoryStep(story,storyStep+1);},[story,storyStep,goStoryStep]);
   const prevStory=useCallback(()=>{if(story)goStoryStep(story,storyStep-1);},[story,storyStep,goStoryStep]);
   const shuffleStory=useCallback(()=>{startStory(randomStory(story?.id));},[startStory,story]);
+  const exitStory=useCallback(()=>{setStory(null);setStoryAuto(false);},[]);
+  const toggleStoryAuto=useCallback(()=>{setStoryAuto(a=>!a);},[]);
+
+  // Lecture automatique : avance seule d'étape en étape, durée de lecture
+  // constante par étape ; s'arrête au dernier pas ou si l'utilisateur navigue.
+  const STORY_STEP_MS=8000;
+  useEffect(()=>{
+    if(!story||!storyAuto)return;
+    const t=setTimeout(()=>nextStory(),STORY_STEP_MS);
+    return()=>clearTimeout(t);
+  },[story,storyStep,storyAuto,nextStory]);
 
   // ── FETCH ÉVÉNEMENTS IA ───────────────────────────────────────────────────
   const fetchZone=useCallback(async(startYa,endYa)=>{
@@ -465,6 +479,49 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
   // ── PLANISPHÈRE ───────────────────────────────────────────────────────────
   const locateSpecies=useCallback((node)=>{setSelectedSpecies(node);},[]);
   const clearSpecies=useCallback(()=>{setSelectedSpecies(null);},[]);
+
+  // ── IMPORT / EXPORT (JSON, avec source citée par événement) ────────────────
+  const importInputRef=useRef(null);
+  const exportEvents=useCallback(()=>{
+    const s=S.current;
+    const data=[...ALL_EVENTS,...s.aiEvents].map(ev=>({
+      id:ev.id,title:ev.title,date_label:ev.date_label,yearsAgo:ev.yearsAgo,cat:ev.cat,desc:ev.desc,
+      source:BIBLE_SOURCES[ev.id]||ev.source||(/^(ai|srch)_/.test(ev.id)?"Généré par IA — à vérifier":"Chronos — synthèse encyclopédique"),
+    }));
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download="chronos-evenements.json";document.body.appendChild(a);a.click();a.remove();
+    URL.revokeObjectURL(url);
+  },[]);
+  const importEvents=useCallback((file)=>{
+    const s=S.current;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const parsed=JSON.parse(String(reader.result));
+        if(!Array.isArray(parsed))throw new Error("format invalide");
+        let added=0;
+        parsed.forEach((it,i)=>{
+          const ya=Number(it.yearsAgo);
+          if(!it.title||isNaN(ya)||ya<0)return;
+          let id=typeof it.id==="string"&&it.id?it.id:`imp_${Date.now()}_${i}`;
+          if(ALL_EVENTS.find(e=>e.id===id)||s.aiEvents.find(e=>e.id===id))id=`imp_${Date.now()}_${i}`;
+          s.aiEvents.push({id,yearsAgo:ya,title:String(it.title),date_label:it.date_label||fmt(ya),desc:it.desc||"",cat:it.cat||"histoire",importance:2,minZoom:0,source:it.source||"Importé"});
+          added++;
+        });
+        saveAiEvents();scheduleRedraw();
+        setImportMsg(added?`${added} événement${added>1?"s":""} importé${added>1?"s":""}.`:"Aucun événement valide trouvé dans ce fichier.");
+      }catch(e){setImportMsg("Fichier invalide — un JSON exporté depuis Chronos est attendu.");}
+      setTimeout(()=>setImportMsg(null),5000);
+    };
+    reader.readAsText(file);
+  },[saveAiEvents,scheduleRedraw]);
+  const handleImportFile=useCallback((e)=>{
+    const file=e.target.files?.[0];
+    if(file)importEvents(file);
+    e.target.value="";
+  },[importEvents]);
 
   // ── RECHERCHE ─────────────────────────────────────────────────────────────
   const searchDebRef=useRef(null);
@@ -872,8 +929,23 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                 style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
                 ↓ Image
               </button>
+              {/* Export / Import JSON (avec sources citées) */}
+              <button onClick={exportEvents} title="Exporter tous les événements en JSON, avec la source citée pour chacun"
+                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
+                ↓ JSON
+              </button>
+              <button onClick={()=>importInputRef.current?.click()} title="Importer des événements depuis un fichier JSON"
+                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
+                ↑ Importer
+              </button>
+              <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{display:"none"}}/>
             </div>
           </div>
+          {importMsg&&(
+            <div style={{padding:"5px 18px",background:"#f5f0e6",borderBottom:"1px solid rgba(28,25,23,.08)",fontSize:11,color:"#6b4423",flexShrink:0}}>
+              {importMsg}
+            </div>
+          )}
 
           {/* ── PLAGE TEMPORELLE (double curseur) ── */}
           {!bibleMode&&(
@@ -966,7 +1038,8 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
               {story&&(
                 <NarrativeBar story={story} index={storyStep}
                   onPrev={prevStory} onNext={nextStory}
-                  onExit={()=>setStory(null)} onShuffle={shuffleStory}/>
+                  onExit={exitStory} onShuffle={shuffleStory}
+                  autoplay={storyAuto} onToggleAutoplay={toggleStoryAuto} stepMs={STORY_STEP_MS}/>
               )}
 
               <BookmarksPanel open={ui.showBookmarksView} bookmarks={bookmarks} customTags={customTags} addingTag={addingTag} newTagInput={newTagInput} setUi={setUi} setAddingTag={setAddingTag} setNewTagInput={setNewTagInput} addCustomTag={addCustomTag} removeCustomTag={removeCustomTag} removeBookmark={removeBookmark} goToResult={goToResult} stateRef={S}/>

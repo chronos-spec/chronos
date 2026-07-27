@@ -362,4 +362,9 @@ export const BIBLE_CONTENT = Object.fromEntries(
   [...AT, ...NT].map(ev => [ev.id, content(ev)])
 );
 
+// Référence scripturaire de chaque événement — citée telle quelle à l'export.
+export const BIBLE_SOURCES = Object.fromEntries(
+  [...AT, ...NT].map(ev => [ev.id, ev.ref])
+);
+
 export const BIBLE_TIERS = TIER;
