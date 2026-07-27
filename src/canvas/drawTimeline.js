@@ -337,11 +337,26 @@ export function drawAll(canvas, miniCanvas, params) {
       if(ak!==bk)return ak?-1:1;
       return (a.importance||2)-(b.importance||2);
     });
-    const deduped=[];
-    for(const ev of vis){const x=toX(ev.yearsAgo);if(!deduped.find(p=>Math.abs(p.x-x)<28))deduped.push({x,ev});}
-    deduped.sort((a,b)=>a.x-b.x);
+    // ── ZOOM SÉMANTIQUE — regroupement ───────────────────────────────────────
+    // Les événements dont les pastilles se chevaucheraient à l'écran fusionnent
+    // en un badge « +N » cliquable ; zoomer dessus les déplie individuellement.
+    const CLUSTER_R=26;
+    const sortedVis=[...vis].sort((a,b)=>toX(a.yearsAgo)-toX(b.yearsAgo));
+    const clusters=[];
+    for(const ev of sortedVis){
+      const x=toX(ev.yearsAgo);
+      const last=clusters[clusters.length-1];
+      if(last&&x-last.cx<CLUSTER_R){
+        last.items.push(ev);
+        last.cx=(last.cx*(last.items.length-1)+x)/last.items.length;
+      }else{
+        clusters.push({cx:x,items:[ev]});
+      }
+    }
+    const singles=clusters.filter(c=>c.items.length===1).map(c=>({x:c.cx,ev:c.items[0]}));
+    const multiClusters=clusters.filter(c=>c.items.length>1);
 
-    for(const {x,ev} of deduped){
+    for(const {x,ev} of singles){
       const col=cc(ev.cat),imp=ev.importance||2;
       const isHov=hoveredId===ev.id,isSel=selectedId===ev.id;
       const isBiblical=ev.cat==="biblique";
@@ -423,6 +438,26 @@ export function drawAll(canvas, miniCanvas, params) {
           ctx.textAlign="center";ctx.fillText(l,x,startY+i*lh+fs);
         });
       }
+      ctx.restore();
+    }
+
+    // ── BADGES DE CLUSTER ─────────────────────────────────────────────────
+    for(const cluster of multiClusters){
+      const {cx:x,items}=cluster;
+      const keeps2=ev=>bibleMode?ev.cat==="biblique":passesFilters(ev);
+      const clusterSmoked=!items.some(keeps2);
+      const r=Math.min(9+items.length*1.1,21);
+      placed.push({x,ev:null,side:1,isCluster:true,
+        ids:items.map(e=>e.id),count:items.length,
+        fromYa:Math.min(...items.map(e=>e.yearsAgo)),toYa:Math.max(...items.map(e=>e.yearsAgo))});
+      ctx.save();
+      if(clusterSmoked)ctx.globalAlpha=1-fadeT*(1-DIM_ALPHA);
+      ctx.beginPath();ctx.arc(x,LINE_Y,r,0,Math.PI*2);
+      ctx.fillStyle=ink(.85);ctx.fill();
+      ctx.strokeStyle="#fbf8f2";ctx.lineWidth=1.5;ctx.stroke();
+      ctx.font=`700 ${Math.round(Math.min(11,8+items.length*0.15))}px -apple-system,'Segoe UI',system-ui,sans-serif`;
+      ctx.fillStyle="#fbf8f2";ctx.textAlign="center";
+      ctx.fillText(`+${items.length}`,x,LINE_Y+4);
       ctx.restore();
     }
   }

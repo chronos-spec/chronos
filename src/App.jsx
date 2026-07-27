@@ -581,11 +581,15 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
     const onMM=(e)=>{
       const rect=cnv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;
       if(dragging){const s=S.current,lr=L(s.vs)-L(s.ve),sh=-(e.movementX/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);_sr.current();_tf.current();return;}
-      const s=S.current;let found=null;
-      for(const p of s.placed)if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){found=p.ev;break;}
-      const nid=found?found.id:null;
-      if(nid!==s.hoveredId){s.hoveredId=nid;wrap.style.cursor=found?"pointer":"grab";_sr.current();
-        if(found){let tx=mx+16,ty=my-68;if(tx+220>cnv.width)tx=mx-226;if(ty<10)ty=my+20;setUi(u=>({...u,tooltip:{x:tx,y:ty,date:found.date_label,title:found.title}}));}
+      const s=S.current;let foundP=null;
+      for(const p of s.placed)if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){foundP=p;break;}
+      const nid=foundP?(foundP.isCluster?`cluster:${foundP.x.toFixed(1)}`:foundP.ev.id):null;
+      if(nid!==s.hoveredId){s.hoveredId=nid;wrap.style.cursor=foundP?"pointer":"grab";_sr.current();
+        if(foundP){
+          let tx=mx+16,ty=my-68;if(tx+220>cnv.width)tx=mx-226;if(ty<10)ty=my+20;
+          if(foundP.isCluster)setUi(u=>({...u,tooltip:{x:tx,y:ty,date:`${fmt(foundP.toYa)} → ${fmt(foundP.fromYa)}`,title:`+${foundP.count} événements groupés`,hint:"Cliquer pour zoomer et les distinguer"}}));
+          else setUi(u=>({...u,tooltip:{x:tx,y:ty,date:foundP.ev.date_label,title:foundP.ev.title}}));
+        }
         else setUi(u=>({...u,tooltip:null}));}
     };
     const onClick=(e)=>{
@@ -614,7 +618,26 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           return;
         }
       }
-      for(const p of s.placed)if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){_op.current(p.ev);return;}
+      for(const p of s.placed){
+        if(Math.abs(p.x-mx)<22&&Math.abs(s.lineY-my)<110){
+          if(p.isCluster){
+            // Zoom sémantique : déplier le cluster en zoomant sur sa fourchette.
+            _cp.current();
+            if(animRef.current)cancelAnimationFrame(animRef.current);
+            const s2=S.current,span=Math.max(p.fromYa-p.toYa,0.1);
+            const targetVs=p.fromYa+span*0.15,targetVe=Math.max(p.toYa-span*0.15,0.1);
+            const startVs=s2.vs,startVe=s2.ve,steps=28;let step=0;
+            const animate=()=>{step++;const t=step/steps,ease=t<0.5?2*t*t:-1+(4-2*t)*t;
+              const ls=L(startVs)+(L(targetVs)-L(startVs))*ease,le=L(startVe)+(L(targetVe)-L(startVe))*ease;
+              s2.vs=Math.pow(10,ls);s2.ve=Math.pow(10,le);_sr.current();
+              if(step<steps)animRef.current=requestAnimationFrame(animate);else _tf.current();};
+            animRef.current=requestAnimationFrame(animate);
+          }else{
+            _op.current(p.ev);
+          }
+          return;
+        }
+      }
       if(s.periodY!=null&&my>=s.periodY&&my<=s.periodY+(s.periodH||20)){const ya=makeCoord(s.vs,s.ve,cnv.width).toYa(mx);const per=PERIODS.find(p=>ya<=p.from&&ya>=p.to);if(per){_opp.current(per);return;}}
       if(s.periodY!=null&&my<s.periodY&&my>44){const ya=makeCoord(s.vs,s.ve,cnv.width).toYa(mx);const ep=EPOCHS.find(p=>ya<=p.from&&ya>=p.to);if(ep){_opp.current(ep);return;}}
       _cp.current();
