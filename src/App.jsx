@@ -18,6 +18,7 @@ import { EpochBubbles } from "./components/EpochBubbles.jsx";
 import { NarrativeBar } from "./components/NarrativeBar.jsx";
 import { STORIES, randomStory } from "./data/stories.js";
 import { BIBLE_SOURCES } from "./data/bibleEvents.js";
+import { ThemePage } from "./components/ThemePage.jsx";
 
 // Respecte la préférence système "mouvement réduit" : les animations de zoom
 // passent alors en une seule image (saut direct) plutôt qu'un fondu progressif.
@@ -228,6 +229,8 @@ function Chronos() {
   const [storyAuto,setStoryAuto]=useState(false);         // lecture automatique du parcours
   const [importMsg,setImportMsg]=useState(null);          // retour de l'import JSON
   const [focusYa,setFocusYa]=useState(null);              // instant temporel partagé avec l'arbre
+  const [speciesFocus,setSpeciesFocus]=useState(null);     // espèce affichée en évidence sur la frise
+  const [themePage,setThemePage]=useState(null);          // clé du thème (THEMES) ouvert en page dédiée, ou null
   const [annotations,setAnnotations]=useState({});        // {evId: texte}
   const [annotInput,setAnnotInput]=useState("");
   const [annotTarget,setAnnotTarget]=useState(null);
@@ -308,6 +311,10 @@ function Chronos() {
     // Synchroniser l'arbre du vivant sur le centre (ou le point focal) de la fenêtre visée.
     const centerYa=ep.focus??Math.pow(10,(L(ep.from)+L(Math.max(ep.to,0.1)))/2);
     setFocusYa(centerYa);
+    // Bandeau bien visible sur la frise : uniquement pour une navigation venant
+    // d'une espèce de l'arbre de vie (identifiée par son label) ; toute autre
+    // navigation (parcours, visite, mode biblique) l'efface.
+    setSpeciesFocus(ep.label?{label:ep.label,color:ep.color||"#0e7490",from:ep.from,to:ep.to}:null);
     const animate=()=>{step++;const t=step/steps,ease=t<0.5?2*t*t:-1+(4-2*t)*t;
       const ls=L(startVs)+(L(targetVs)-L(startVs))*ease,le=L(startVe)+(L(targetVe)-L(startVe))*ease;
       s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);scheduleRedraw();
@@ -585,7 +592,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
     s.vs=Math.min(ns,UA*1.1);s.ve=Math.max(ne,0.05);
   },[]);
 
-  const resetView=useCallback(()=>{S.current.vs=UA*1.04;S.current.ve=20;scheduleRedraw();triggerFetch();},[scheduleRedraw,triggerFetch]);
+  const resetView=useCallback(()=>{S.current.vs=UA*1.04;S.current.ve=20;setSpeciesFocus(null);scheduleRedraw();triggerFetch();},[scheduleRedraw,triggerFetch]);
 
   const zoomFromCenter=useCallback((factor)=>{
     const s=S.current,W=canvasRef.current?.width||800;
@@ -800,6 +807,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
         @keyframes bw{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes floaty{0%,100%{transform:translateY(0);opacity:.7}50%{transform:translateY(4px);opacity:1}}
+        @keyframes speciesPop{0%{opacity:0;transform:translateY(-6px)}100%{opacity:1;transform:translateY(0)}}
         ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#d8d0c3;border-radius:999px}
         .dual-range-thumb{-webkit-appearance:none;appearance:none;pointer-events:none;position:absolute;top:0;left:0;width:100%;height:20px;background:transparent;margin:0}
         .dual-range-thumb::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:15px;height:15px;border-radius:50%;background:#8b5e34;border:2px solid #fff;box-shadow:0 1px 5px rgba(23,20,18,.35);cursor:pointer;margin-top:2px}
@@ -894,16 +902,30 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
             {/* Thèmes civilisations */}
             <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
               <span style={{fontSize:9,color:"rgba(28,25,23,.45)",letterSpacing:".1em",textTransform:"uppercase",fontWeight:600,flexShrink:0}}>Couches :</span>
-              {Object.entries(THEMES).map(([key,theme])=>(
-                <button key={key} onClick={()=>setActiveThemes(prev=>{const next=new Set(prev);next.has(key)?next.delete(key):next.add(key);return next;})}
-                  style={{padding:"3px 9px",borderRadius:10,fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
-                    border:`1px solid ${theme.color}${activeThemes.has(key)?"":"44"}`,
-                    background:activeThemes.has(key)?`${theme.color}22`:"transparent",
-                    color:activeThemes.has(key)?theme.color:"rgba(28,25,23,.5)",
-                    transition:"all .15s",whiteSpace:"nowrap"}}>
-                  {theme.icon} {theme.label.split(" ")[0]}
-                </button>
-              ))}
+              {Object.entries(THEMES).map(([key,theme])=>{
+                const active=activeThemes.has(key);
+                return (
+                <div key={key} style={{display:"inline-flex",alignItems:"center",gap:2}}>
+                  <button onClick={()=>setActiveThemes(prev=>{const next=new Set(prev);if(next.has(key))next.delete(key);else next.add(key);return next;})}
+                    aria-pressed={active}
+                    style={{padding:"3px 9px",borderRadius:10,fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+                      border:`1px solid ${theme.color}${active?"":"44"}`,
+                      background:active?`${theme.color}22`:"transparent",
+                      color:active?theme.color:"rgba(28,25,23,.5)",
+                      transition:"all .15s",whiteSpace:"nowrap"}}>
+                    {theme.icon} {theme.label.split(" ")[0]}
+                  </button>
+                  {active&&(
+                    <button onClick={()=>setThemePage(key)} title={`Ouvrir le récit de ${theme.label} dans une page dédiée`}
+                      style={{width:18,height:18,borderRadius:"50%",border:`1px solid ${theme.color}66`,
+                        background:"#fff",color:theme.color,fontSize:9,cursor:"pointer",fontFamily:"inherit",
+                        display:"flex",alignItems:"center",justifyContent:"center",padding:0,flexShrink:0}}>
+                      ↗
+                    </button>
+                  )}
+                </div>
+                );
+              })}
             </div>
             <div style={{width:1,background:"rgba(28,25,23,.1)",alignSelf:"stretch",flexShrink:0}}/>
             {/* Filtres catégories événements (multi-sélection) — désactivés en mode biblique */}
@@ -1064,15 +1086,37 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           {/* ── FRISE ── */}
           <section id="frise-chronologique" style={{...css.timelineCard,height:fullscreen?"calc(100vh - 88px)":"76vh",minHeight:fullscreen?400:520,margin:fullscreen?"0":"0 18px 18px",borderRadius:fullscreen?0:12,border:fullscreen?"none":"1px solid rgba(23,20,18,.10)",boxShadow:fullscreen?"none":"0 18px 50px rgba(12,10,26,.16)",flexShrink:0}}>
             {/* Toolbar frise */}
-            <div style={{position:"absolute",top:0,left:0,right:0,zIndex:10,display:"flex",alignItems:"center",justifyContent:"space-between",padding:`6px 12px 6px ${sidebarOpen?12:50}px`,background:"rgba(250,247,242,.95)",borderBottom:"1px solid rgba(23,20,18,.07)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={css.metaLabel}>Navigation</span>
-                <span style={css.metaValue}>{ui.range||"zoom ×1"}</span>
-                <span style={{fontSize:11,color:"rgba(23,20,18,.35)",fontStyle:"italic"}}>{ui.epochLabel}</span>
+            <div style={{position:"absolute",top:0,left:0,right:0,zIndex:10}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:`6px 12px 6px ${sidebarOpen?12:50}px`,background:"rgba(250,247,242,.95)",borderBottom:"1px solid rgba(23,20,18,.07)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <span style={css.metaLabel}>Navigation</span>
+                  <span style={css.metaValue}>{ui.range||"zoom ×1"}</span>
+                  <span style={{fontSize:11,color:"rgba(23,20,18,.35)",fontStyle:"italic"}}>{ui.epochLabel}</span>
+                </div>
+                <span style={{fontSize:10,color:"rgba(23,20,18,.32)",display:isMobile?"none":"block"}}>
+                  Molette = zoom · Drag = déplacer · Clic = fiche · ← → ↑ ↓ Entrée Échap au clavier
+                </span>
               </div>
-              <span style={{fontSize:10,color:"rgba(23,20,18,.32)",display:isMobile?"none":"block"}}>
-                Molette = zoom · Drag = déplacer · Clic = fiche · ← → ↑ ↓ Entrée Échap au clavier
-              </span>
+              {/* Bandeau bien visible : quelle espèce de l'arbre du vivant est ici mise en évidence.
+                  Fond opaque (pas de canal alpha) : il doit couvrir totalement ce qui est dessiné
+                  sur le canvas juste en dessous, sans quoi les deux textes se superposent. */}
+              {speciesFocus && (
+                <div role="status" aria-live="polite" style={{display:"flex",alignItems:"center",gap:10,
+                  padding:`10px 14px 10px ${sidebarOpen?14:50}px`,background:"#fffdf8",
+                  borderBottom:`3px solid ${speciesFocus.color}`,boxShadow:"0 3px 10px rgba(23,20,18,.12)",
+                  animation:REDUCED_MOTION?"none":"speciesPop .35s ease"}}>
+                  <span style={{width:11,height:11,borderRadius:"50%",background:speciesFocus.color,flexShrink:0,boxShadow:`0 0 0 4px ${speciesFocus.color}30`}}/>
+                  <span style={{fontFamily:"'Fraunces',Georgia,serif",fontSize:16,color:"#1c1917",fontWeight:700}}>{speciesFocus.label}</span>
+                  <span style={{fontSize:12.5,color:speciesFocus.color,fontWeight:600}}>
+                    {fmt(speciesFocus.from)} → {speciesFocus.to!=null?fmt(speciesFocus.to):"aujourd'hui"}
+                  </span>
+                  <button onClick={()=>setSpeciesFocus(null)} aria-label="Fermer le bandeau"
+                    style={{marginLeft:"auto",width:24,height:24,borderRadius:"50%",border:"1px solid rgba(23,20,18,.12)",background:"#fff",
+                      color:"rgba(23,20,18,.5)",fontSize:14,cursor:"pointer",lineHeight:1,flexShrink:0}}>
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
 
             <div ref={wrapRef} style={css.wrap}>
@@ -1249,6 +1293,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
 
         </main>
       </div>
+      {themePage&&<ThemePage themeKey={themePage} onClose={()=>setThemePage(null)}/>}
     </div>
   );
 }

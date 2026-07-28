@@ -27,7 +27,7 @@ function useFocusOnTimeline() {
   const ctx = useContext(FocusCtx);
   return (node) => {
     if (!ctx?.onFocus || !node || node.from == null) return;
-    ctx.onFocus({ from: node.from, to: node.to });
+    ctx.onFocus({ from: node.from, to: node.to, label: node.label.replace(/💀|⭐|🔀/g,"").trim(), color: node.color });
     ctx.notify?.(node);
   };
 }
