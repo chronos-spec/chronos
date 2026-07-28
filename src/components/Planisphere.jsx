@@ -355,43 +355,81 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
       {/* Carte */}
       <div style={{ position:"relative", borderRadius:16, overflow:"hidden",
         border:"1px solid rgba(23,20,18,.1)", boxShadow:"0 14px 36px rgba(23,20,18,.10)",
-        background:"linear-gradient(180deg,#eef3f2,#e2eae7)" }}>
-        <div style={{ position:"absolute", top:12, left:14, zIndex:2, fontSize:11.5, color:"rgba(28,25,23,.6)", pointerEvents:"none" }}>
-          <span style={{ fontWeight:700, color:"#1c1917" }}>{era}</span>
+        background:"#0a2f4d" }}>
+        <div style={{ position:"absolute", top:12, left:14, zIndex:2, fontSize:11.5, color:"#fff", textShadow:"0 1px 4px rgba(0,0,0,.55)", pointerEvents:"none" }}>
+          <span style={{ fontWeight:700 }}>{era}</span>
           <span style={{ marginLeft:8 }}>· il y a {fmt(Math.max(displayedYa, 0.1))}</span>
         </div>
         <div style={{ position:"absolute", top:12, right:14, zIndex:2, display:"flex", alignItems:"center", gap:8 }}>
           {(view.w < PROJ_W*0.995) && (
             <button onClick={resetView} title="Revenir à la vue plein monde"
-              style={{ padding:"4px 11px", borderRadius:999, border:"1px solid rgba(23,20,18,.15)", background:"rgba(255,255,255,.9)",
+              style={{ padding:"4px 11px", borderRadius:999, border:"1px solid rgba(23,20,18,.15)", background:"rgba(255,255,255,.92)",
                 color:"rgba(23,20,18,.65)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
               ⤢ Vue mondiale
             </button>
           )}
-          <span style={{ fontSize:9.5, color:"rgba(28,25,23,.4)", pointerEvents:"none" }}>Molette = zoom · Glisser = déplacer</span>
+          <span style={{ fontSize:9.5, color:"#fff", textShadow:"0 1px 4px rgba(0,0,0,.55)", pointerEvents:"none" }}>Molette = zoom · Glisser = déplacer</span>
         </div>
 
         <svg ref={svgWrapRef} viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
           style={{ display:"block", width:"100%", height:"auto", cursor:"grab", touchAction:"none" }}>
+          <defs>
+            {/* Océan : plus profond aux pôles, plus clair sous les tropiques — comme vu de l'espace */}
+            <linearGradient id="oceanGrad" x1="0" y1="0" x2="0" y2={PROJ_H} gradientUnits="userSpaceOnUse">
+              <stop offset="0%"   stopColor="#0d3a5c" />
+              <stop offset="12%"  stopColor="#134f74" />
+              <stop offset="28%"  stopColor="#1c6f96" />
+              <stop offset="42%"  stopColor="#2790a8" />
+              <stop offset="50%"  stopColor="#2f9cae" />
+              <stop offset="58%"  stopColor="#2790a8" />
+              <stop offset="72%"  stopColor="#1c6f96" />
+              <stop offset="88%"  stopColor="#134f74" />
+              <stop offset="100%" stopColor="#0d3a5c" />
+            </linearGradient>
+            {/* Terre : bandes de biomes par latitude — calottes glaciaires, forêts
+                boréales, déserts subtropicaux, bande équatoriale verte — un seul
+                dégradé partagé par tous les continents pour un rendu cohérent
+                façon composite satellite (dans l'esprit d'une NASA Blue Marble). */}
+            <linearGradient id="landGrad" x1="0" y1="0" x2="0" y2={PROJ_H} gradientUnits="userSpaceOnUse">
+              <stop offset="0%"   stopColor="#eef3f6" />
+              <stop offset="7%"   stopColor="#d7e2d3" />
+              <stop offset="16%"  stopColor="#5f8f5a" />
+              <stop offset="28%"  stopColor="#4f8c4f" />
+              <stop offset="36%"  stopColor="#9aa85f" />
+              <stop offset="42%"  stopColor="#d9c27a" />
+              <stop offset="48%"  stopColor="#c3b168" />
+              <stop offset="50%"  stopColor="#2f6b3f" />
+              <stop offset="52%"  stopColor="#c3b168" />
+              <stop offset="58%"  stopColor="#d9c27a" />
+              <stop offset="64%"  stopColor="#9aa85f" />
+              <stop offset="76%"  stopColor="#4f8c4f" />
+              <stop offset="88%"  stopColor="#5f8f5a" />
+              <stop offset="95%"  stopColor="#d7e2d3" />
+              <stop offset="100%" stopColor="#eef3f6" />
+            </linearGradient>
+          </defs>
+
+          <rect x={0} y={0} width={PROJ_W} height={PROJ_H} fill="url(#oceanGrad)" />
+
           {/* Graticule discret */}
           {Array.from({ length:9 }, (_, i) => (i + 1) * (PROJ_W / 10)).map(x => (
-            <line key={"vx"+x} x1={x} y1={0} x2={x} y2={PROJ_H} stroke="rgba(23,20,18,.05)" strokeWidth={1} />
+            <line key={"vx"+x} x1={x} y1={0} x2={x} y2={PROJ_H} stroke="rgba(255,255,255,.07)" strokeWidth={1} />
           ))}
           {Array.from({ length:4 }, (_, i) => (i + 1) * (PROJ_H / 5)).map(y => (
-            <line key={"hy"+y} x1={0} y1={y} x2={PROJ_W} y2={y} stroke="rgba(23,20,18,.05)" strokeWidth={1} />
+            <line key={"hy"+y} x1={0} y1={y} x2={PROJ_W} y2={y} stroke="rgba(255,255,255,.07)" strokeWidth={1} />
           ))}
-          <line x1={0} y1={PROJ_H/2} x2={PROJ_W} y2={PROJ_H/2} stroke="rgba(23,20,18,.09)" strokeWidth={1} strokeDasharray="3,4" />
+          <line x1={0} y1={PROJ_H/2} x2={PROJ_W} y2={PROJ_H/2} stroke="rgba(255,255,255,.12)" strokeWidth={1} strokeDasharray="3,4" />
 
-          {/* Plaques continentales */}
+          {/* Plaques continentales — dégradé de biomes partagé, contour propre à chaque plaque */}
           {PLATE_IDS.map(id => (
-            <path key={id} d={platePathAt(id, transforms)} fill={PLATES[id].color + "cc"}
-              stroke="rgba(23,20,18,.3)" strokeWidth={1.1} strokeLinejoin="round" />
+            <path key={id} d={platePathAt(id, transforms)} fill="url(#landGrad)"
+              stroke={PLATES[id].color} strokeOpacity={0.55} strokeWidth={1.1} strokeLinejoin="round" />
           ))}
           {PLATE_IDS.map(id => {
             const t = transforms[id], pivot = PLATES[id].pivot;
             return (
               <text key={id+"-lbl"} x={pivot.x + t.dx} y={pivot.y + t.dy} textAnchor="middle"
-                fontSize="9" fill="rgba(23,20,18,.42)" style={{ pointerEvents:"none" }}>
+                fontSize="9" fill="#1c1917" opacity={0.55} style={{ pointerEvents:"none" }}>
                 {PLATES[id].label}
               </text>
             );

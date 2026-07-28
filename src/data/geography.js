@@ -1,14 +1,17 @@
 // ══════════════════════════════════════════════════════════════════════════
 // GÉOGRAPHIE STYLISÉE — dérive des continents
 // ──────────────────────────────────────────────────────────────────────────
-// Approche : chaque plaque est un polygone unique (silhouette actuelle,
-// simplifiée en basse résolution). Pour reconstituer une époque passée, on
-// n'invente pas une nouvelle silhouette : on applique à la plaque une simple
-// transformation rigide (translation + rotation autour de son propre centre)
-// dont les paramètres sont interpolés entre quelques images-clés géologiques.
-// Résultat : une animation toujours fluide (aucune déformation de contour),
-// et un seul jeu de coordonnées par plaque à entretenir.
-// Approximation pédagogique — pas une reconstruction scientifique exacte.
+// Approche : chaque plaque est un ensemble de polygones fixes (silhouette
+// actuelle — continent principal + îles notables — simplifiée mais fidèle
+// aux grands caps et péninsules réels). Pour reconstituer une époque passée,
+// on n'invente pas une nouvelle silhouette : on applique à la plaque une
+// simple transformation rigide (translation + rotation autour de son propre
+// centre) dont les paramètres sont interpolés entre des images-clés
+// géologiques datées (voir KEYFRAMES). Résultat : une animation toujours
+// fluide (aucune déformation de contour), un seul jeu de coordonnées par
+// plaque à entretenir, et un rendu qui reste lisible à tout niveau de zoom.
+// Approximation pédagogique (silhouettes à quelques dizaines de points) —
+// pas une reconstruction GPlates/GeoJSON au mètre près.
 // ══════════════════════════════════════════════════════════════════════════
 
 export const PROJ_W = 1000, PROJ_H = 500;
@@ -20,21 +23,78 @@ export function project(lon, lat) {
 
 export const PLATE_IDS = ["africa","eurasia","north_america","south_america","india","australia","antarctica"];
 
+// Chaque plaque a un anneau principal (le continent) et, en option, des
+// anneaux secondaires (îles/archipels rattachés) rendus avec la même
+// transformation rigide — assez pour reconnaître Madagascar, le Japon,
+// les îles Britanniques, le Groenland ou la Nouvelle-Zélande sur la carte.
 const RAW_PLATES = {
-  africa: { label:"Afrique", color:"#c2703d",
-    outline:[[-17,15],[-16,25],[-8,32],[3,37],[11,37],[20,33],[32,31],[36,20],[41,11],[46,2],[51,10],[44,-2],[40,-16],[35,-25],[27,-34],[18,-35],[12,-25],[10,-10],[9,0],[-5,5],[-17,15]] },
-  eurasia: { label:"Eurasie", color:"#7a8b6f",
-    outline:[[-9,43],[0,38],[15,37],[30,32],[35,15],[45,12],[55,25],[65,25],[75,20],[85,22],[95,15],[105,10],[115,22],[125,35],[140,45],[155,55],[170,65],[150,65],[130,60],[110,55],[90,60],[70,65],[50,68],[30,68],[10,55],[-9,43]] },
+  africa: { label:"Afrique", color:"#b06a35",
+    rings:[
+      [[-17.5,20.9],[-9.5,35.8],[-5.3,35.9],[2.9,36.8],[11.2,32.9],[19.9,32.8],[25,31.5],[31.2,31.5],
+       [34.9,29.5],[32.8,27.8],[37.2,19.6],[39.5,15.6],[43.3,11.6],[51.3,11.8],[45.3,2.0],[40.5,-2.8],
+       [40.7,-14.5],[35.4,-23.9],[32.6,-28.8],[31.0,-29.9],[27.9,-33.0],[18.4,-33.9],[17.9,-31.6],
+       [14.5,-22.7],[11.7,-17.9],[13.2,-8.8],[8.8,-4.8],[9.3,0.4],[8.7,4.0],[3.4,6.4],[-1.2,5.6],
+       [-4.0,5.3],[-10.8,8.5],[-16.6,12.6],[-17.5,20.9]],
+      // Madagascar
+      [[43.3,-25.6],[47.1,-25.2],[49.9,-15.2],[49.4,-12.3],[47.8,-14.9],[44.4,-20.3],[43.3,-25.6]],
+    ]},
+  eurasia: { label:"Eurasie", color:"#6f7d52",
+    rings:[
+      [[-9.4,38.7],[-5.4,36.1],[3.1,42.4],[9.2,44.4],[12.5,41.9],[16.9,41.1],[19.8,40.6],[23.7,37.9],
+       [26.2,40.0],[35.0,36.2],[34.8,31.5],[36.2,33.5],[43.3,15.4],[51.6,25.3],[56.3,26.2],[61.9,25.3],
+       [67.0,24.9],[70.0,32.0],[85.0,29.0],[94.0,16.0],[99.0,7.0],[103.5,1.3],[105.0,10.3],[108.0,21.0],
+       [110.0,18.0],[121.0,23.5],[121.5,31.2],[127.0,37.5],[131.9,43.1],[158.6,53.0],[170.0,66.0],
+       [140.0,73.0],[105.0,73.0],[80.0,73.0],[60.0,70.0],[25.0,70.0],[5.0,62.0],[3.0,51.0],[-9.4,38.7]],
+      // Îles Britanniques
+      [[-8.2,51.5],[-5.0,55.0],[-3.0,58.6],[-2.0,57.5],[1.7,52.9],[1.4,51.0],[-4.7,50.1],[-8.2,51.5]],
+      // Japon
+      [[130.4,31.0],[132.5,34.2],[136.9,35.0],[140.9,37.0],[141.9,39.7],[140.0,41.5],[139.8,45.4],
+       [141.6,43.0],[139.0,36.5],[135.0,34.5],[130.4,31.0]],
+    ]},
   north_america: { label:"Amérique du Nord", color:"#4f7fa6",
-    outline:[[-165,68],[-140,60],[-125,49],[-118,34],[-108,22],[-97,16],[-88,14],[-80,9],[-77,8],[-83,22],[-81,31],[-75,36],[-66,45],[-60,53],[-53,62],[-60,68],[-75,73],[-95,74],[-120,72],[-140,70],[-165,68]] },
+    rings:[
+      [[-165.0,68.0],[-155.0,71.0],[-140.0,69.5],[-135.0,59.5],[-130.0,55.0],[-125.7,48.4],[-124.2,40.8],
+       [-117.1,32.5],[-109.0,23.0],[-105.0,20.5],[-97.0,16.0],[-92.2,15.9],[-88.0,13.7],[-83.0,9.0],
+       [-79.5,8.0],[-77.3,7.9],[-82.0,22.1],[-81.8,25.8],[-80.1,26.1],[-80.0,32.0],[-75.5,35.2],
+       [-74.0,40.5],[-70.2,41.7],[-66.1,44.3],[-63.6,44.6],[-59.9,47.0],[-52.7,47.5],[-55.6,51.4],
+       [-60.4,55.0],[-64.2,60.4],[-68.5,63.6],[-64.0,67.6],[-75.0,68.5],[-85.0,68.0],[-95.0,68.5],
+       [-110.0,68.0],[-120.0,69.5],[-140.0,70.5],[-165.0,68.0]],
+      // Groenland
+      [[-52.0,60.0],[-43.0,60.0],[-22.0,70.0],[-20.0,76.0],[-35.0,83.0],[-55.0,82.0],[-65.0,76.0],[-63.0,68.0],[-52.0,60.0]],
+    ]},
   south_america: { label:"Amérique du Sud", color:"#b9822f",
-    outline:[[-79,9],[-77,1],[-80,-4],[-81,-14],[-75,-20],[-70,-30],[-71,-40],[-73,-50],[-68,-55],[-63,-50],[-58,-38],[-53,-25],[-48,-15],[-38,-8],[-42,1],[-52,5],[-62,8],[-72,10],[-79,9]] },
+    rings:[
+      [[-77.3,7.9],[-77.0,1.2],[-79.9,-2.2],[-80.6,-5.0],[-81.1,-14.5],[-76.3,-13.6],[-70.4,-18.4],
+       [-70.2,-23.6],[-71.4,-30.1],[-71.7,-33.0],[-73.7,-42.0],[-74.9,-52.0],[-68.6,-54.9],[-65.0,-54.7],
+       [-68.1,-52.3],[-67.3,-45.8],[-65.3,-40.8],[-62.3,-38.9],[-57.5,-36.4],[-58.4,-34.6],[-53.4,-33.7],
+       [-48.5,-25.5],[-41.0,-22.9],[-39.0,-13.0],[-38.5,-8.0],[-35.2,-5.5],[-44.4,-2.5],[-48.5,0.0],
+       [-51.0,1.8],[-59.8,8.6],[-71.6,10.5],[-77.3,7.9]],
+    ]},
   india: { label:"Inde", color:"#9a5b8f",
-    outline:[[68,24],[70,20],[72,15],[75,9],[78,8],[81,10],[83,16],[87,21],[90,23],[92,26],[86,29],[78,31],[71,28],[68,24]] },
+    rings:[
+      [[61.7,25.1],[66.5,25.4],[68.2,23.7],[70.5,20.7],[72.8,20.9],[72.8,18.9],[73.4,15.5],[74.8,12.9],
+       [76.6,8.9],[79.9,9.3],[79.3,10.4],[80.3,13.1],[80.2,15.9],[83.9,17.7],[86.5,20.3],[87.0,21.6],
+       [88.9,22.0],[92.3,21.5],[93.0,15.9],[88.0,21.9],[85.0,23.0],[80.0,21.5],[75.0,22.0],[70.0,24.0],[61.7,25.1]],
+      // Sri Lanka
+      [[79.7,9.8],[81.9,9.3],[81.9,6.0],[79.9,6.2],[79.7,9.8]],
+    ]},
   australia: { label:"Australie", color:"#c8963c",
-    outline:[[113,-22],[114,-30],[118,-35],[130,-38],[140,-38],[149,-37],[153,-27],[150,-19],[143,-14],[133,-12],[122,-16],[113,-22]] },
+    rings:[
+      [[113.3,-22.0],[113.9,-25.9],[115.0,-34.0],[117.9,-35.1],[124.2,-32.5],[129.0,-31.6],[131.3,-31.5],
+       [133.4,-32.0],[134.6,-33.0],[135.9,-34.9],[137.8,-35.6],[139.9,-36.1],[140.0,-38.0],[144.6,-38.4],
+       [146.4,-38.7],[147.9,-37.8],[150.0,-36.8],[150.3,-35.3],[151.3,-33.8],[152.9,-31.5],[153.2,-28.2],
+       [153.5,-25.3],[151.7,-24.3],[149.3,-21.4],[146.1,-18.9],[145.8,-16.6],[142.5,-14.5],[141.5,-13.0],
+       [137.1,-15.4],[135.4,-14.9],[133.1,-11.6],[130.8,-12.5],[130.0,-14.9],[126.1,-13.9],[123.4,-16.9],
+       [121.7,-17.3],[114.9,-21.5],[113.3,-22.0]],
+      // Nouvelle-Zélande
+      [[172.6,-34.4],[174.7,-36.8],[178.5,-38.7],[177.8,-39.6],[176.9,-40.4],[175.3,-41.3],[174.2,-41.2],
+       [172.6,-40.5],[171.2,-42.5],[168.4,-44.7],[166.5,-45.4],[167.6,-44.2],[169.6,-43.6],[170.5,-42.6],
+       [172.6,-40.0],[172.7,-38.0],[172.6,-34.4]],
+    ]},
   antarctica: { label:"Antarctique", color:"#7d8a94",
-    outline:[[-180,-63],[-135,-68],[-90,-74],[-45,-71],[0,-70],[45,-73],[90,-76],[135,-70],[180,-63],[180,-90],[-180,-90],[-180,-63]] },
+    rings:[
+      [[-180,-63],[-135,-68],[-90,-74],[-45,-71],[0,-70],[45,-73],[90,-76],[135,-70],[180,-63],[180,-90],[-180,-90],[-180,-63]],
+    ]},
 };
 
 function centroidOf(projPts) {
@@ -46,26 +106,26 @@ function centroidOf(projPts) {
 export const PLATES = {};
 for (const id of PLATE_IDS) {
   const raw = RAW_PLATES[id];
-  const projected = raw.outline.map(([lon,lat]) => project(lon,lat));
-  PLATES[id] = { ...raw, projected, pivot: centroidOf(projected) };
+  const projectedRings = raw.rings.map(ring => ring.map(([lon,lat]) => project(lon,lat)));
+  // Le pivot de rotation se calcule sur le continent principal seulement (premier
+  // anneau) : une petite île ne doit pas décentrer la rotation de toute la plaque.
+  PLATES[id] = { ...raw, projectedRings, pivot: centroidOf(projectedRings[0]) };
 }
 
 // ── IMAGES-CLÉS ──────────────────────────────────────────────────────────
-// Récit simplifié : dispersion précambrienne → assemblage de la Pangée
-// (~300-252 Ma) → fragmentation progressive → configuration actuelle.
+// Datées et calées sur des repères réels de la littérature (Scotese/PALEOMAP,
+// EarthByte/GPlates) : assemblage de la Pangée ~335-260 Ma, début de
+// fragmentation ~200 Ma, ouverture de l'Atlantique central ~180 Ma puis Sud
+// ~150-130 Ma, séparation Inde-Antarctique ~136-120 Ma suivie de la dérive la
+// plus rapide connue d'une plaque continentale jusqu'à sa collision avec
+// l'Asie ~50 Ma (soulèvement de l'Himalaya), séparation Australie-Antarctique
+// ~45 Ma. Approximation pédagogique par plaque rigide unique — pas une
+// reconstruction GPlates exacte (celle-ci utiliserait des pôles d'Euler par
+// micro-plaque et par intervalle de quelques millions d'années).
 // Afrique sert de plaque de référence (quasi immobile) ; dx/dy en pixels
 // de projection, rot en degrés, autour du centre propre de chaque plaque.
 const IDENTITY = { dx:0, dy:0, rot:0 };
 
-// Images-clés datées et calées sur des repères réels de la littérature
-// (Scotese/PALEOMAP, EarthByte/GPlates) : assemblage de la Pangée ~335-260 Ma,
-// début de fragmentation ~200 Ma, ouverture de l'Atlantique central ~180 Ma
-// puis Sud ~150-130 Ma, séparation Inde-Antarctique ~136-120 Ma suivie de la
-// dérive la plus rapide connue d'une plaque continentale jusqu'à sa collision
-// avec l'Asie ~50 Ma (soulèvement de l'Himalaya), séparation Australie-
-// Antarctique ~45 Ma. Approximation pédagogique par plaque rigide unique —
-// pas une reconstruction GPlates exacte (celle-ci utiliserait des pôles
-// d'Euler par micro-plaque et par intervalle de quelques millions d'années).
 export const KEYFRAMES = [
   { t:540e6, label:"Cambrien — blocs dispersés, Gondwana au pôle Sud",
     transforms:{
@@ -246,12 +306,16 @@ function applyTransform(x, y, pivot, t) {
   return { x: pivot.x+rx+t.dx, y: pivot.y+ry+t.dy };
 }
 
-// Chemin SVG (attribut `d`) d'une plaque à l'instant donné (transforms = résultat de transformsAt).
+// Chemin SVG (attribut `d`) d'une plaque à l'instant donné (transforms = résultat
+// de transformsAt). Concatène tous les anneaux (continent + îles) en un seul
+// chemin multi-sous-tracés, chacun subissant la même transformation rigide.
 export function platePathAt(plateId, transforms) {
   const plate = PLATES[plateId];
   const t = transforms[plateId];
-  const pts = plate.projected.map(p => applyTransform(p.x, p.y, plate.pivot, t));
-  return "M" + pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("L") + "Z";
+  return plate.projectedRings.map(ring => {
+    const pts = ring.map(p => applyTransform(p.x, p.y, plate.pivot, t));
+    return "M" + pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("L") + "Z";
+  }).join(" ");
 }
 
 // Position projetée d'un point (lon,lat moderne) porté par une plaque, à l'instant donné.
