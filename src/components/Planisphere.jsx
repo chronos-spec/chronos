@@ -1,9 +1,23 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { PLATE_IDS, PLATES, PROJ_W, PROJ_H, transformsAt, platePathAt, projectPointAt, eraLabelAt } from "../data/geography.js";
 import { SPECIES_GEO } from "../data/speciesGeo.js";
 import { JOURNEYS, positionAt } from "../data/journeys.js";
 import { ALL_NODES } from "./LifeTree.jsx";
 import { fmt } from "../utils/time.js";
+
+const WORLD_VIEW = { x: 0, y: 0, w: PROJ_W, h: PROJ_H };
+const MIN_VIEW_W = PROJ_W * 0.06;   // zoom max ≈ ×16
+const MAX_VIEW_W = PROJ_W;          // vue plein monde
+
+function clampView(v) {
+  const w = Math.min(MAX_VIEW_W, Math.max(MIN_VIEW_W, v.w));
+  const h = w * (PROJ_H / PROJ_W);
+  let x = Math.min(PROJ_W - w, Math.max(0, v.x));
+  let y = Math.min(PROJ_H - h, Math.max(0, v.y));
+  if (w >= PROJ_W) x = 0;
+  if (h >= PROJ_H) y = 0;
+  return { x, y, w, h };
+}
 
 const REDUCED_MOTION = typeof window!=="undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
 
@@ -23,7 +37,7 @@ const SPECIES_LIST = Object.keys(SPECIES_GEO)
 
 const clean = (label="") => label.replace(/💀|⭐|🔀/g,"").trim();
 
-export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSpecies, onClearSpecies }) {
+export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSpecies, onClearSpecies, focusRegion = null }) {
   const [localYa, setLocalYa]         = useState(0);
   const [displayedYa, setDisplayedYa] = useState(0);
   const [search, setSearch]           = useState("");
@@ -31,7 +45,83 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
   const [journeyId, setJourneyId]     = useState(null);
   const [journeyYa, setJourneyYa]     = useState(null);
   const [playing, setPlaying]         = useState(false);
+  const [view, setView]               = useState(WORLD_VIEW);   // viewBox courant (zoom/pan)
   const journey = JOURNEYS.find(j => j.id === journeyId) || null;
+
+  const svgWrapRef = useRef(null);
+  const viewAnimRef = useRef(null);
+  const dragRef = useRef(null);
+
+  // Anime le viewBox courant vers une cible (zoom/déplacement de caméra fluide).
+  const animateViewTo = useCallback((target) => {
+    if (viewAnimRef.current) cancelAnimationFrame(viewAnimRef.current);
+    const dest = clampView(target);
+    if (REDUCED_MOTION) { setView(dest); return; }
+    const start = view, t0 = performance.now(), dur = 650;
+    const tick = (now) => {
+      const t = Math.min(1, (now - t0) / dur);
+      const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+      setView({
+        x: start.x + (dest.x-start.x)*ease, y: start.y + (dest.y-start.y)*ease,
+        w: start.w + (dest.w-start.w)*ease, h: start.h + (dest.h-start.h)*ease,
+      });
+      if (t < 1) viewAnimRef.current = requestAnimationFrame(tick);
+    };
+    viewAnimRef.current = requestAnimationFrame(tick);
+  }, [view]);
+
+  // Cadre une zone (points ou boîte projetés) avec une marge confortable.
+  const zoomToPoints = useCallback((pts, padFrac = 0.6) => {
+    if (!pts?.length) return;
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+    let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const w0 = Math.max(x1-x0, 24), h0 = Math.max(y1-y0, 24);
+    const padX = w0*padFrac + 40, padY = h0*padFrac + 40;
+    x0 -= padX; x1 += padX; y0 -= padY; y1 += padY;
+    const w = x1-x0, ratio = PROJ_W/PROJ_H;
+    let vw = w, vh = w/ratio;
+    if (vh < y1-y0) { vh = y1-y0; vw = vh*ratio; }
+    const cx = (x0+x1)/2, cy = (y0+y1)/2;
+    animateViewTo({ x: cx-vw/2, y: cy-vh/2, w: vw, h: vh });
+  }, [animateViewTo]);
+
+  const resetView = useCallback(() => animateViewTo(WORLD_VIEW), [animateViewTo]);
+
+  // ── Molette = zoom, glisser = déplacer (comme la frise) ───────────────────
+  useEffect(() => {
+    const el = svgWrapRef.current; if (!el) return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const fx = (e.clientX-rect.left)/rect.width, fy = (e.clientY-rect.top)/rect.height;
+      setView(v => {
+        const pivotX = v.x + fx*v.w, pivotY = v.y + fy*v.h;
+        const factor = e.deltaY > 0 ? 1.16 : 0.86;
+        const w = v.w*factor, h = w*(PROJ_H/PROJ_W);
+        return clampView({ x: pivotX - fx*w, y: pivotY - fy*h, w, h });
+      });
+    };
+    let dragging = false, lastX = 0, lastY = 0;
+    const onDown = (e) => { dragging = true; lastX = e.clientX; lastY = e.clientY; el.style.cursor = "grabbing"; };
+    const onMove = (e) => {
+      if (!dragging) return;
+      const rect = el.getBoundingClientRect();
+      const dx = (e.clientX-lastX)/rect.width * view.w, dy = (e.clientY-lastY)/rect.height * view.h;
+      lastX = e.clientX; lastY = e.clientY;
+      setView(v => clampView({ ...v, x: v.x-dx, y: v.y-dy }));
+    };
+    const onUp = () => { dragging = false; el.style.cursor = "grab"; };
+    el.addEventListener("wheel", onWheel, { passive:false });
+    el.addEventListener("mousedown", onDown);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("mousedown", onDown);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [view.w, view.h]);
 
   // La frise / l'arbre pilotent la carte via focusYa (navigation partagée).
   useEffect(() => { if (focusYa != null) setLocalYa(focusYa); }, [focusYa]);
@@ -97,6 +187,28 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
 
   const transforms = useMemo(() => transformsAt(displayedYa), [displayedYa]);
   const era = useMemo(() => eraLabelAt(displayedYa), [displayedYa]);
+  // Facteur maintenant la taille à l'écran des marqueurs constante quel que soit le zoom.
+  const zoomK = view.w / PROJ_W;
+
+  // Choisir une espèce cadre aussi la carte sur l'endroit où elle a vécu —
+  // calculé indépendamment de l'animation de caméra pour rester exact tout de suite.
+  useEffect(() => {
+    if (!selectedSpecies?.id) return;
+    const geoPts = SPECIES_GEO[selectedSpecies.id];
+    if (!geoPts?.length) return;
+    const speciesEra = selectedSpecies.to != null ? (selectedSpecies.from + selectedSpecies.to) / 2 : selectedSpecies.from;
+    const tr = transformsAt(speciesEra);
+    zoomToPoints(geoPts.map(p => projectPointAt(p.plate, p.lon, p.lat, tr)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSpecies?.id]);
+
+  // Un événement choisi sur la frise (avec coordonnées) cadre la carte sur sa région.
+  useEffect(() => {
+    if (!focusRegion?.points?.length) return;
+    const tr = transformsAt(focusRegion.ya ?? localYa);
+    zoomToPoints(focusRegion.points.map(p => projectPointAt(p.plate, p.lon, p.lat, tr)), focusRegion.padFrac ?? 0.7);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusRegion?.id]);
 
   const results = useMemo(() => {
     if (!search.trim()) return [];
@@ -240,8 +352,19 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
           <span style={{ fontWeight:700, color:"#1c1917" }}>{era}</span>
           <span style={{ marginLeft:8 }}>· il y a {fmt(Math.max(displayedYa, 0.1))}</span>
         </div>
+        <div style={{ position:"absolute", top:12, right:14, zIndex:2, display:"flex", alignItems:"center", gap:8 }}>
+          {(view.w < PROJ_W*0.995) && (
+            <button onClick={resetView} title="Revenir à la vue plein monde"
+              style={{ padding:"4px 11px", borderRadius:999, border:"1px solid rgba(23,20,18,.15)", background:"rgba(255,255,255,.9)",
+                color:"rgba(23,20,18,.65)", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+              ⤢ Vue mondiale
+            </button>
+          )}
+          <span style={{ fontSize:9.5, color:"rgba(28,25,23,.4)", pointerEvents:"none" }}>Molette = zoom · Glisser = déplacer</span>
+        </div>
 
-        <svg viewBox={`0 0 ${PROJ_W} ${PROJ_H}`} style={{ display:"block", width:"100%", height:"auto" }}>
+        <svg ref={svgWrapRef} viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
+          style={{ display:"block", width:"100%", height:"auto", cursor:"grab", touchAction:"none" }}>
           {/* Graticule discret */}
           {Array.from({ length:9 }, (_, i) => (i + 1) * (PROJ_W / 10)).map(x => (
             <line key={"vx"+x} x1={x} y1={0} x2={x} y2={PROJ_H} stroke="rgba(23,20,18,.05)" strokeWidth={1} />
@@ -269,30 +392,30 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
           {/* Zones de l'espèce sélectionnée */}
           {projected.length > 1 && (
             <polyline points={projected.map(p => `${p.x},${p.y}`).join(" ")} fill="none"
-              stroke={speciesColor + "66"} strokeWidth={1} strokeDasharray="3,3"
+              stroke={speciesColor + "66"} strokeWidth={zoomK} strokeDasharray={`${zoomK*3},${zoomK*3}`}
               style={{ opacity:fade?1:0, transition:"opacity .5s ease" }} />
           )}
           {projected.map((p, i) => (
             <g key={i} style={{ opacity:fade?1:0, transition:`opacity .5s ease ${i*0.06}s` }}>
-              <circle cx={p.x} cy={p.y} r={15} fill={speciesColor + "26"} />
-              <circle cx={p.x} cy={p.y} r={5.5} fill={speciesColor} stroke="#fff" strokeWidth={1.5} />
+              <circle cx={p.x} cy={p.y} r={15*zoomK} fill={speciesColor + "26"} />
+              <circle cx={p.x} cy={p.y} r={5.5*zoomK} fill={speciesColor} stroke="#fff" strokeWidth={1.5*zoomK} />
             </g>
           ))}
 
           {/* Trajet animé */}
           {journey && journeyProjected.length > 1 && (
             <polyline points={journeyProjected.map(p => `${p.x},${p.y}`).join(" ")} fill="none"
-              stroke={journey.color} strokeWidth={1.4} strokeDasharray="5,4" opacity={0.55} />
+              stroke={journey.color} strokeWidth={1.4*zoomK} strokeDasharray={`${5*zoomK},${4*zoomK}`} opacity={0.55} />
           )}
           {journey && journeyProjected.map((p, i) => (
             <g key={"jstep"+i}>
-              <circle cx={p.x} cy={p.y} r={3} fill={journey.color} opacity={0.6} />
+              <circle cx={p.x} cy={p.y} r={3*zoomK} fill={journey.color} opacity={0.6} />
             </g>
           ))}
           {journey && journeyMarker && (
             <g>
-              <circle cx={journeyMarker.x} cy={journeyMarker.y} r={13} fill={journey.color + "30"} />
-              <circle cx={journeyMarker.x} cy={journeyMarker.y} r={5.5} fill={journey.color} stroke="#fff" strokeWidth={1.6} />
+              <circle cx={journeyMarker.x} cy={journeyMarker.y} r={13*zoomK} fill={journey.color + "30"} />
+              <circle cx={journeyMarker.x} cy={journeyMarker.y} r={5.5*zoomK} fill={journey.color} stroke="#fff" strokeWidth={1.6*zoomK} />
             </g>
           )}
         </svg>
