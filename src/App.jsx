@@ -833,7 +833,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
 
       {/* ── BOUTON SIDEBAR ── */}
       <button onClick={()=>setSidebarOpen(o=>!o)} title={sidebarOpen?"Fermer":"Menu"}
-        style={{position:"fixed",left:sidebarOpen?284:12,top:14,zIndex:400,width:30,height:30,borderRadius:7,background:"#fbfaf7",border:"1px solid rgba(23,20,18,.14)",boxShadow:"0 2px 8px rgba(23,20,18,.12)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,color:"rgba(23,20,18,.6)",transition:"left .3s cubic-bezier(.16,1,.3,1)"}}>
+        style={{position:"fixed",left:sidebarOpen?284:12,top:14,zIndex:400,width:30,height:30,borderRadius:"50%",background:"#fbfaf7",border:"1px solid rgba(23,20,18,.14)",boxShadow:"0 2px 8px rgba(23,20,18,.12)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,color:"rgba(23,20,18,.6)",transition:"left .3s cubic-bezier(.16,1,.3,1)"}}>
         {sidebarOpen?"←":"☰"}
       </button>
 
@@ -908,7 +908,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                 <div key={key} style={{display:"inline-flex",alignItems:"center",gap:2}}>
                   <button onClick={()=>setActiveThemes(prev=>{const next=new Set(prev);if(next.has(key))next.delete(key);else next.add(key);return next;})}
                     aria-pressed={active}
-                    style={{padding:"3px 9px",borderRadius:10,fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+                    style={{padding:"3px 9px",borderRadius:999,fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
                       border:`1px solid ${theme.color}${active?"":"44"}`,
                       background:active?`${theme.color}22`:"transparent",
                       color:active?theme.color:"rgba(28,25,23,.5)",
@@ -934,7 +934,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                 <span style={{fontSize:10,color:"rgba(28,25,23,.5)",fontStyle:"italic"}}>Filtres désactivés — mode biblique actif</span>
               ):(<>
                 <button onClick={()=>setActiveCats(new Set(ALL_CAT_IDS))}
-                  style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+                  style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
                     border:"1px solid rgba(28,25,23,.22)",background:activeCats.size===ALL_CAT_IDS.length?"#1f1c17":"transparent",
                     color:activeCats.size===ALL_CAT_IDS.length?"#fff":"rgba(28,25,23,.55)",transition:"all .15s"}}>
                   Tout
@@ -944,7 +944,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                   return (
                     <button key={c.id} onClick={()=>setActiveCats(prev=>{const next=new Set(prev);active?next.delete(c.id):next.add(c.id);return next;})}
                       title={active?`Masquer ${c.label}`:`Afficher ${c.label}`} role="checkbox" aria-checked={active}
-                      style={{padding:"3px 10px 3px 7px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+                      style={{padding:"3px 10px 3px 7px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
                         display:"inline-flex",alignItems:"center",gap:5,
                         border:`1px solid ${c.color}${active?"":"66"}`,
                         background:active?c.color:"transparent",
@@ -965,7 +965,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
             {/* Actions droite */}
             <div style={{display:"flex",gap:6,flexShrink:0}}>
               {/* Vue : frise / pistes thématiques / frises parallèles */}
-              <div style={{display:"flex",borderRadius:12,overflow:"hidden",border:"1px solid rgba(23,20,18,.15)"}}>
+              <div style={{display:"flex",borderRadius:999,overflow:"hidden",border:"1px solid rgba(23,20,18,.15)"}}>
                 {[{id:null,label:"Frise",title:"Vue frise normale"},
                   {id:"theme",label:"🎚️ Pistes",title:"Pistes thématiques : civilisations, religions, sciences, guerres, arts, personnages"},
                   {id:"civ",label:"🏛️ Rome/Judée/Grèce",title:"Frises parallèles synchronisées"}].map((v,i)=>(
@@ -980,7 +980,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
               </div>
               {/* Événements bibliques */}
               <button onClick={toggleBibleMode} title="Enfume tous les autres événements pour ne laisser ressortir que ceux de la Bible" aria-pressed={bibleMode}
-                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
                   border:`1px solid ${bibleMode?"#8b5e34":"rgba(139,94,52,.4)"}`,
                   background:bibleMode?"#8b5e34":"transparent",
                   color:bibleMode?"#fff":"#6b4423",transition:"all .15s"}}>
@@ -988,31 +988,31 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
               </button>
               {/* Visite guidée */}
               <button onClick={()=>goTourStep(tourStep===null?0:null)} aria-pressed={tourStep!==null}
-                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(185,130,47,.4)",background:tourStep!==null?"rgba(185,130,47,.15)":"transparent",color:"#7a4b12"}}>
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(185,130,47,.4)",background:tourStep!==null?"rgba(185,130,47,.15)":"transparent",color:"#7a4b12"}}>
                 {tourStep!==null?`🎯 Étape ${tourStep+1}/${TOUR_STEPS.length}`:"🎯 Visite guidée"}
               </button>
               {/* Échelle réelle */}
               <button onClick={()=>{setLinearScale(l=>!l);}} aria-pressed={linearScale}
-                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:`1px solid ${linearScale?"#0369a1":"rgba(23,20,18,.15)"}`,background:linearScale?"rgba(3,105,161,.12)":"transparent",color:linearScale?"#0369a1":"rgba(23,20,18,.6)"}}>
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:`1px solid ${linearScale?"#0369a1":"rgba(23,20,18,.15)"}`,background:linearScale?"rgba(3,105,161,.12)":"transparent",color:linearScale?"#0369a1":"rgba(23,20,18,.6)"}}>
                 {linearScale?"📏 Échelle réelle ✓":"📏 Échelle réelle"}
               </button>
               {/* Plein écran */}
               <button onClick={()=>setFullscreen(f=>!f)} aria-pressed={fullscreen}
-                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:fullscreen?"#12100e":"transparent",color:fullscreen?"#fff":"rgba(23,20,18,.6)"}}>
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:fullscreen?"#12100e":"transparent",color:fullscreen?"#fff":"rgba(23,20,18,.6)"}}>
                 {fullscreen?"⊡ Normal":"⊞ Plein écran"}
               </button>
               {/* Export */}
               <button onClick={exportImage}
-                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
                 ↓ Image
               </button>
               {/* Export / Import JSON (avec sources citées) */}
               <button onClick={exportEvents} title="Exporter tous les événements en JSON, avec la source citée pour chacun"
-                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
                 ↓ JSON
               </button>
               <button onClick={()=>importInputRef.current?.click()} title="Importer des événements depuis un fichier JSON"
-                style={{padding:"3px 10px",borderRadius:12,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
                 ↑ Importer
               </button>
               <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{display:"none"}}/>
@@ -1059,9 +1059,9 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
               </div>
               <div style={{display:"flex",gap:6}}>
                 <button onClick={()=>goTourStep(tourStep>0?tourStep-1:null)} disabled={tourStep===0}
-                  style={{padding:"4px 12px",borderRadius:7,border:"1px solid rgba(185,130,47,.3)",background:"transparent",color:"#7a4b12",cursor:"pointer",fontFamily:"inherit",fontSize:11,opacity:tourStep===0?.4:1}}>← Préc.</button>
+                  style={{padding:"4px 12px",borderRadius:999,border:"1px solid rgba(185,130,47,.3)",background:"transparent",color:"#7a4b12",cursor:"pointer",fontFamily:"inherit",fontSize:11,opacity:tourStep===0?.4:1}}>← Préc.</button>
                 <button onClick={()=>goTourStep(tourStep<TOUR_STEPS.length-1?tourStep+1:null)}
-                  style={{padding:"4px 12px",borderRadius:7,border:"none",background:"#b9822f",color:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:11}}>
+                  style={{padding:"4px 12px",borderRadius:999,border:"none",background:"#b9822f",color:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:11}}>
                   {tourStep<TOUR_STEPS.length-1?"Suiv. →":"✓ Fin"}
                 </button>
               </div>
@@ -1198,9 +1198,9 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                                 style={{width:"100%",minHeight:80,border:"1px solid rgba(23,20,18,.18)",borderRadius:8,padding:"8px 10px",fontSize:13,fontFamily:"inherit",color:"#12100e",outline:"none",resize:"vertical",boxSizing:"border-box"}}/>
                               <div style={{display:"flex",gap:8,marginTop:6}}>
                                 <button onClick={()=>{saveAnnotation(ui.panelEventId,annotInput);setAnnotTarget(null);}}
-                                  style={{padding:"5px 14px",borderRadius:7,border:"none",background:"#0a7848",color:"#fff",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Sauvegarder</button>
+                                  style={{padding:"5px 14px",borderRadius:999,border:"none",background:"#0a7848",color:"#fff",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Sauvegarder</button>
                                 <button onClick={()=>setAnnotTarget(null)}
-                                  style={{padding:"5px 14px",borderRadius:7,border:"1px solid rgba(23,20,18,.15)",background:"transparent",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
+                                  style={{padding:"5px 14px",borderRadius:999,border:"1px solid rgba(23,20,18,.15)",background:"transparent",fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>Annuler</button>
                               </div>
                             </div>
                           ):(
@@ -1217,7 +1217,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                           <div style={{fontSize:11,color:"#0a7848",fontWeight:600,marginBottom:4}}>🌿 Voir dans l'Arbre de la vie</div>
                           <div style={{fontSize:12,color:"rgba(23,20,18,.55)"}}>Cet événement est lié à l'évolution du vivant.</div>
                           <button onClick={()=>{closePanel();setTimeout(()=>{const tree=document.getElementById("arbre-de-vie");if(tree)tree.scrollIntoView({behavior:"smooth",block:"start"});},200);}}
-                            style={{marginTop:8,padding:"4px 12px",borderRadius:7,border:"1px solid rgba(10,120,72,.3)",background:"transparent",color:"#0a7848",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
+                            style={{marginTop:8,padding:"4px 12px",borderRadius:999,border:"1px solid rgba(10,120,72,.3)",background:"transparent",color:"#0a7848",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
                             ↓ Aller à l'arbre de vie
                           </button>
                         </div>

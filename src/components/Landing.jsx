@@ -19,7 +19,7 @@ export function Landing({ onStart }) {
     <div style={{
       position: "fixed", inset: 0, zIndex: 1000,
       background: "radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #faf7f0 55%, #f1ebdf 100%)",
-      color: "#1c1917", fontFamily: "'DM Mono', ui-monospace, monospace",
+      color: "#1c1917", fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif",
       display: "flex", flexDirection: "column", overflow: "auto",
     }}>
       <style>{`
@@ -62,7 +62,7 @@ export function Landing({ onStart }) {
 
         <div className={`ld-in ${in_ ? "on" : ""}`} style={{ transitionDelay: ".2s", marginTop: 6 }}>
           <button className="ld-cta" onClick={onStart} style={{
-            fontFamily: "'DM Mono', monospace", fontSize: 15, letterSpacing: ".02em",
+            fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif", fontSize: 15, letterSpacing: ".02em",
             padding: "16px 34px", borderRadius: 999, cursor: "pointer",
             border: "1px solid rgba(120,80,20,.28)",
             background: "linear-gradient(180deg,#1f1c17,#141210)", color: "#f7f0e2",

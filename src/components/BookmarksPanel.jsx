@@ -31,7 +31,7 @@ export function BookmarksPanel({
         <div style={{fontSize:10,letterSpacing:".12em",textTransform:"uppercase",color:"rgba(18,16,14,.4)",marginBottom:8}}>Catégories</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
           {customTags.map(tag=>(
-            <div key={tag} style={{display:"flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:10,background:"rgba(18,16,14,.05)",border:"1px solid rgba(18,16,14,.1)",fontSize:11}}>
+            <div key={tag} style={{display:"flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:999,background:"rgba(18,16,14,.05)",border:"1px solid rgba(18,16,14,.1)",fontSize:11}}>
               <span style={{color:"#12100e"}}>{tag}</span>
               <button aria-label={`Supprimer la catégorie ${tag}`} type="button" style={css.inlineIconButton} onClick={()=>removeCustomTag(tag)}>x</button>
             </div>
@@ -40,7 +40,7 @@ export function BookmarksPanel({
             <div style={{display:"flex",gap:4}}>
               <input autoFocus value={newTagInput} onChange={e=>setNewTagInput(e.target.value)}
                 onKeyDown={e=>{if(e.key==="Enter")addCustomTag(newTagInput);if(e.key==="Escape"){setAddingTag(false);setNewTagInput("");}}}
-                style={{width:96,height:26,border:"1px solid rgba(18,16,14,.2)",borderRadius:5,padding:"0 8px",fontSize:11,fontFamily:"'DM Mono',monospace",outline:"none"}}
+                style={{width:96,height:26,border:"1px solid rgba(18,16,14,.2)",borderRadius:999,padding:"0 10px",fontSize:11,fontFamily:"inherit",outline:"none"}}
                 placeholder="Nouvelle..."/>
               <button aria-label="Ajouter la catégorie" type="button" onClick={()=>addCustomTag(newTagInput)} style={{...css.panelClose,position:"static",width:24,height:24,fontSize:10}}>✓</button>
             </div>

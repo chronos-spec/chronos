@@ -3,27 +3,32 @@ import { L, fmt, makeCoord, zoomLvl } from '../utils/time.js';
 import { PAPER_TOP, PAPER_BOTTOM, ink, INK_STRONG, ALIVE, alive } from '../theme.js';
 
 // ── THÈMES CIVILISATIONS — inline pour éviter les problèmes de chemin ─────────
+// Toutes les dates ci-dessous sont en "années avant aujourd'hui" (2025), comme
+// partout ailleurs dans l'app. Certaines valeurs historiques (ex. Empire romain,
+// Croisades, Alexandre le Grand) étaient saisies comme années de calendrier
+// brutes (ex. "753" pour 753 av. J.-C.) au lieu d'années-avant-aujourd'hui,
+// ce qui les plaçait au mauvais endroit sur la frise — corrigé ici.
 const THEMES = {
   civilisations:{ label:"Civilisations & Empires", color:"#f59e0b", icon:"🏛️", items:[
-    { id:"sumer",    label:"Sumer",                from:5500,  to:1900,  color:"#f59e0b" },
-    { id:"egypte",   label:"Égypte ancienne",      from:3100,  to:30,    color:"#eab308" },
-    { id:"grece",    label:"Grèce antique",         from:800,   to:146,   color:"#3b82f6" },
-    { id:"rome",     label:"Empire romain",         from:753,   to:476,   color:"#ef4444" },
-    { id:"byzance",  label:"Empire byzantin",       from:330,   to:1453,  color:"#8b5cf6" },
-    { id:"perse",    label:"Empire perse",          from:550,   to:330,   color:"#f97316" },
-    { id:"islam",    label:"Âge d'or islamique",    from:632,   to:1258,  color:"#10b981" },
-    { id:"ottoman",  label:"Empire ottoman",        from:1299,  to:1922,  color:"#059669" },
-    { id:"chine_h",  label:"Chine impériale",       from:221,   to:1912,  color:"#dc2626" },
-    { id:"mongol",   label:"Empire mongol",         from:1206,  to:1368,  color:"#78716c" },
-    { id:"maya",     label:"Civilisation maya",     from:2000,  to:1500,  color:"#16a34a" },
-    { id:"aztec",    label:"Empire aztèque",        from:1345,  to:1521,  color:"#15803d" },
-    { id:"inca",     label:"Empire inca",           from:1438,  to:1533,  color:"#166534" },
-    { id:"brit",     label:"Empire britannique",    from:1583,  to:1997,  color:"#1d4ed8" },
-    { id:"france",   label:"France royale",         from:987,   to:1792,  color:"#2563eb" },
+    { id:"sumer",    label:"Sumer",                from:6525,  to:3925,  color:"#f59e0b" },
+    { id:"egypte",   label:"Égypte ancienne",      from:5125,  to:2055,  color:"#eab308" },
+    { id:"grece",    label:"Grèce antique",         from:2825,  to:2171,  color:"#3b82f6" },
+    { id:"rome",     label:"Empire romain",         from:2778,  to:1549,  color:"#ef4444" },
+    { id:"byzance",  label:"Empire byzantin",       from:1695,  to:572,   color:"#8b5cf6" },
+    { id:"perse",    label:"Empire perse",          from:2575,  to:2355,  color:"#f97316" },
+    { id:"islam",    label:"Âge d'or islamique",    from:1393,  to:767,   color:"#10b981" },
+    { id:"ottoman",  label:"Empire ottoman",        from:726,   to:103,   color:"#059669" },
+    { id:"chine_h",  label:"Chine impériale",       from:2246,  to:113,   color:"#dc2626" },
+    { id:"mongol",   label:"Empire mongol",         from:819,   to:657,   color:"#78716c" },
+    { id:"maya",     label:"Civilisation maya",     from:4025,  to:525,   color:"#16a34a" },
+    { id:"aztec",    label:"Empire aztèque",        from:680,   to:504,   color:"#15803d" },
+    { id:"inca",     label:"Empire inca",           from:587,   to:492,   color:"#166534" },
+    { id:"brit",     label:"Empire britannique",    from:442,   to:28,    color:"#1d4ed8" },
+    { id:"france",   label:"France royale",         from:1038,  to:233,   color:"#2563eb" },
   ]},
   religions:{ label:"Religions & Philosophies", color:"#8b5cf6", icon:"✨", items:[
     { id:"hindou",   label:"Hindouisme",            from:3500,  to:null,  color:"#f97316" },
-    { id:"judaisme", label:"Judaïsme",              from:2000,  to:null,  color:"#3b82f6" },
+    { id:"judaisme", label:"Judaïsme",              from:3300,  to:null,  color:"#3b82f6" },
     { id:"boud",     label:"Bouddhisme",            from:2530,  to:null,  color:"#eab308" },
     { id:"confuc",   label:"Confucianisme",         from:2500,  to:null,  color:"#dc2626" },
     { id:"christi",  label:"Christianisme",         from:2025,  to:null,  color:"#6366f1" },
@@ -41,8 +46,8 @@ const THEMES = {
     { id:"ia",       label:"IA générative",         from:3,     to:null,  color:"#8b5cf6" },
   ]},
   guerres:{ label:"Guerres & Conflits", color:"#ef4444", icon:"⚔️", items:[
-    { id:"croisades",label:"Croisades",             from:1096,  to:1291,  color:"#7c3aed" },
-    { id:"gua",      label:"Guerre de Cent Ans",    from:1337,  to:1453,  color:"#2563eb" },
+    { id:"croisades",label:"Croisades",             from:929,   to:734,   color:"#7c3aed" },
+    { id:"gua",      label:"Guerre de Cent Ans",    from:688,   to:572,   color:"#2563eb" },
     { id:"napo",     label:"Guerres napoléoniennes",from:221,   to:210,   color:"#1d4ed8" },
     { id:"g1",       label:"Première Guerre mondiale",from:110, to:107,   color:"#78716c" },
     { id:"g2",       label:"Seconde Guerre mondiale",from:86,   to:80,    color:"#1f2937" },
@@ -50,14 +55,14 @@ const THEMES = {
   ]},
   arts:{ label:"Arts & Culture", color:"#ec4899", icon:"🎨", items:[
     { id:"chauvet",  label:"Art rupestre",          from:36500, to:36000, color:"#f97316" },
-    { id:"renaiss",  label:"Renaissance italienne", from:430,   to:300,   color:"#ec4899" },
-    { id:"baroque",  label:"Baroque",               from:380,   to:250,   color:"#f97316" },
+    { id:"renaiss",  label:"Renaissance italienne", from:625,   to:425,   color:"#ec4899" },
+    { id:"baroque",  label:"Baroque",               from:425,   to:275,   color:"#f97316" },
     { id:"impression",label:"Impressionnisme",      from:155,   to:120,   color:"#8b5cf6" },
     { id:"cinema",   label:"Cinéma",                from:130,   to:null,  color:"#7c3aed" },
   ]},
   personnages:{ label:"Personnages clés", color:"#f97316", icon:"👤", items:[
-    { id:"alex",     label:"Alexandre le Grand",    from:2356,  to:2323,  color:"#6366f1" },
-    { id:"cesar",    label:"Jules César",           from:2100,  to:2044,  color:"#ef4444" },
+    { id:"alex",     label:"Alexandre le Grand",    from:2381,  to:2348,  color:"#6366f1" },
+    { id:"cesar",    label:"Jules César",           from:2125,  to:2069,  color:"#ef4444" },
     { id:"leon",     label:"Léonard de Vinci",      from:567,   to:515,   color:"#ec4899" },
     { id:"napoleon", label:"Napoléon Bonaparte",    from:256,   to:204,   color:"#1d4ed8" },
     { id:"darwin2",  label:"Charles Darwin",        from:216,   to:143,   color:"#16a34a" },

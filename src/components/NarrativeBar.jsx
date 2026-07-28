@@ -13,7 +13,7 @@ export function NarrativeBar({ story, index, onPrev, onNext, onExit, onShuffle, 
       background: "rgba(255,253,248,.97)", backdropFilter: "blur(6px)",
       border: "1px solid rgba(28,25,23,.12)", borderRadius: 16,
       boxShadow: "0 20px 50px rgba(28,25,23,.18)", overflow: "hidden",
-      fontFamily: "'DM Mono', ui-monospace, monospace",
+      fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif",
     }}>
       {/* progression */}
       <div style={{ display: "flex", gap: 4, padding: "10px 16px 0" }}>

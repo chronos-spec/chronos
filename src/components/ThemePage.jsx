@@ -50,7 +50,7 @@ export function ThemePage({ themeKey, onClose }) {
         backdropFilter: "blur(6px)", borderBottom: `2px solid ${theme.color}`, padding: "14px 24px" }}>
         <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <button onClick={onClose} aria-label="Retour à la frise"
-            style={{ width: 34, height: 34, borderRadius: 9, border: "1px solid rgba(23,20,18,.15)",
+            style={{ width: 34, height: 34, borderRadius: "50%", border: "1px solid rgba(23,20,18,.15)",
               background: "#fff", color: "rgba(23,20,18,.6)", fontSize: 16, cursor: "pointer", flexShrink: 0 }}>
             ←
           </button>
@@ -119,7 +119,7 @@ export function ThemePage({ themeKey, onClose }) {
         </p>
 
         <button onClick={onClose}
-          style={{ marginTop: 24, padding: "10px 18px", borderRadius: 10, border: "1px solid rgba(23,20,18,.15)",
+          style={{ marginTop: 24, padding: "10px 18px", borderRadius: 999, border: "1px solid rgba(23,20,18,.15)",
             background: "#fff", color: "rgba(23,20,18,.65)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
           ← Retour à la frise
         </button>

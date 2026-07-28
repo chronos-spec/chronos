@@ -1,11 +1,11 @@
-import { SURFACE, PANEL, INK, MUTED, LINE, GOLD } from "./theme.js";
+import { SURFACE, PANEL, INK, MUTED, LINE, GOLD, FONT_SANS } from "./theme.js";
 
 export const css = {
   app:{
     minHeight:"100vh",
     background:"#efede7",
     color:INK,
-    fontFamily:"'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+    fontFamily:FONT_SANS,
     overflow:"hidden"
   },
   shell:{
@@ -37,12 +37,12 @@ export const css = {
   sidebarHeader:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12},
   brandBlock:{minWidth:0},
   brand:{fontFamily:"'Fraunces',Georgia,serif",fontSize:30,fontWeight:700,color:INK,lineHeight:1},
-  brandSub:{fontFamily:"'DM Mono',monospace",fontSize:11,color:GOLD,letterSpacing:".08em",marginLeft:6},
+  brandSub:{fontFamily:FONT_SANS,fontSize:11,color:GOLD,letterSpacing:".08em",marginLeft:6},
   brandLine:{fontSize:11,lineHeight:1.5,color:MUTED,marginTop:8,maxWidth:230},
   compactButton:{
     height:30,
     padding:"0 10px",
-    borderRadius:7,
+    borderRadius:999,
     border:`1px solid ${LINE}`,
     background:"#f2efe8",
     color:INK,
@@ -65,7 +65,7 @@ export const css = {
     gap:7,
     minHeight:34,
     padding:"7px 9px",
-    borderRadius:7,
+    borderRadius:12,
     border:`1px solid ${ep.stripe}33`,
     background:ep.pillBg,
     color:ep.pillText,
@@ -78,8 +78,8 @@ export const css = {
   periodGrid:{display:"flex",flexWrap:"wrap",gap:6},
   periodPill:(per)=>({
     flexShrink:0,
-    padding:"5px 8px",
-    borderRadius:7,
+    padding:"5px 10px",
+    borderRadius:999,
     fontSize:10.5,
     letterSpacing:0,
     fontWeight:600,
@@ -93,7 +93,7 @@ export const css = {
   sidebarFooter:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:"auto",paddingTop:8},
   sidebarAction:{
     height:36,
-    borderRadius:7,
+    borderRadius:999,
     border:`1px solid ${LINE}`,
     background:PANEL,
     color:INK,
@@ -119,7 +119,7 @@ export const css = {
   primaryAction:{
     height:36,
     padding:"0 14px",
-    borderRadius:7,
+    borderRadius:999,
     border:"1px solid rgba(185,130,47,.42)",
     background:"#fff7e8",
     color:"#7a4b12",
@@ -131,7 +131,7 @@ export const css = {
   secondaryAction:{
     height:36,
     padding:"0 12px",
-    borderRadius:7,
+    borderRadius:999,
     border:`1px solid ${LINE}`,
     background:PANEL,
     color:INK,
@@ -209,7 +209,7 @@ export const css = {
   zoomBtn:{
     width:36,
     height:36,
-    borderRadius:7,
+    borderRadius:"50%",
     background:PANEL,
     border:`1px solid ${LINE}`,
     cursor:"pointer",

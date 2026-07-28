@@ -47,7 +47,7 @@ export function EventPanel({
             <div style={{display:"flex",gap:3,alignItems:"center"}}>
               <input autoFocus value={newTagInput} onChange={e=>setNewTagInput(e.target.value)}
                 onKeyDown={e=>{if(e.key==="Enter")addCustomTag(newTagInput);if(e.key==="Escape"){setAddingTag(false);setNewTagInput("");}}}
-                style={{width:86,height:24,border:"1px solid rgba(18,16,14,.2)",borderRadius:5,padding:"0 7px",fontSize:11,fontFamily:"'DM Mono',monospace",outline:"none"}}
+                style={{width:86,height:24,border:"1px solid rgba(18,16,14,.2)",borderRadius:999,padding:"0 9px",fontSize:11,fontFamily:"inherit",outline:"none"}}
                 placeholder="Nom..."/>
               <button type="button" style={css.inlineConfirmButton} onClick={()=>addCustomTag(newTagInput)}>✓</button>
             </div>

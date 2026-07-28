@@ -26,7 +26,7 @@ export function EpochBubbles({ navigateToEpoch }) {
             border: `1px solid ${e.color}33`,
             background: `linear-gradient(165deg, ${e.bg}, #ffffff 80%)`,
             boxShadow: "0 6px 18px rgba(28,25,23,.05)",
-            fontFamily: "'DM Mono', ui-monospace, monospace",
+            fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif",
             transition: "transform .16s ease, box-shadow .16s ease, border-color .16s ease",
           }}>
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
