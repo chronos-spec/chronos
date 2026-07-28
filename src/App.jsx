@@ -19,6 +19,7 @@ import { NarrativeBar } from "./components/NarrativeBar.jsx";
 import { STORIES, randomStory } from "./data/stories.js";
 import { BIBLE_SOURCES } from "./data/bibleEvents.js";
 import { ThemePage } from "./components/ThemePage.jsx";
+import { EVENT_GEO, REGION_LABELS } from "./data/eventGeo.js";
 
 // Respecte la préférence système "mouvement réduit" : les animations de zoom
 // passent alors en une seule image (saut direct) plutôt qu'un fondu progressif.
@@ -231,6 +232,7 @@ function Chronos() {
   const [focusYa,setFocusYa]=useState(null);              // instant temporel partagé avec l'arbre
   const [speciesFocus,setSpeciesFocus]=useState(null);     // espèce affichée en évidence sur la frise
   const [themePage,setThemePage]=useState(null);          // clé du thème (THEMES) ouvert en page dédiée, ou null
+  const [focusRegion,setFocusRegion]=useState(null);       // cadrage régional du planisphère (événement sélectionné)
   const [annotations,setAnnotations]=useState({});        // {evId: texte}
   const [annotInput,setAnnotInput]=useState("");
   const [annotTarget,setAnnotTarget]=useState(null);
@@ -478,12 +480,31 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
     fetchPeriodRich(item);
   },[scheduleRedraw,fetchPeriodRich]);
 
+  // Un événement géolocalisé cadre le planisphère sur sa région et met en
+  // évidence les autres événements connus au même endroit, avant ou après.
+  const regionFocusFor=useCallback((ev)=>{
+    const geo=EVENT_GEO[ev.id];if(!geo)return null;
+    const s=S.current;
+    const events=[...ALL_EVENTS,...s.aiEvents]
+      .map(e=>({e,geo:EVENT_GEO[e.id]}))
+      .filter(({geo:g})=>g?.region===geo.region)
+      .map(({e,geo:g})=>({id:e.id,title:e.title,yearsAgo:e.yearsAgo,date_label:e.date_label,lon:g.lon,lat:g.lat,plate:g.plate}))
+      .sort((a,b)=>b.yearsAgo-a.yearsAgo);
+    return{
+      id:`${ev.id}_${Date.now()}`,ya:ev.yearsAgo,currentId:ev.id,
+      regionLabel:REGION_LABELS[geo.region]||geo.region,
+      points:events.map(e=>({lon:e.lon,lat:e.lat,plate:e.plate})),
+      events,
+    };
+  },[]);
+
   const openPanel=useCallback((ev)=>{
     S.current._currentPanelEv=ev;S.current.selectedId=ev.id;scheduleRedraw();
     setFocusYa(ev.yearsAgo); // l'arbre se cale sur l'instant de l'événement
+    setFocusRegion(regionFocusFor(ev)); // le planisphère cadre sa région (ou se réinitialise si sans lieu)
     setUi(u=>({...u,panelOpen:true,panelCat:ev.cat.toUpperCase(),panelCatColor:cc(ev.cat),panelDate:ev.date_label,panelTitle:ev.title,panelContent:"loading",panelError:null,tooltip:null,panelEventId:ev.id,showBookmarkMenu:false}));
     fetchRich(ev);
-  },[scheduleRedraw,fetchRich]);
+  },[scheduleRedraw,fetchRich,regionFocusFor]);
 
   const closePanel=useCallback(()=>{S.current.selectedId=null;scheduleRedraw();setUi(u=>({...u,panelOpen:false}));},[scheduleRedraw]);
 
@@ -1287,7 +1308,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           {/* ── PLANISPHÈRE ── */}
           {!fullscreen&&(
             <div id="planisphere">
-              <Planisphere focusYa={focusYa} selectedSpecies={selectedSpecies} onSelectSpecies={locateSpecies} onClearSpecies={clearSpecies} />
+              <Planisphere focusYa={focusYa} selectedSpecies={selectedSpecies} onSelectSpecies={locateSpecies} onClearSpecies={clearSpecies} focusRegion={focusRegion} onClearRegion={()=>setFocusRegion(null)} />
             </div>
           )}
 

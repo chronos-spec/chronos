@@ -37,7 +37,7 @@ const SPECIES_LIST = Object.keys(SPECIES_GEO)
 
 const clean = (label="") => label.replace(/💀|⭐|🔀/g,"").trim();
 
-export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSpecies, onClearSpecies, focusRegion = null }) {
+export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSpecies, onClearSpecies, focusRegion = null, onClearRegion }) {
   const [localYa, setLocalYa]         = useState(0);
   const [displayedYa, setDisplayedYa] = useState(0);
   const [search, setSearch]           = useState("");
@@ -232,6 +232,14 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
     return projectPointAt(journeyPos.plate, journeyPos.lon, journeyPos.lat, transforms);
   }, [journey, journeyPos, transforms]);
 
+  // Événements de la même région que celui choisi sur la frise — projetés pour
+  // être affichés ensemble, celui cliqué mis en évidence, les autres estompés.
+  const regionProjected = useMemo(() => {
+    if (!focusRegion?.events?.length) return [];
+    return focusRegion.events.map(e => ({ ...e, ...projectPointAt(e.plate, e.lon, e.lat, transforms) }));
+  }, [focusRegion, transforms]);
+  const currentRegionEvent = regionProjected.find(e => e.id === focusRegion?.currentId) || null;
+
   // Petit fondu à chaque changement d'espèce plutôt qu'un pop-in brutal.
   useEffect(() => {
     setFade(false);
@@ -418,18 +426,55 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
               <circle cx={journeyMarker.x} cy={journeyMarker.y} r={5.5*zoomK} fill={journey.color} stroke="#fff" strokeWidth={1.6*zoomK} />
             </g>
           )}
+
+          {/* Événements de la région choisie sur la frise — l'un d'eux mis en évidence */}
+          {regionProjected.map(e => {
+            const isCurrent = e.id === focusRegion?.currentId;
+            return (
+              <g key={e.id}>
+                {isCurrent && <circle cx={e.x} cy={e.y} r={16*zoomK} fill="#c2703d26" />}
+                <circle cx={e.x} cy={e.y} r={(isCurrent?6.5:4)*zoomK} fill={isCurrent ? "#c2703d" : "#0e7490"}
+                  stroke="#fff" strokeWidth={(isCurrent?1.8:1.2)*zoomK} />
+              </g>
+            );
+          })}
         </svg>
 
-        {journey && journeyPos && (
+        {focusRegion && regionProjected.length > 0 ? (
+          <div style={{ position:"absolute", bottom:0, left:0, right:0, background:"rgba(255,253,248,.97)",
+            borderTop:"1px solid rgba(23,20,18,.1)", padding:"8px 12px" }}>
+            <div style={{ fontSize:10.5, color:"rgba(28,25,23,.5)", marginBottom:5, display:"flex", alignItems:"center", gap:8 }}>
+              <span>📍 <strong style={{ color:"#1c1917" }}>{focusRegion.regionLabel}</strong>
+              {" "}· {regionProjected.length} événement{regionProjected.length>1?"s":""} connu{regionProjected.length>1?"s":""} ici</span>
+              {onClearRegion && (
+                <button onClick={onClearRegion} aria-label="Fermer"
+                  style={{ marginLeft:"auto", width:18, height:18, borderRadius:"50%", border:"none", background:"transparent",
+                    color:"rgba(23,20,18,.4)", fontSize:12, cursor:"pointer", lineHeight:1, flexShrink:0 }}>
+                  ✕
+                </button>
+              )}
+            </div>
+            <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:2 }}>
+              {regionProjected.map(e => {
+                const isCurrent = e.id === focusRegion.currentId;
+                return (
+                  <span key={e.id} style={{ flexShrink:0, display:"inline-flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:999,
+                    border:`1px solid ${isCurrent ? "#c2703d" : "rgba(23,20,18,.15)"}`, background:isCurrent ? "rgba(194,112,61,.12)" : "#fff",
+                    fontSize:11, color:isCurrent ? "#c2703d" : "rgba(23,20,18,.65)", fontWeight:isCurrent?700:500, whiteSpace:"nowrap" }}>
+                    {e.title} <span style={{ opacity:.65 }}>· {fmt(e.yearsAgo)}</span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ) : journey && journeyPos ? (
           <div style={{ position:"absolute", bottom:10, left:14, right:14, display:"flex", alignItems:"center", gap:8,
             flexWrap:"wrap", pointerEvents:"none" }}>
             <span style={{ width:9, height:9, borderRadius:"50%", background:journey.color, flexShrink:0 }} />
             <strong style={{ fontFamily:"Georgia,serif", fontSize:14, color:"#1c1917" }}>{journeyPos.label}</strong>
             <span style={{ fontSize:11, color:"rgba(28,25,23,.6)" }}>il y a {fmt(Math.max(journeyYa, 0.1))}</span>
           </div>
-        )}
-
-        {!journey && selectedSpecies && (
+        ) : selectedSpecies ? (
           <div style={{ position:"absolute", bottom:10, left:14, right:14, display:"flex", alignItems:"center", gap:8,
             flexWrap:"wrap", opacity:fade?1:0, transition:"opacity .5s ease", pointerEvents:"none" }}>
             <span style={{ width:9, height:9, borderRadius:"50%", background:speciesColor, flexShrink:0 }} />
@@ -438,7 +483,7 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
               {projected.map(p => p.note).join("  ·  ")}
             </span>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
