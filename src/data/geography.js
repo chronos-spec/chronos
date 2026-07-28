@@ -113,31 +113,46 @@ for (const id of PLATE_IDS) {
 }
 
 // ── IMAGES-CLÉS ──────────────────────────────────────────────────────────
-// Datées et calées sur des repères réels de la littérature (Scotese/PALEOMAP,
-// EarthByte/GPlates) : assemblage de la Pangée ~335-260 Ma, début de
-// fragmentation ~200 Ma, ouverture de l'Atlantique central ~180 Ma puis Sud
-// ~150-130 Ma, séparation Inde-Antarctique ~136-120 Ma suivie de la dérive la
-// plus rapide connue d'une plaque continentale jusqu'à sa collision avec
-// l'Asie ~50 Ma (soulèvement de l'Himalaya), séparation Australie-Antarctique
-// ~45 Ma. Approximation pédagogique par plaque rigide unique — pas une
-// reconstruction GPlates exacte (celle-ci utiliserait des pôles d'Euler par
-// micro-plaque et par intervalle de quelques millions d'années).
-// Afrique sert de plaque de référence (quasi immobile) ; dx/dy en pixels
-// de projection, rot en degrés, autour du centre propre de chaque plaque.
+// Chronologie recalée sur le schéma « Assembly / Breakup of Pangea » du
+// Lisbon Earthquake Museum (Quake, lisbonquake.com/fr/scanner/derive-continents) :
+// Rodinia ~750 Ma → 650 Ma → 458 Ma → 390 Ma → Pangée assemblée 237 Ma →
+// 195 Ma → 152 Ma (« les continents que nous connaissons prennent forme ») →
+// 66 Ma → aujourd'hui. Complétée entre 66 Ma et 23 Ma par deux étapes datées
+// de la littérature (Scotese/PALEOMAP, EarthByte/GPlates) que ce schéma
+// simplifié ne détaille pas : la collision Inde-Asie (~50 Ma, soulèvement de
+// l'Himalaya) et la séparation Australie-Antarctique (~45 Ma). Rodinia reste
+// la reconstruction la plus incertaine de toutes (plusieurs hypothèses
+// concurrentes existent dans la littérature scientifique) — traitée ici
+// comme un point de départ illustratif, pas une position figée. Approximation
+// pédagogique par plaque rigide unique — pas une reconstruction GPlates
+// exacte (celle-ci utiliserait des pôles d'Euler par micro-plaque et par
+// intervalle de quelques millions d'années). Afrique sert de plaque de
+// référence (quasi immobile) ; dx/dy en pixels de projection, rot en degrés,
+// autour du centre propre de chaque plaque.
 const IDENTITY = { dx:0, dy:0, rot:0 };
 
 export const KEYFRAMES = [
-  { t:540e6, label:"Cambrien — blocs dispersés, Gondwana au pôle Sud",
+  { t:750e6, label:"Rodinia — un supercontinent bien plus ancien que la Pangée",
     transforms:{
       africa: IDENTITY,
-      eurasia: { dx:0, dy:-14, rot:0 },
-      north_america: { dx:10, dy:28, rot:0 },
-      south_america: { dx:14, dy:42, rot:0 },
-      india: { dx:-15, dy:90, rot:8 },
-      australia: { dx:-2, dy:40, rot:0 },
-      antarctica: IDENTITY,
+      eurasia: { dx:25, dy:-35, rot:20 },
+      north_america: { dx:-25, dy:15, rot:-25 },
+      south_america: { dx:-10, dy:60, rot:-30 },
+      india: { dx:-20, dy:100, rot:5 },
+      australia: { dx:-15, dy:70, rot:-40 },
+      antarctica: { dx:10, dy:20, rot:15 },
     }},
-  { t:470e6, label:"Ordovicien — Gondwana toujours austral",
+  { t:650e6, label:"Rodinia se disloque",
+    transforms:{
+      africa: IDENTITY,
+      eurasia: { dx:10, dy:-25, rot:10 },
+      north_america: { dx:-10, dy:20, rot:-10 },
+      south_america: { dx:5, dy:50, rot:-15 },
+      india: { dx:-18, dy:95, rot:7 },
+      australia: { dx:-8, dy:50, rot:-15 },
+      antarctica: { dx:5, dy:8, rot:8 },
+    }},
+  { t:458e6, label:"Ordovicien — Gondwana austral",
     transforms:{
       africa: IDENTITY,
       eurasia: { dx:-4, dy:-3, rot:-1 },
@@ -147,7 +162,7 @@ export const KEYFRAMES = [
       australia: { dx:-5, dy:47.5, rot:1.5 },
       antarctica: { dx:1.5, dy:-3, rot:1 },
     }},
-  { t:400e6, label:"Dévonien — collision Laurentia/Baltica (Euramérica)",
+  { t:390e6, label:"Dévonien — collision Laurentia/Baltica (Euramérica)",
     transforms:{
       africa: IDENTITY,
       eurasia: { dx:-8, dy:8, rot:-2 },
@@ -157,17 +172,7 @@ export const KEYFRAMES = [
       australia: { dx:-8, dy:55, rot:3 },
       antarctica: { dx:3, dy:-6, rot:2 },
     }},
-  { t:300e6, label:"Carbonifère — assemblage de la Pangée",
-    transforms:{
-      africa: IDENTITY,
-      eurasia: { dx:-30, dy:10, rot:-6 },
-      north_america: { dx:95, dy:-24, rot:14 },
-      south_america: { dx:55, dy:-30, rot:-18 },
-      india: { dx:-58, dy:132, rot:17 },
-      australia: { dx:-13, dy:78, rot:5 },
-      antarctica: { dx:6, dy:-13, rot:4 },
-    }},
-  { t:252e6, label:"Permien — Pangée assemblée",
+  { t:237e6, label:"Pangée assemblée",
     transforms:{
       africa: IDENTITY,
       eurasia: { dx:-32, dy:12, rot:-7 },
@@ -177,7 +182,7 @@ export const KEYFRAMES = [
       australia: { dx:-14, dy:80, rot:5 },
       antarctica: { dx:7, dy:-14, rot:4 },
     }},
-  { t:200e6, label:"Trias/Jurassique — la Pangée commence à se fissurer",
+  { t:195e6, label:"Trias/Jurassique — la Pangée commence à se fissurer",
     transforms:{
       africa: IDENTITY,
       eurasia: { dx:-26, dy:9, rot:-6 },
@@ -187,25 +192,15 @@ export const KEYFRAMES = [
       australia: { dx:-12, dy:74, rot:5 },
       antarctica: { dx:6, dy:-12, rot:4 },
     }},
-  { t:180e6, label:"Jurassique — l'Atlantique central s'ouvre",
+  { t:152e6, label:"Jurassique — les continents actuels prennent forme",
     transforms:{
       africa: IDENTITY,
-      eurasia: { dx:-20, dy:7, rot:-5 },
-      north_america: { dx:70, dy:-20, rot:11 },
-      south_america: { dx:38, dy:-22, rot:-15 },
-      india: { dx:-48, dy:121, rot:17 },
-      australia: { dx:-11, dy:69, rot:5 },
-      antarctica: { dx:6, dy:-11, rot:4 },
-    }},
-  { t:145e6, label:"Crétacé — Gondwana se fragmente",
-    transforms:{
-      africa: IDENTITY,
-      eurasia: { dx:-10, dy:4, rot:-3 },
-      north_america: { dx:45, dy:-15, rot:8 },
-      south_america: { dx:22, dy:-14, rot:-12 },
-      india: { dx:-40, dy:110, rot:15 },
-      australia: { dx:-10, dy:60, rot:4 },
-      antarctica: { dx:5, dy:-10, rot:3 },
+      eurasia: { dx:-11, dy:4.5, rot:-3.2 },
+      north_america: { dx:48, dy:-16, rot:8.5 },
+      south_america: { dx:24, dy:-15, rot:-12.5 },
+      india: { dx:-42, dy:112, rot:15.3 },
+      australia: { dx:-10.2, dy:61, rot:4.1 },
+      antarctica: { dx:5.1, dy:-10.2, rot:3.1 },
     }},
   { t:100e6, label:"Crétacé moyen — l'Atlantique Sud s'ouvre, l'Inde s'isole",
     transforms:{

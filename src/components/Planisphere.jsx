@@ -26,9 +26,10 @@ const ERA_PRESETS = [
   { label:"Néogène",          ya:15e6 },
   { label:"Extinction K-Pg",  ya:66e6 },
   { label:"Crétacé",          ya:100e6 },
-  { label:"Jurassique",       ya:150e6 },
-  { label:"Pangée",           ya:252e6 },
+  { label:"Jurassique",       ya:152e6 },
+  { label:"Pangée",           ya:237e6 },
   { label:"Cambrien",         ya:500e6 },
+  { label:"Rodinia",          ya:750e6 },
 ];
 
 const SPECIES_LIST = Object.keys(SPECIES_GEO)
@@ -249,7 +250,7 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
     }
   }, [selectedSpecies?.id]);
 
-  const sliderMax = 540e6;
+  const sliderMax = 750e6; // remonte jusqu'à Rodinia, le supercontinent qui précède la Pangée
   const sliderVal = Math.min(Math.max(localYa, 0), sliderMax);
   const speciesColor = selectedSpecies?.color || "#c2703d";
 
@@ -324,7 +325,7 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
         <input type="range" min={0} max={sliderMax} step={1e6} value={sliderVal}
           onChange={e => setLocalYa(Number(e.target.value))}
           style={{ flex:1, accentColor:"#0e7490" }} />
-        <span style={{ fontSize:10.5, color:"rgba(28,25,23,.5)", width:56, flexShrink:0, textAlign:"right" }}>540 Ma</span>
+        <span style={{ fontSize:10.5, color:"rgba(28,25,23,.5)", width:56, flexShrink:0, textAlign:"right" }}>750 Ma</span>
       </div>
 
       {/* Recherche d'espèce */}
