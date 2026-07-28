@@ -57,8 +57,17 @@ for (const id of PLATE_IDS) {
 // de projection, rot en degrés, autour du centre propre de chaque plaque.
 const IDENTITY = { dx:0, dy:0, rot:0 };
 
+// Images-clés datées et calées sur des repères réels de la littérature
+// (Scotese/PALEOMAP, EarthByte/GPlates) : assemblage de la Pangée ~335-260 Ma,
+// début de fragmentation ~200 Ma, ouverture de l'Atlantique central ~180 Ma
+// puis Sud ~150-130 Ma, séparation Inde-Antarctique ~136-120 Ma suivie de la
+// dérive la plus rapide connue d'une plaque continentale jusqu'à sa collision
+// avec l'Asie ~50 Ma (soulèvement de l'Himalaya), séparation Australie-
+// Antarctique ~45 Ma. Approximation pédagogique par plaque rigide unique —
+// pas une reconstruction GPlates exacte (celle-ci utiliserait des pôles
+// d'Euler par micro-plaque et par intervalle de quelques millions d'années).
 export const KEYFRAMES = [
-  { t:540e6, label:"Cambrien — blocs dispersés",
+  { t:540e6, label:"Cambrien — blocs dispersés, Gondwana au pôle Sud",
     transforms:{
       africa: IDENTITY,
       eurasia: { dx:0, dy:-14, rot:0 },
@@ -68,7 +77,17 @@ export const KEYFRAMES = [
       australia: { dx:-2, dy:40, rot:0 },
       antarctica: IDENTITY,
     }},
-  { t:400e6, label:"Dévonien — Euramérica",
+  { t:470e6, label:"Ordovicien — Gondwana toujours austral",
+    transforms:{
+      africa: IDENTITY,
+      eurasia: { dx:-4, dy:-3, rot:-1 },
+      north_america: { dx:25, dy:11, rot:3 },
+      south_america: { dx:14.5, dy:28, rot:-2.5 },
+      india: { dx:-22.5, dy:95, rot:10 },
+      australia: { dx:-5, dy:47.5, rot:1.5 },
+      antarctica: { dx:1.5, dy:-3, rot:1 },
+    }},
+  { t:400e6, label:"Dévonien — collision Laurentia/Baltica (Euramérica)",
     transforms:{
       africa: IDENTITY,
       eurasia: { dx:-8, dy:8, rot:-2 },
@@ -98,7 +117,7 @@ export const KEYFRAMES = [
       australia: { dx:-14, dy:80, rot:5 },
       antarctica: { dx:7, dy:-14, rot:4 },
     }},
-  { t:200e6, label:"Jurassique — la Pangée se fissure",
+  { t:200e6, label:"Trias/Jurassique — la Pangée commence à se fissurer",
     transforms:{
       africa: IDENTITY,
       eurasia: { dx:-26, dy:9, rot:-6 },
@@ -107,6 +126,16 @@ export const KEYFRAMES = [
       india: { dx:-52, dy:128, rot:18 },
       australia: { dx:-12, dy:74, rot:5 },
       antarctica: { dx:6, dy:-12, rot:4 },
+    }},
+  { t:180e6, label:"Jurassique — l'Atlantique central s'ouvre",
+    transforms:{
+      africa: IDENTITY,
+      eurasia: { dx:-20, dy:7, rot:-5 },
+      north_america: { dx:70, dy:-20, rot:11 },
+      south_america: { dx:38, dy:-22, rot:-15 },
+      india: { dx:-48, dy:121, rot:17 },
+      australia: { dx:-11, dy:69, rot:5 },
+      antarctica: { dx:6, dy:-11, rot:4 },
     }},
   { t:145e6, label:"Crétacé — Gondwana se fragmente",
     transforms:{
@@ -118,7 +147,17 @@ export const KEYFRAMES = [
       australia: { dx:-10, dy:60, rot:4 },
       antarctica: { dx:5, dy:-10, rot:3 },
     }},
-  { t:66e6, label:"Fin du Crétacé — Chicxulub",
+  { t:100e6, label:"Crétacé moyen — l'Atlantique Sud s'ouvre, l'Inde s'isole",
+    transforms:{
+      africa: IDENTITY,
+      eurasia: { dx:-8, dy:3, rot:-2 },
+      north_america: { dx:32, dy:-11, rot:6 },
+      south_america: { dx:16, dy:-9, rot:-10 },
+      india: { dx:-45, dy:120, rot:17 },
+      australia: { dx:-9, dy:53, rot:4 },
+      antarctica: { dx:4, dy:-9, rot:3 },
+    }},
+  { t:66e6, label:"Fin du Crétacé — Chicxulub, l'Inde fonce vers l'Asie",
     transforms:{
       africa: IDENTITY,
       eurasia: { dx:-6, dy:2, rot:-2 },
@@ -127,6 +166,26 @@ export const KEYFRAMES = [
       india: { dx:-25, dy:55, rot:10 },
       australia: { dx:-8, dy:45, rot:3 },
       antarctica: { dx:3, dy:-5, rot:2 },
+    }},
+  { t:50e6, label:"Éocène — collision Inde-Asie, l'Himalaya se soulève",
+    transforms:{
+      africa: IDENTITY,
+      eurasia: { dx:-4, dy:1, rot:-1.5 },
+      north_america: { dx:14, dy:-6, rot:3.5 },
+      south_america: { dx:7, dy:-3, rot:-5.5 },
+      india: { dx:-6, dy:12, rot:3 },
+      australia: { dx:-6, dy:28, rot:2 },
+      antarctica: { dx:2, dy:-3, rot:1.2 },
+    }},
+  { t:34e6, label:"Éocène-Oligocène — l'Australie quitte l'Antarctique",
+    transforms:{
+      africa: IDENTITY,
+      eurasia: { dx:-3, dy:0.5, rot:-1.3 },
+      north_america: { dx:10, dy:-4, rot:2.8 },
+      south_america: { dx:5, dy:-1.5, rot:-4.3 },
+      india: { dx:-3.6, dy:6.7, rot:2.4 },
+      australia: { dx:-1, dy:2, rot:0.3 },
+      antarctica: { dx:0.8, dy:-1.3, rot:0.5 },
     }},
   { t:23e6, label:"Néogène — proche du présent",
     transforms:{
