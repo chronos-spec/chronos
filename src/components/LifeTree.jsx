@@ -19,18 +19,16 @@ function aliveAt(node, T) {
 
 // Lien Arbre de vie <-> Frise chronologique
 // Contexte permettant aux noeuds (rendus recursivement) de declencher un zoom
-// de la frise sur la periode d'apparition de l'espece cliquee.
+// de la frise sur la periode d'apparition de l'espece cliquee, sans quitter
+// l'arbre : la frise se met à jour en arrière-plan, un bandeau le confirme
+// ici, et l'utilisateur choisit lui-même s'il veut aller la regarder.
 const FocusCtx = createContext(null);
 function useFocusOnTimeline() {
-  const onFocus = useContext(FocusCtx);
+  const ctx = useContext(FocusCtx);
   return (node) => {
-    if (!onFocus || !node || node.from == null) return;
-    onFocus({ from: node.from, to: node.to });
-    // Le conteneur scrollable est <main>, pas la fenêtre : on cible la frise.
-    if (typeof document !== "undefined") {
-      const frise = document.getElementById("frise-chronologique");
-      if (frise) frise.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (!ctx?.onFocus || !node || node.from == null) return;
+    ctx.onFocus({ from: node.from, to: node.to });
+    ctx.notify?.(node);
   };
 }
 
@@ -798,8 +796,27 @@ export function LifeTree({ onFocusTimeline, onLocateSpecies, focusYa = null } = 
       .slice(0, 22);
   }, [activeFocus]);
   const [panel, setPanel]       = useState(null); // nœud affiché en fiche
+  const [focusBanner, setFocusBanner] = useState(null); // dernière espèce envoyée sur la frise
   const nodeRefs = useRef(null);
   const treeRef  = useRef(null);
+
+  // Le bandeau de confirmation se referme tout seul après quelques secondes.
+  useEffect(() => {
+    if (!focusBanner) return;
+    const t = setTimeout(() => setFocusBanner(null), 6000);
+    return () => clearTimeout(t);
+  }, [focusBanner]);
+
+  const focusCtxValue = useMemo(() => ({
+    onFocus: onFocusTimeline,
+    notify: (node) => setFocusBanner(node),
+  }), [onFocusTimeline]);
+
+  const jumpToFrise = () => {
+    if (typeof document === "undefined") return;
+    const frise = document.getElementById("frise-chronologique");
+    if (frise) frise.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const results = useMemo(() => {
     if (!search.trim()) return [];
@@ -828,7 +845,7 @@ export function LifeTree({ onFocusTimeline, onLocateSpecies, focusYa = null } = 
   };
 
   return (
-    <FocusCtx.Provider value={onFocusTimeline}>
+    <FocusCtx.Provider value={focusCtxValue}>
     <LocateCtx.Provider value={onLocateSpecies}>
     <FocusYaCtx.Provider value={activeFocus}>
     <div style={{fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",
@@ -842,9 +859,32 @@ export function LifeTree({ onFocusTimeline, onLocateSpecies, focusYa = null } = 
       <div style={{maxWidth:900,margin:"0 auto"}}>
         <div style={{display:"flex",alignItems:"baseline",gap:12,marginBottom:8,flexWrap:"wrap"}}>
           <span style={{fontSize:13,color:ink(.5)}}>
-            Cliquer une espèce pour la déplier · re-cliquer pour sa fiche · <strong style={{color:ALIVE}}>elle vous ramène à son époque sur la frise ↑</strong>
+            Cliquer une espèce pour la déplier · re-cliquer pour sa fiche · <strong style={{color:ALIVE}}>sa période s'affiche sur la frise, sans quitter l'arbre</strong>
           </span>
         </div>
+
+        {/* Bandeau de confirmation : la frise vient d'être mise à jour */}
+        {focusBanner && (
+          <div role="status" aria-live="polite" style={{marginBottom:14,padding:"10px 14px",borderRadius:12,
+            border:"1px solid rgba(14,116,144,.25)",background:"rgba(14,116,144,.07)",
+            display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            <span style={{fontSize:13}}>🕰️</span>
+            <span style={{fontSize:12.5,color:INK}}>
+              <strong>{focusBanner.label.replace(/💀|⭐|🔀/g,"").trim()}</strong> affichée sur la frise
+              {focusBanner.from!=null&&<> · {fmt(focusBanner.from)} → {focusBanner.to!=null?fmt(focusBanner.to):"aujourd'hui"}</>}
+            </span>
+            <button onClick={jumpToFrise}
+              style={{marginLeft:"auto",padding:"4px 11px",borderRadius:999,border:"1px solid rgba(14,116,144,.35)",
+                background:"#fff",color:"#0e7490",fontSize:11.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
+              Voir sur la frise ↓
+            </button>
+            <button onClick={()=>setFocusBanner(null)} aria-label="Fermer"
+              style={{width:20,height:20,borderRadius:"50%",border:"none",background:"transparent",
+                color:"rgba(23,20,18,.4)",fontSize:13,cursor:"pointer",lineHeight:1,flexShrink:0}}>
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Bandeau synchronisé avec la frise : qui vit à cet instant ? */}
         {activeFocus!=null && (

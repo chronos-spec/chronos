@@ -576,7 +576,12 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
 
   const zoomAround=useCallback((pivotYa,factor)=>{
     const s=S.current,ns=pivotYa+(s.vs-pivotYa)*factor,ne=pivotYa+(s.ve-pivotYa)*factor;
-    if(ns>UA*1.1||ne<0.05)return;if(L(ns)-L(Math.max(ne,0.1))<0.03)return;
+    if(ns>UA*1.1||ne<0.05)return;
+    // Le plancher de résolution ne s'applique qu'en zoom AVANT (factor<1) : sinon,
+    // depuis une fenêtre déjà extrêmement resserrée (ex. après un clic sur un cluster
+    // de deux événements très proches), la nouvelle fenêtre reste sous le seuil et le
+    // zoom arrière serait bloqué indéfiniment — l'utilisateur resterait coincé.
+    if(factor<1&&L(ns)-L(Math.max(ne,0.1))<0.03)return;
     s.vs=Math.min(ns,UA*1.1);s.ve=Math.max(ne,0.05);
   },[]);
 
@@ -1198,7 +1203,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                 🌿 L'arbre de la vie
               </span>
               <span style={{fontSize:12,color:"rgba(28,25,23,.6)"}}>
-                Chaque espèce renvoie à son époque sur la frise ↑&nbsp;&nbsp;·&nbsp;&nbsp;cliquer pour explorer ↓
+                Chaque espèce affiche sa période sur la frise, sans vous faire quitter l'arbre&nbsp;&nbsp;·&nbsp;&nbsp;cliquer pour explorer ↓
               </span>
               <span style={{fontSize:18,color:"#9a7b34",marginTop:2,animation:"floaty 1.8s ease-in-out infinite"}}>⌄</span>
             </button>
