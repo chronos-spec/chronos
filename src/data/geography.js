@@ -113,26 +113,76 @@ for (const id of PLATE_IDS) {
 }
 
 // ── IMAGES-CLÉS ──────────────────────────────────────────────────────────
-// Chronologie recalée sur le schéma « Assembly / Breakup of Pangea » du
-// Lisbon Earthquake Museum (Quake, lisbonquake.com/fr/scanner/derive-continents) :
-// Rodinia ~750 Ma → 650 Ma → 458 Ma → 390 Ma → Pangée assemblée 237 Ma →
-// 195 Ma → 152 Ma (« les continents que nous connaissons prennent forme ») →
-// 66 Ma → aujourd'hui. Complétée entre 66 Ma et 23 Ma par deux étapes datées
-// de la littérature (Scotese/PALEOMAP, EarthByte/GPlates) que ce schéma
-// simplifié ne détaille pas : la collision Inde-Asie (~50 Ma, soulèvement de
-// l'Himalaya) et la séparation Australie-Antarctique (~45 Ma). Rodinia reste
-// la reconstruction la plus incertaine de toutes (plusieurs hypothèses
-// concurrentes existent dans la littérature scientifique) — traitée ici
-// comme un point de départ illustratif, pas une position figée. Approximation
-// pédagogique par plaque rigide unique — pas une reconstruction GPlates
+// Chronologie du cycle des supercontinents (cycle de Wilson), du plus ancien
+// au plus récent : Vaalbara (~3,6-2,8 Ga) → Kenorland (~2,7 Ga) →
+// Columbia/Nuna (~1,8-1,5 Ga) → Rodinia assemblée (~1,1-1,0 Ga) → Rodinia se
+// disloque (~750-650 Ma) → Pannotia, supercontinent éphémère (~600 Ma) →
+// Gondwana austral/Euramérica (458-390 Ma) → Pangée assemblée (~335-300 Ma,
+// tous les cratons soudés) → la Pangée se scinde d'abord en Laurasia/Gondwana
+// (~175 Ma) → les continents actuels prennent forme (152 Ma) → ouverture de
+// l'Atlantique Sud, isolement de l'Inde (100 Ma) → Chicxulub (66 Ma) →
+// collision Inde-Asie/soulèvement de l'Himalaya (~50 Ma) → séparation
+// Australie-Antarctique (~34 Ma) → aujourd'hui.
+//
+// Rigueur des dates : Pangée et Rodinia sont des reconstructions solidement
+// établies (fit des côtes, corrélations stratigraphiques, paléomagnétisme
+// convergent). Pannotia, Columbia/Nuna sont acceptés mais leurs contours
+// précis restent débattus. Kenorland et surtout Vaalbara reposent sur des
+// reconstitutions paléomagnétiques encore incertaines, avec des hypothèses
+// concurrentes dans la littérature — traités ici comme des points de départ
+// illustratifs, pas des positions figées (voir libellés « hypothèse »).
+// Approximation pédagogique par plaque rigide unique (translation + rotation
+// autour du centre propre de chaque plaque) — pas une reconstruction GPlates
 // exacte (celle-ci utiliserait des pôles d'Euler par micro-plaque et par
-// intervalle de quelques millions d'années). Afrique sert de plaque de
-// référence (quasi immobile) ; dx/dy en pixels de projection, rot en degrés,
-// autour du centre propre de chaque plaque.
+// intervalle de quelques millions d'années, avec des cratons qui se
+// fragmentent et se recombinent, ce qu'un unique polygone rigide par
+// continent moderne ne peut pas représenter au-delà de ~1 Ga). Afrique sert
+// de plaque de référence (quasi immobile) ; dx/dy en pixels de projection,
+// rot en degrés, autour du centre propre de chaque plaque.
 const IDENTITY = { dx:0, dy:0, rot:0 };
 
 export const KEYFRAMES = [
-  { t:750e6, label:"Rodinia — un supercontinent bien plus ancien que la Pangée",
+  { t:3200e6, label:"Vaalbara — hypothèse du plus ancien supercontinent, très incertaine",
+    transforms:{
+      africa: IDENTITY,
+      eurasia: { dx:-5, dy:5, rot:4 },
+      north_america: { dx:6, dy:-8, rot:-6 },
+      south_america: { dx:-10, dy:-15, rot:8 },
+      india: { dx:4, dy:20, rot:-3 },
+      australia: { dx:5, dy:-10, rot:9 },
+      antarctica: { dx:-2, dy:4, rot:-2 },
+    }},
+  { t:2700e6, label:"Kenorland — reconstitution débattue",
+    transforms:{
+      africa: IDENTITY,
+      eurasia: { dx:-10, dy:10, rot:8 },
+      north_america: { dx:12, dy:-15, rot:-12 },
+      south_america: { dx:-18, dy:-25, rot:15 },
+      india: { dx:8, dy:40, rot:-5 },
+      australia: { dx:10, dy:-20, rot:18 },
+      antarctica: { dx:-3, dy:8, rot:-4 },
+    }},
+  { t:1650e6, label:"Columbia/Nuna",
+    transforms:{
+      africa: IDENTITY,
+      eurasia: { dx:-15, dy:20, rot:-10 },
+      north_america: { dx:20, dy:-30, rot:15 },
+      south_america: { dx:-25, dy:-10, rot:20 },
+      india: { dx:10, dy:60, rot:-8 },
+      australia: { dx:15, dy:-40, rot:25 },
+      antarctica: { dx:-5, dy:15, rot:-6 },
+    }},
+  { t:1000e6, label:"Rodinia assemblée",
+    transforms:{
+      africa: IDENTITY,
+      eurasia: { dx:32, dy:-45, rot:26 },
+      north_america: { dx:-32, dy:20, rot:-32 },
+      south_america: { dx:-13, dy:78, rot:-39 },
+      india: { dx:-26, dy:130, rot:6 },
+      australia: { dx:-20, dy:91, rot:-52 },
+      antarctica: { dx:13, dy:26, rot:19 },
+    }},
+  { t:750e6, label:"Rodinia commence à se disloquer",
     transforms:{
       africa: IDENTITY,
       eurasia: { dx:25, dy:-35, rot:20 },
@@ -151,6 +201,16 @@ export const KEYFRAMES = [
       india: { dx:-18, dy:95, rot:7 },
       australia: { dx:-8, dy:50, rot:-15 },
       antarctica: { dx:5, dy:8, rot:8 },
+    }},
+  { t:600e6, label:"Pannotia — supercontinent éphémère",
+    transforms:{
+      africa: IDENTITY,
+      eurasia: { dx:2, dy:-15, rot:3 },
+      north_america: { dx:15, dy:20, rot:5 },
+      south_america: { dx:10, dy:35, rot:-5 },
+      india: { dx:-16, dy:88, rot:9 },
+      australia: { dx:-4, dy:42, rot:2 },
+      antarctica: { dx:2, dy:2, rot:2 },
     }},
   { t:458e6, label:"Ordovicien — Gondwana austral",
     transforms:{
@@ -172,7 +232,7 @@ export const KEYFRAMES = [
       australia: { dx:-8, dy:55, rot:3 },
       antarctica: { dx:3, dy:-6, rot:2 },
     }},
-  { t:237e6, label:"Pangée assemblée",
+  { t:335e6, label:"Pangée assemblée — tous les cratons soudés",
     transforms:{
       africa: IDENTITY,
       eurasia: { dx:-32, dy:12, rot:-7 },
@@ -182,7 +242,7 @@ export const KEYFRAMES = [
       australia: { dx:-14, dy:80, rot:5 },
       antarctica: { dx:7, dy:-14, rot:4 },
     }},
-  { t:195e6, label:"Trias/Jurassique — la Pangée commence à se fissurer",
+  { t:175e6, label:"La Pangée se scinde d'abord en Laurasia et Gondwana",
     transforms:{
       africa: IDENTITY,
       eurasia: { dx:-26, dy:9, rot:-6 },

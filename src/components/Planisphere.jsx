@@ -27,9 +27,13 @@ const ERA_PRESETS = [
   { label:"Extinction K-Pg",  ya:66e6 },
   { label:"Crétacé",          ya:100e6 },
   { label:"Jurassique",       ya:152e6 },
-  { label:"Pangée",           ya:237e6 },
-  { label:"Cambrien",         ya:500e6 },
+  { label:"Pangée",           ya:335e6 },
+  { label:"Pannotia",         ya:600e6 },
   { label:"Rodinia",          ya:750e6 },
+  { label:"Rodinia assemblée",ya:1000e6 },
+  { label:"Columbia/Nuna",    ya:1650e6 },
+  { label:"Kenorland",        ya:2700e6 },
+  { label:"Vaalbara",         ya:3200e6 },
 ];
 
 const SPECIES_LIST = Object.keys(SPECIES_GEO)
@@ -250,7 +254,11 @@ export function Planisphere({ focusYa = null, selectedSpecies = null, onSelectSp
     }
   }, [selectedSpecies?.id]);
 
-  const sliderMax = 750e6; // remonte jusqu'à Rodinia, le supercontinent qui précède la Pangée
+  // Le curseur remonte jusqu'à Rodinia (750 Ma) : au-delà, la résolution linéaire
+  // deviendrait inutilisable pour l'ère récente (mieux peuplée en évènements/espèces).
+  // Les supercontinents plus anciens (Rodinia assemblée, Columbia/Nuna, Kenorland,
+  // Vaalbara) restent accessibles via les boutons de préréglages ci-dessus.
+  const sliderMax = 750e6;
   const sliderVal = Math.min(Math.max(localYa, 0), sliderMax);
   const speciesColor = selectedSpecies?.color || "#c2703d";
 
