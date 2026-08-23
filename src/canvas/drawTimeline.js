@@ -238,30 +238,26 @@ export function drawAll(canvas, miniCanvas, params) {
   }
 
   // ── BANDES DE PÉRIODES (réduite, discrète) ────────────────────────────────
-  // Fond neutre uniforme (alternance à peine perceptible) + un simple liseré
-  // de couleur en pied de bande comme repère — jamais un aplat saturé.
   if(!linearScale){
-    PERIODS.forEach((per,i)=>{
+    for(const per of PERIODS){
       const x1=toX(per.from),x2=toX(Math.max(per.to,0.1));
-      if(Math.min(x1,x2)>W||Math.max(x1,x2)<0) return;
+      if(Math.min(x1,x2)>W||Math.max(x1,x2)<0) continue;
       const rx=Math.max(0,Math.min(x1,x2)),rw=Math.min(W,Math.abs(x2-x1));
-      if(rw<1) return;
-      ctx.fillStyle=i%2===0?ink(.028):ink(.05);
-      ctx.fillRect(rx,PERIOD_Y,rw,PERIOD_H);
-      ctx.strokeStyle=ink(.07);ctx.lineWidth=1;ctx.setLineDash([]);
-      ctx.beginPath();ctx.moveTo(rx+rw,PERIOD_Y);ctx.lineTo(rx+rw,PERIOD_Y+PERIOD_H);ctx.stroke();
-      ctx.fillStyle=per.color+"cc";ctx.fillRect(rx,PERIOD_Y+PERIOD_H-2,rw,2);
+      if(rw<1) continue;
+      ctx.fillStyle=per.color+"55";ctx.fillRect(rx,PERIOD_Y,rw,PERIOD_H);
+      ctx.strokeStyle=per.color+"aa";ctx.lineWidth=0.75;ctx.setLineDash([]);
+      ctx.strokeRect(rx+0.3,PERIOD_Y+0.3,rw-0.6,PERIOD_H-0.6);
       if(rw>28){
         ctx.save();ctx.beginPath();ctx.rect(rx+2,PERIOD_Y,rw-4,PERIOD_H);ctx.clip();
         const fs=rw>80?10:rw>45?9:8;
         ctx.font=`600 ${fs}px -apple-system,'Segoe UI',system-ui,sans-serif`;
-        ctx.fillStyle=ink(.5);ctx.textAlign="center";
+        ctx.fillStyle=ink(.78);ctx.textAlign="center";
         // Sticky : centré sur la portion réellement visible, pas sur la bande entière.
         const visCenterX=(Math.max(rx,0)+Math.min(rx+rw,W))/2;
         ctx.fillText(per.label,visCenterX,PERIOD_Y+PERIOD_H/2+fs*0.38);
         ctx.restore();
       }
-    });
+    }
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -395,14 +391,9 @@ export function drawAll(canvas, miniCanvas, params) {
       // Estompage : mode biblique (tout sauf la Bible) OU filtres actifs
       // (catégorie / plage temporelle) qui excluent cet événement.
       const smoked=(bibleMode?!isBiblical:!passesFilters(ev))||!inLifeline(ev);
-      // Seuil de collision proportionnel à la largeur probable de l'étiquette
-      // (les majeurs gardent un libellé permanent, donc plus large) plutôt
-      // qu'une distance fixe — sinon deux majeurs espacés de >90px de pastille
-      // à pastille peuvent quand même voir leurs textes se chevaucher.
-      const labelHalfW=imp===1?95:60;
-      const nearby=placed.filter(p=>p.ev&&Math.abs(p.x-x)<(labelHalfW+(p.labelHalfW??60)));
+      const nearby=placed.filter(p=>Math.abs(p.x-x)<90);
       const side=nearby.length>0&&nearby[nearby.length-1].side===1?-1:1;
-      placed.push({x,ev,side,labelHalfW});
+      placed.push({x,ev,side});
       const zThresh=imp===1?0:imp===2?1.5:2.5;
       let sF=(isSel||isHov)?1:Math.min(1,0.35+Math.max(0,zl-zThresh)*0.35);
       if(bibleMode&&isBiblical)sF=1; // toujours pleinement déployé, peu importe le zoom
@@ -451,17 +442,12 @@ export function drawAll(canvas, miniCanvas, params) {
       ctx.beginPath();ctx.arc(x,LINE_Y,r,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
       if(isSel){ctx.beginPath();ctx.arc(x,LINE_Y,r+3.5,0,Math.PI*2);ctx.strokeStyle=col+"66";ctx.lineWidth=1.5;ctx.stroke();}
 
-      // Label — masqué par défaut (la frise ne doit porter que des points).
-      // Seuls les évènements majeurs (imp===1) gardent un repère textuel
-      // permanent, discret et non coloré ; tout le reste ne révèle son titre
-      // qu'au survol/sélection (info-bulle) ou au clic (fiche complète) —
-      // c'est ce qui évite l'effet « tableau de bord » avec des dizaines
-      // d'étiquettes qui se chevauchent.
-      const showLabel = isHov||isSel||(bibleMode&&isBiblical)||(imp===1&&sF>0.6);
-      if(showLabel){
-        const fs=Math.max(9,(imp===1?12:11)*(isHov||isSel?1:sF));
+      // Label — texte en encre foncée, jamais dans la couleur (règle de l'arbre de vie)
+      const minR=imp===1?1.5:imp===2?2:2.8;
+      if(r>=minR||isHov||isSel||(bibleMode&&isBiblical)){
+        const fs=Math.max(9,(imp===1?13:imp===2?12:11)*sF);
         const maxLW=imp===1?130:110;
-        ctx.font=`${(isHov||isSel)?"600":"500"} ${Math.round(fs)}px -apple-system,'Segoe UI',system-ui,sans-serif`;
+        ctx.font=`${imp===1?"600":"500"} ${Math.round(fs)}px -apple-system,'Segoe UI',system-ui,sans-serif`;
         const titleText=ev.uncertain?"▨ "+ev.title:ev.title;
         const words=titleText.split(" ");let line="",lines=[];
         for(const w of words){const t=line+w+" ";if(ctx.measureText(t).width>maxLW&&line){lines.push(line.trim());line=w+" ";}else line=t;}
@@ -471,12 +457,12 @@ export function drawAll(canvas, miniCanvas, params) {
         lines.forEach((l,i)=>{
           const tw2=ctx.measureText(l).width,lx=x-tw2/2-5,ly=startY+i*lh-1;
           if(isHov||isSel){
-            ctx.fillStyle=ink(.05);
+            ctx.fillStyle=col+"12";
             ctx.beginPath();
             if(ctx.roundRect)ctx.roundRect(lx,ly,tw2+10,lh+2,5);else ctx.rect(lx,ly,tw2+10,lh+2);
             ctx.fill();
           }
-          ctx.fillStyle=isHov||isSel?INK_STRONG:ink(.5);
+          ctx.fillStyle=isHov||isSel?INK_STRONG:imp===1?ink(.86):ink(.62);
           ctx.textAlign="center";ctx.fillText(l,x,startY+i*lh+fs);
         });
       }

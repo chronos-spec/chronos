@@ -1,25 +1,22 @@
 // src/theme.js — source unique de vérité pour l'identité visuelle de Chronos.
 // Importé par styles.js (shell), drawTimeline.js (frise) et LifeTree.jsx (arbre).
-// Palette douce et désaturée (direction Notion/Linear) : une couleur = un
-// repère de catégorie, jamais un aplat criard. Voir CAT_COL dans
-// data/timelineData.js pour les teintes par catégorie.
-export const INK        = "#26241f";           // texte courant
+export const INK        = "#37352f";           // texte courant
 export const INK_STRONG = "#171412";           // titres
-export const INK_RGB    = "38,36,31";          // pour composer des rgba() côté canvas
+export const INK_RGB    = "55,53,47";          // pour composer des rgba() côté canvas
 export const ink        = (a) => `rgba(${INK_RGB},${a})`;
-export const MUTED      = ink(.55);
-export const FAINT      = ink(.36);
-export const LINE       = ink(.09);
+export const MUTED      = ink(.58);
+export const FAINT      = ink(.38);
+export const LINE       = ink(.10);
 export const PANEL        = "#ffffff";
-export const SURFACE      = "#f8f7f4";          // fond papier unifié
-export const PAPER_TOP    = "#f9f8f5";          // dégradé canvas (haut) — quasi plat
-export const PAPER_BOTTOM = "#f2f0ea";          // dégradé canvas (bas)
-export const GOLD       = "#a58a58";            // accent — aligné sur la teinte "histoire"
-export const ALIVE      = "#4f8a68";            // vivant / aujourd'hui
-export const ALIVE_RGB  = "79,138,104";
+export const SURFACE      = "#fbf9f4";          // fond papier unifié
+export const PAPER_TOP    = "#fbf8f2";          // dégradé canvas (haut)
+export const PAPER_BOTTOM = "#f3ecdd";          // dégradé canvas (bas)
+export const GOLD       = "#b9822f";
+export const ALIVE      = "#0a7848";            // vivant / aujourd'hui
+export const ALIVE_RGB  = "10,120,72";
 export const alive      = (a) => `rgba(${ALIVE_RGB},${a})`;
 export const EXTINCT    = "#6b7280";
-export const DANGER     = "#c0392b";
+export const DANGER     = "#dc2626";
 export const FONT_SANS  = "-apple-system,'Segoe UI',system-ui,sans-serif";
 export const FONT_SERIF = "'Fraunces',Georgia,serif";
 export const FONT_MONO  = "'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace";

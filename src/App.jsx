@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { ALL_EVENTS, EPOCHS, PERIODS, PERIOD_DESCRIPTIONS, STATIC_CONTENT, UA, cc, CAT_COL } from "./data/timelineData.js";
+import { ALL_EVENTS, EPOCHS, PERIODS, PERIOD_DESCRIPTIONS, STATIC_CONTENT, UA, cc } from "./data/timelineData.js";
 import { buildPrompt, epochAt, fmt, L, makeCoord, zoomLvl } from "./utils/time.js";
 import { drawAll } from "./canvas/drawTimeline.js";
 import { css } from "./styles.js";
@@ -223,7 +223,6 @@ function Chronos() {
   const [bibleMode,setBibleMode]=useState(false);         // événements bibliques mis en avant, le reste enfumé
   const [lanesMode,setLanesMode]=useState(null);          // null | "theme" (swimlanes) | "civ" (Rome/Judée/Grèce)
   const [tourStep,setTourStep]=useState(null);            // visite guidée (null = inactif)
-  const [settingsOpen,setSettingsOpen]=useState(false);    // panneau des réglages avancés (vues, bible, export...)
   // Parcours narratifs + synchronisation frise ↔ arbre du vivant
   const [story,setStory]=useState(null);                  // parcours en cours (objet) ou null
   const [storyStep,setStoryStep]=useState(0);             // étape courante du parcours
@@ -919,131 +918,127 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
             </>
           )}
 
-          {/* ── BARRE DE FILTRES — catégories au premier plan, réglages avancés repliés ── */}
-          <div style={{display:"flex",alignItems:"center",gap:10,padding:"9px 18px",background:"#fbfaf7",borderTop:"1px solid rgba(28,25,23,.07)",borderBottom:"1px solid rgba(28,25,23,.07)",flexShrink:0}}>
-            <div style={{display:"flex",gap:5,alignItems:"center",overflowX:"auto",flex:1,minWidth:0}}>
+          {/* ── BARRE OUTILS FRISE ── */}
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 18px",background:"#f5f0e6",borderTop:"1px solid rgba(28,25,23,.08)",borderBottom:"1px solid rgba(28,25,23,.08)",flexWrap:"wrap",flexShrink:0}}>
+            {/* Thèmes civilisations */}
+            <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+              <span style={{fontSize:9,color:"rgba(28,25,23,.45)",letterSpacing:".1em",textTransform:"uppercase",fontWeight:600,flexShrink:0}}>Couches :</span>
+              {Object.entries(THEMES).map(([key,theme])=>{
+                const active=activeThemes.has(key);
+                return (
+                <div key={key} style={{display:"inline-flex",alignItems:"center",gap:2}}>
+                  <button onClick={()=>setActiveThemes(prev=>{const next=new Set(prev);if(next.has(key))next.delete(key);else next.add(key);return next;})}
+                    aria-pressed={active}
+                    style={{padding:"3px 9px",borderRadius:999,fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+                      border:`1px solid ${theme.color}${active?"":"44"}`,
+                      background:active?`${theme.color}22`:"transparent",
+                      color:active?theme.color:"rgba(28,25,23,.5)",
+                      transition:"all .15s",whiteSpace:"nowrap"}}>
+                    {theme.icon} {theme.label.split(" ")[0]}
+                  </button>
+                  {active&&(
+                    <button onClick={()=>setThemePage(key)} title={`Ouvrir le récit de ${theme.label} dans une page dédiée`}
+                      style={{width:18,height:18,borderRadius:"50%",border:`1px solid ${theme.color}66`,
+                        background:"#fff",color:theme.color,fontSize:9,cursor:"pointer",fontFamily:"inherit",
+                        display:"flex",alignItems:"center",justifyContent:"center",padding:0,flexShrink:0}}>
+                      ↗
+                    </button>
+                  )}
+                </div>
+                );
+              })}
+            </div>
+            <div style={{width:1,background:"rgba(28,25,23,.1)",alignSelf:"stretch",flexShrink:0}}/>
+            {/* Filtres catégories événements (multi-sélection) — désactivés en mode biblique */}
+            <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap",alignItems:"center",opacity:bibleMode?.4:1,pointerEvents:bibleMode?"none":"auto",transition:"opacity .2s"}}>
               {bibleMode?(
-                <span style={{fontSize:11,color:"rgba(28,25,23,.5)",fontStyle:"italic",whiteSpace:"nowrap"}}>Filtres désactivés — mode biblique actif</span>
+                <span style={{fontSize:10,color:"rgba(28,25,23,.5)",fontStyle:"italic"}}>Filtres désactivés — mode biblique actif</span>
               ):(<>
                 <button onClick={()=>setActiveCats(new Set(ALL_CAT_IDS))}
-                  style={{padding:"5px 12px",borderRadius:999,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",flexShrink:0,
-                    border:`1px solid ${activeCats.size===ALL_CAT_IDS.length?"rgba(38,36,31,.7)":"rgba(38,36,31,.16)"}`,
-                    background:activeCats.size===ALL_CAT_IDS.length?"rgba(38,36,31,.9)":"transparent",
-                    color:activeCats.size===ALL_CAT_IDS.length?"#fff":"rgba(38,36,31,.6)",transition:"all .15s"}}>
-                  Toutes
+                  style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+                    border:"1px solid rgba(28,25,23,.22)",background:activeCats.size===ALL_CAT_IDS.length?"#1f1c17":"transparent",
+                    color:activeCats.size===ALL_CAT_IDS.length?"#fff":"rgba(28,25,23,.55)",transition:"all .15s"}}>
+                  Tout
                 </button>
                 {CATS.map(c=>{
                   const active=activeCats.has(c.id);
                   return (
                     <button key={c.id} onClick={()=>setActiveCats(prev=>{const next=new Set(prev);active?next.delete(c.id):next.add(c.id);return next;})}
                       title={active?`Masquer ${c.label}`:`Afficher ${c.label}`} role="checkbox" aria-checked={active}
-                      style={{padding:"5px 12px 5px 9px",borderRadius:999,fontSize:11,fontWeight:500,cursor:"pointer",fontFamily:"inherit",flexShrink:0,
-                        display:"inline-flex",alignItems:"center",gap:6,
-                        border:`1px solid ${active?"rgba(38,36,31,.16)":"rgba(38,36,31,.08)"}`,
-                        background:active?"rgba(38,36,31,.05)":"transparent",
-                        color:active?"rgba(38,36,31,.85)":"rgba(38,36,31,.34)",transition:"all .15s"}}>
-                      <span aria-hidden="true" style={{width:7,height:7,borderRadius:"50%",flexShrink:0,background:c.color,opacity:active?1:.4}}/>
+                      style={{padding:"3px 10px 3px 7px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+                        display:"inline-flex",alignItems:"center",gap:5,
+                        border:`1px solid ${c.color}${active?"":"66"}`,
+                        background:active?c.color:"transparent",
+                        color:active?"#fff":c.color,transition:"all .15s"}}>
+                      <span aria-hidden="true" style={{width:11,height:11,borderRadius:3,flexShrink:0,
+                        border:`1.5px solid ${active?"#fff":c.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,lineHeight:1,color:"#fff"}}>
+                        {active?"✓":""}
+                      </span>
                       {c.label}
                     </button>
                   );
                 })}
+                <span aria-live="polite" style={{marginLeft:"auto",fontSize:10,color:"rgba(28,25,23,.5)",fontWeight:600,whiteSpace:"nowrap"}}>
+                  {filteredCount} événement{filteredCount!==1?"s":""} affiché{filteredCount!==1?"s":""}
+                </span>
               </>)}
             </div>
-            {!bibleMode&&(
-              <span aria-live="polite" style={{fontSize:10.5,color:"rgba(28,25,23,.4)",fontWeight:500,whiteSpace:"nowrap",flexShrink:0}}>
-                {filteredCount} évènement{filteredCount!==1?"s":""}
-              </span>
-            )}
-            <button onClick={()=>setFullscreen(f=>!f)} aria-pressed={fullscreen} title={fullscreen?"Quitter le plein écran":"Plein écran"}
-              style={{width:28,height:28,borderRadius:"50%",cursor:"pointer",fontFamily:"inherit",fontSize:13,flexShrink:0,
-                border:"1px solid rgba(23,20,18,.12)",background:fullscreen?"rgba(38,36,31,.9)":"transparent",color:fullscreen?"#fff":"rgba(23,20,18,.55)"}}>
-              {fullscreen?"⊡":"⛶"}
-            </button>
-            <button onClick={()=>setSettingsOpen(o=>!o)} aria-pressed={settingsOpen} aria-label="Réglages avancés" title="Réglages avancés : couches, vues, export…"
-              style={{width:28,height:28,borderRadius:"50%",cursor:"pointer",fontFamily:"inherit",fontSize:13,flexShrink:0,
-                border:"1px solid rgba(23,20,18,.12)",background:settingsOpen?"rgba(38,36,31,.9)":"transparent",color:settingsOpen?"#fff":"rgba(23,20,18,.55)"}}>
-              ⚙
-            </button>
-          </div>
-
-          {/* ── RÉGLAGES AVANCÉS — repliés par défaut : couches, vues, export ── */}
-          {settingsOpen&&(
-            <div style={{padding:"10px 18px",background:"#f5f0e6",borderBottom:"1px solid rgba(28,25,23,.08)",flexShrink:0,display:"flex",flexDirection:"column",gap:9}}>
-              {/* Couches thématiques */}
-              <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
-                <span style={{fontSize:9,color:"rgba(28,25,23,.4)",letterSpacing:".1em",textTransform:"uppercase",fontWeight:600,flexShrink:0}}>Couches :</span>
-                {Object.entries(THEMES).map(([key,theme])=>{
-                  const active=activeThemes.has(key);
-                  return (
-                  <div key={key} style={{display:"inline-flex",alignItems:"center",gap:2}}>
-                    <button onClick={()=>setActiveThemes(prev=>{const next=new Set(prev);if(next.has(key))next.delete(key);else next.add(key);return next;})}
-                      aria-pressed={active}
-                      style={{padding:"3px 9px",borderRadius:999,fontSize:9,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
-                        border:`1px solid ${theme.color}${active?"":"33"}`,
-                        background:active?`${theme.color}18`:"transparent",
-                        color:active?theme.color:"rgba(28,25,23,.45)",
-                        transition:"all .15s",whiteSpace:"nowrap"}}>
-                      {theme.icon} {theme.label.split(" ")[0]}
-                    </button>
-                    {active&&(
-                      <button onClick={()=>setThemePage(key)} title={`Ouvrir le récit de ${theme.label} dans une page dédiée`}
-                        style={{width:18,height:18,borderRadius:"50%",border:`1px solid ${theme.color}55`,
-                          background:"#fff",color:theme.color,fontSize:9,cursor:"pointer",fontFamily:"inherit",
-                          display:"flex",alignItems:"center",justifyContent:"center",padding:0,flexShrink:0}}>
-                        ↗
-                      </button>
-                    )}
-                  </div>
-                  );
-                })}
+            {/* Actions droite */}
+            <div style={{display:"flex",gap:6,flexShrink:0}}>
+              {/* Vue : frise / pistes thématiques / frises parallèles */}
+              <div style={{display:"flex",borderRadius:999,overflow:"hidden",border:"1px solid rgba(23,20,18,.15)"}}>
+                {[{id:null,label:"Frise",title:"Vue frise normale"},
+                  {id:"theme",label:"🎚️ Pistes",title:"Pistes thématiques : civilisations, religions, sciences, guerres, arts, personnages"},
+                  {id:"civ",label:"🏛️ Rome/Judée/Grèce",title:"Frises parallèles synchronisées"}].map((v,i)=>(
+                  <button key={v.label} onClick={()=>setLanesMode(v.id)} title={v.title} aria-pressed={lanesMode===v.id}
+                    style={{padding:"3px 9px",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"none",
+                      borderLeft:i>0?"1px solid rgba(23,20,18,.15)":"none",
+                      background:lanesMode===v.id?"#12100e":"transparent",
+                      color:lanesMode===v.id?"#fff":"rgba(23,20,18,.6)",whiteSpace:"nowrap"}}>
+                    {v.label}
+                  </button>
+                ))}
               </div>
-              {/* Vues et actions */}
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                <div style={{display:"flex",borderRadius:999,overflow:"hidden",border:"1px solid rgba(23,20,18,.14)"}}>
-                  {[{id:null,label:"Frise",title:"Vue frise normale"},
-                    {id:"theme",label:"🎚️ Pistes",title:"Pistes thématiques : civilisations, religions, sciences, guerres, arts, personnages"},
-                    {id:"civ",label:"🏛️ Rome/Judée/Grèce",title:"Frises parallèles synchronisées"}].map((v,i)=>(
-                    <button key={v.label} onClick={()=>setLanesMode(v.id)} title={v.title} aria-pressed={lanesMode===v.id}
-                      style={{padding:"3px 9px",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"none",
-                        borderLeft:i>0?"1px solid rgba(23,20,18,.14)":"none",
-                        background:lanesMode===v.id?"rgba(38,36,31,.9)":"transparent",
-                        color:lanesMode===v.id?"#fff":"rgba(23,20,18,.55)",whiteSpace:"nowrap"}}>
-                      {v.label}
-                    </button>
-                  ))}
-                </div>
-                <button onClick={toggleBibleMode} title="Enfume tous les autres événements pour ne laisser ressortir que ceux de la Bible" aria-pressed={bibleMode}
-                  style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
-                    border:`1px solid ${bibleMode?"#9c8058":"rgba(156,128,88,.35)"}`,
-                    background:bibleMode?"#9c8058":"transparent",
-                    color:bibleMode?"#fff":"#6b5738",transition:"all .15s"}}>
-                  📖 {bibleMode?"Événements bibliques ✓":"Événements bibliques"}
-                </button>
-                <button onClick={()=>goTourStep(tourStep===null?0:null)} aria-pressed={tourStep!==null}
-                  style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(165,138,88,.4)",background:tourStep!==null?"rgba(165,138,88,.13)":"transparent",color:"#7a6238"}}>
-                  {tourStep!==null?`🎯 Étape ${tourStep+1}/${TOUR_STEPS.length}`:"🎯 Visite guidée"}
-                </button>
-                <button onClick={()=>{setLinearScale(l=>!l);}} aria-pressed={linearScale}
-                  style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:`1px solid ${linearScale?"#5a7a8a":"rgba(23,20,18,.14)"}`,background:linearScale?"rgba(90,122,138,.12)":"transparent",color:linearScale?"#3f5b68":"rgba(23,20,18,.55)"}}>
-                  {linearScale?"📏 Échelle réelle ✓":"📏 Échelle réelle"}
-                </button>
-                <span style={{width:1,alignSelf:"stretch",background:"rgba(23,20,18,.1)"}}/>
-                <button onClick={exportImage}
-                  style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.14)",background:"transparent",color:"rgba(23,20,18,.55)"}}>
-                  ↓ Image
-                </button>
-                <button onClick={exportEvents} title="Exporter tous les événements en JSON, avec la source citée pour chacun"
-                  style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.14)",background:"transparent",color:"rgba(23,20,18,.55)"}}>
-                  ↓ JSON
-                </button>
-                <button onClick={()=>importInputRef.current?.click()} title="Importer des événements depuis un fichier JSON"
-                  style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.14)",background:"transparent",color:"rgba(23,20,18,.55)"}}>
-                  ↑ Importer
-                </button>
-                <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{display:"none"}}/>
-              </div>
+              {/* Événements bibliques */}
+              <button onClick={toggleBibleMode} title="Enfume tous les autres événements pour ne laisser ressortir que ceux de la Bible" aria-pressed={bibleMode}
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                  border:`1px solid ${bibleMode?"#8b5e34":"rgba(139,94,52,.4)"}`,
+                  background:bibleMode?"#8b5e34":"transparent",
+                  color:bibleMode?"#fff":"#6b4423",transition:"all .15s"}}>
+                📖 {bibleMode?"Événements bibliques ✓":"Événements bibliques"}
+              </button>
+              {/* Visite guidée */}
+              <button onClick={()=>goTourStep(tourStep===null?0:null)} aria-pressed={tourStep!==null}
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(185,130,47,.4)",background:tourStep!==null?"rgba(185,130,47,.15)":"transparent",color:"#7a4b12"}}>
+                {tourStep!==null?`🎯 Étape ${tourStep+1}/${TOUR_STEPS.length}`:"🎯 Visite guidée"}
+              </button>
+              {/* Échelle réelle */}
+              <button onClick={()=>{setLinearScale(l=>!l);}} aria-pressed={linearScale}
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:`1px solid ${linearScale?"#0369a1":"rgba(23,20,18,.15)"}`,background:linearScale?"rgba(3,105,161,.12)":"transparent",color:linearScale?"#0369a1":"rgba(23,20,18,.6)"}}>
+                {linearScale?"📏 Échelle réelle ✓":"📏 Échelle réelle"}
+              </button>
+              {/* Plein écran */}
+              <button onClick={()=>setFullscreen(f=>!f)} aria-pressed={fullscreen}
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:fullscreen?"#12100e":"transparent",color:fullscreen?"#fff":"rgba(23,20,18,.6)"}}>
+                {fullscreen?"⊡ Normal":"⊞ Plein écran"}
+              </button>
+              {/* Export */}
+              <button onClick={exportImage}
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
+                ↓ Image
+              </button>
+              {/* Export / Import JSON (avec sources citées) */}
+              <button onClick={exportEvents} title="Exporter tous les événements en JSON, avec la source citée pour chacun"
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
+                ↓ JSON
+              </button>
+              <button onClick={()=>importInputRef.current?.click()} title="Importer des événements depuis un fichier JSON"
+                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
+                ↑ Importer
+              </button>
+              <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{display:"none"}}/>
             </div>
-          )}
+          </div>
           {importMsg&&(
             <div role="status" aria-live="polite" style={{padding:"5px 18px",background:"#f5f0e6",borderBottom:"1px solid rgba(28,25,23,.08)",fontSize:11,color:"#6b4423",flexShrink:0}}>
               {importMsg}
@@ -1098,7 +1093,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           {showLegendBar&&!fullscreen&&(
             <div style={{display:"flex",alignItems:"center",gap:16,padding:"5px 18px",background:"#faf7f2",borderBottom:"1px solid rgba(23,20,18,.06)",flexShrink:0,flexWrap:"wrap"}}>
               <span style={{fontSize:9,letterSpacing:".12em",textTransform:"uppercase",color:"rgba(23,20,18,.35)",fontWeight:600}}>Légende :</span>
-              {Object.entries(CAT_COL).map(([k,v])=>(
+              {Object.entries({cosmique:"#5a3db8",geologique:"#0868a8",biologique:"#0a7848",prehistoire:"#b03010",histoire:"#8a6000",biblique:"#8b5e34"}).map(([k,v])=>(
                 <div key={k} style={{display:"flex",alignItems:"center",gap:4}}>
                   <div style={{width:8,height:8,borderRadius:"50%",background:v}}/>
                   <span style={{fontSize:10,color:"rgba(23,20,18,.55)",textTransform:"capitalize"}}>{k}</span>

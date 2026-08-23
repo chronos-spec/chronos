@@ -15,8 +15,7 @@ export const EPOCHS = [
   { label:"Histoire",      from:12e3,  to:0,      bg:"#02081c", stripe:"#1850cc", text:"#6090f0", pillBg:"rgba(24,80,204,.12)",  pillText:"#1850cc" },
 ];
 
-// Palette désaturée : une couleur identifie une catégorie, jamais un aplat.
-export const CAT_COL = { cosmique:"#8b7db8", geologique:"#7397a8", biologique:"#6d9b7b", prehistoire:"#b87862", histoire:"#a58a58", biblique:"#9c8058" };
+export const CAT_COL = { cosmique:"#5a3db8", geologique:"#0868a8", biologique:"#0a7848", prehistoire:"#b03010", histoire:"#8a6000", biblique:"#8b5e34" };
 
 // ── ARBRE DE LA VIE ──
 export const LIFE_TREE = [
