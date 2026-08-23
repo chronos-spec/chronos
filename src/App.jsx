@@ -189,10 +189,13 @@ export default function Root() {
       setStarted(true);
     }} />;
   }
-  return <Chronos />;
+  return <Chronos onBackHome={() => {
+    try { sessionStorage.removeItem("chronos-started"); } catch (e) {}
+    setStarted(false);
+  }} />;
 }
 
-function Chronos() {
+function Chronos({ onBackHome }) {
   const canvasRef=useRef(null),miniRef=useRef(null),wrapRef=useRef(null);
   const S=useRef({vs:UA*1.04,ve:20,aiEvents:[],selectedId:null,hoveredId:null,fetchedZones:new Set(),fetching:false,fetchQueue:[],panelCache:{},placed:[],lineY:0,periodY:0,periodH:0,treeTop:0,filterChangedAt:0});
   const rafRef=useRef(null),fetchDebRef=useRef(null),animRef=useRef(null);
@@ -887,6 +890,11 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
       <button onClick={()=>setSidebarOpen(o=>!o)} title={sidebarOpen?"Fermer":"Menu"}
         style={{position:"fixed",left:sidebarOpen?284:12,top:14,zIndex:400,width:30,height:30,borderRadius:"50%",background:"#fbfaf7",border:"1px solid rgba(23,20,18,.14)",boxShadow:"0 2px 8px rgba(23,20,18,.12)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,color:"rgba(23,20,18,.6)",transition:"left .3s cubic-bezier(.16,1,.3,1)"}}>
         {sidebarOpen?"←":"☰"}
+      </button>
+      {/* ── BOUTON RETOUR À L'ACCUEIL ── */}
+      <button onClick={onBackHome} title="Retour à l'accueil"
+        style={{position:"fixed",left:sidebarOpen?322:50,top:14,zIndex:400,width:30,height:30,borderRadius:"50%",background:"#fbfaf7",border:"1px solid rgba(23,20,18,.14)",boxShadow:"0 2px 8px rgba(23,20,18,.12)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"rgba(23,20,18,.6)",transition:"left .3s cubic-bezier(.16,1,.3,1)"}}>
+        🏠
       </button>
 
       <div style={css.shell}>
