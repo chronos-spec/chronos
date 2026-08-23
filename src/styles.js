@@ -260,10 +260,13 @@ export const css = {
   searchError:{padding:"10px 12px",fontSize:12,lineHeight:1.45,color:"#9f2f24",background:"rgba(180,40,30,.08)",borderBottom:"1px solid rgba(180,40,30,.12)"},
   searchAiBadge:{display:"inline-flex",alignItems:"center",gap:4,padding:"2px 7px",borderRadius:999,background:"rgba(185,130,47,.12)",border:"1px solid rgba(185,130,47,.22)",fontSize:10,color:GOLD,letterSpacing:".05em"},
 
-  tt:(t)=>({position:"absolute",left:t.x,top:t.y,pointerEvents:"none",zIndex:50,background:"#171412",color:SURFACE,borderRadius:8,padding:"9px 12px",maxWidth:230,boxShadow:"0 10px 28px rgba(0,0,0,.28)"}),
-  ttDate:{fontSize:9,color:"#e6b76b",letterSpacing:".08em",marginBottom:4},
-  ttTitle:{fontFamily:"Georgia,serif",fontSize:15,lineHeight:1.3},
-  ttHint:{fontSize:9,color:"rgba(251,250,247,.48)",marginTop:5},
+  // Carte claire, façon arbre de vie / Notion : pastille de catégorie, nom
+  // en gras, date en petit texte discret — jamais un texte coloré.
+  tt:(t)=>({position:"absolute",left:t.x,top:t.y,pointerEvents:"none",zIndex:50,background:PANEL,color:INK,borderRadius:8,padding:"9px 13px",maxWidth:230,border:`1px solid ${LINE}`,boxShadow:"0 10px 26px rgba(23,20,18,.14)"}),
+  ttDot:(c)=>({display:"inline-block",width:8,height:8,borderRadius:"50%",background:c||MUTED,marginRight:6,verticalAlign:1}),
+  ttDate:{fontSize:10.5,color:MUTED,marginBottom:3},
+  ttTitle:{fontFamily:"-apple-system,'Segoe UI',system-ui,sans-serif",fontWeight:600,fontSize:14,lineHeight:1.3,color:INK},
+  ttHint:{fontSize:9,color:"rgba(23,20,18,.4)",marginTop:5},
 
   legend:(o)=>({position:"absolute",left:0,top:0,bottom:0,width:"min(280px, 88vw)",background:PANEL,borderRight:`1px solid ${LINE}`,transform:o?"translateX(0)":"translateX(-100%)",transition:"transform .3s cubic-bezier(.16,1,.3,1)",overflowY:"auto",padding:18,zIndex:35,boxShadow:"8px 0 26px rgba(23,20,18,.10)"}),
   legHead:{fontSize:10,letterSpacing:".14em",textTransform:"uppercase",color:"rgba(23,20,18,.42)",fontWeight:600,marginBottom:9},

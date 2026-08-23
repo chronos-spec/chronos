@@ -409,6 +409,16 @@ function Chronos() {
     },800);
   },[fetchZone]);
 
+  // Choisir une plage (curseur double "Plage :") doit directement cadrer la
+  // frise dessus, pas seulement estomper ce qui est hors plage — sinon il
+  // faut encore zoomer/scroller à la main pour voir la période choisie.
+  const applyRangeToView=useCallback((loP,hiP)=>{
+    const s=S.current;
+    s.vs=rangePToYa(loP)*1.02;
+    s.ve=Math.max(rangePToYa(hiP)*0.98,0.1);
+    scheduleRedraw();triggerFetch();
+  },[scheduleRedraw,triggerFetch]);
+
   // ── FETCH FICHE RICHE ─────────────────────────────────────────────────────
   const fetchRich=useCallback(async(ev)=>{
     const s=S.current;
@@ -675,7 +685,10 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
     const onMU=()=>{dragging=false;wrap.style.cursor="grab";};
     const onMM=(e)=>{
       const rect=cnv.getBoundingClientRect(),mx=e.clientX-rect.left,my=e.clientY-rect.top;
-      if(dragging){const s=S.current,lr=L(s.vs)-L(s.ve),sh=-(e.movementX/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);_sr.current();_tf.current();return;}
+      // Glisser vers la droite doit amener le contenu vers la droite (le point
+      // sous le curseur suit le curseur), donc un décalage positif — pas
+      // l'inverse.
+      if(dragging){const s=S.current,lr=L(s.vs)-L(s.ve),sh=(e.movementX/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);_sr.current();_tf.current();return;}
       const s=S.current;let foundP=null;
       for(const p of s.placed){const vTol=p.y!=null?26:110;if(Math.abs(p.x-mx)<22&&Math.abs((p.y??s.lineY)-my)<vTol){foundP=p;break;}}
       let foundBar=null;
@@ -690,7 +703,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
         if(foundP){
           let tx=mx+16,ty=my-68;if(tx+220>cnv.width)tx=mx-226;if(ty<10)ty=my+20;
           if(foundP.isCluster)setUi(u=>({...u,tooltip:{x:tx,y:ty,date:`${fmt(foundP.toYa)} → ${fmt(foundP.fromYa)}`,title:`+${foundP.count} événements groupés`,hint:"Cliquer pour zoomer et les distinguer"}}));
-          else setUi(u=>({...u,tooltip:{x:tx,y:ty,date:foundP.ev.date_label,title:foundP.ev.title}}));
+          else setUi(u=>({...u,tooltip:{x:tx,y:ty,date:foundP.ev.date_label,title:foundP.ev.title,color:cc(foundP.ev.cat)}}));
         }
         else if(foundBar){
           let tx=mx+16,ty=my-68;if(tx+220>cnv.width)tx=mx-226;if(ty<10)ty=my+20;
@@ -756,7 +769,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
     let lt=null,ld=null;
     const onTS=(e)=>{if(e.touches.length===1)lt=e.touches[0].clientX;else if(e.touches.length===2)ld=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);};
     const onTM=(e)=>{e.preventDefault();const rect=cnv.getBoundingClientRect(),s=S.current;
-      if(e.touches.length===1&&lt!==null){const dx=e.touches[0].clientX-lt;lt=e.touches[0].clientX;const lr=L(s.vs)-L(s.ve),sh=-(dx/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);_sr.current();_tf.current();}
+      if(e.touches.length===1&&lt!==null){const dx=e.touches[0].clientX-lt;lt=e.touches[0].clientX;const lr=L(s.vs)-L(s.ve),sh=(dx/cnv.width)*lr,ls=L(s.vs)+sh,le=L(s.ve)+sh;if(ls>Math.log10(UA*1.1)||le<0)return;s.vs=Math.pow(10,ls);s.ve=Math.pow(10,le);_sr.current();_tf.current();}
       else if(e.touches.length===2&&ld!==null){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const mx=(e.touches[0].clientX+e.touches[1].clientX)/2-rect.left;_za.current(makeCoord(s.vs,s.ve,cnv.width).toYa(mx),ld/d);ld=d;_sr.current();_tf.current();}};
     const onTE=()=>{lt=null;ld=null;};
     const onResize=()=>_sr.current();
@@ -1055,15 +1068,15 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                 <div style={{position:"absolute",top:8,height:4,borderRadius:2,background:"#8b5e34",
                   left:`${timeRangeP[0]*100}%`,width:`${(timeRangeP[1]-timeRangeP[0])*100}%`}}/>
                 <input type="range" className="dual-range-thumb" min={0} max={1000} value={timeRangeP[0]*1000}
-                  onChange={e=>{const v=Number(e.target.value)/1000;setTimeRangeP(([lo,hi])=>[Math.min(v,hi),hi]);}}
+                  onChange={e=>{const v=Number(e.target.value)/1000;setTimeRangeP(([lo,hi])=>{const nlo=Math.min(v,hi);applyRangeToView(nlo,hi);return [nlo,hi];});}}
                   aria-label="Borne ancienne de la plage temporelle"/>
                 <input type="range" className="dual-range-thumb" min={0} max={1000} value={timeRangeP[1]*1000}
-                  onChange={e=>{const v=Number(e.target.value)/1000;setTimeRangeP(([lo,hi])=>[lo,Math.max(v,lo)]);}}
+                  onChange={e=>{const v=Number(e.target.value)/1000;setTimeRangeP(([lo,hi])=>{const nhi=Math.max(v,lo);applyRangeToView(lo,nhi);return [lo,nhi];});}}
                   aria-label="Borne récente de la plage temporelle"/>
               </div>
               <span style={{fontSize:10.5,color:"#8b5e34",fontWeight:600,width:70,textAlign:"right",flexShrink:0}}>{fmt(rangePToYa(timeRangeP[1]))}</span>
               {timeRangeActive&&(
-                <button onClick={()=>setTimeRangeP([0,1])}
+                <button onClick={()=>{setTimeRangeP([0,1]);applyRangeToView(0,1);}}
                   style={{fontSize:10,color:"rgba(28,25,23,.5)",background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",flexShrink:0,textDecoration:"underline"}}>
                   Réinitialiser
                 </button>

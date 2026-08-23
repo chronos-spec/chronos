@@ -238,26 +238,30 @@ export function drawAll(canvas, miniCanvas, params) {
   }
 
   // ── BANDES DE PÉRIODES (réduite, discrète) ────────────────────────────────
+  // Même langage que l'arbre de vie : fond neutre, jamais un aplat de couleur
+  // saturé — la couleur ne sert que de repère discret (ici, un liseré).
   if(!linearScale){
-    for(const per of PERIODS){
+    PERIODS.forEach((per,i)=>{
       const x1=toX(per.from),x2=toX(Math.max(per.to,0.1));
-      if(Math.min(x1,x2)>W||Math.max(x1,x2)<0) continue;
+      if(Math.min(x1,x2)>W||Math.max(x1,x2)<0) return;
       const rx=Math.max(0,Math.min(x1,x2)),rw=Math.min(W,Math.abs(x2-x1));
-      if(rw<1) continue;
-      ctx.fillStyle=per.color+"55";ctx.fillRect(rx,PERIOD_Y,rw,PERIOD_H);
-      ctx.strokeStyle=per.color+"aa";ctx.lineWidth=0.75;ctx.setLineDash([]);
-      ctx.strokeRect(rx+0.3,PERIOD_Y+0.3,rw-0.6,PERIOD_H-0.6);
+      if(rw<1) return;
+      ctx.fillStyle=i%2===0?ink(.028):ink(.05);
+      ctx.fillRect(rx,PERIOD_Y,rw,PERIOD_H);
+      ctx.strokeStyle=ink(.07);ctx.lineWidth=1;ctx.setLineDash([]);
+      ctx.beginPath();ctx.moveTo(rx+rw,PERIOD_Y);ctx.lineTo(rx+rw,PERIOD_Y+PERIOD_H);ctx.stroke();
+      ctx.fillStyle=per.color+"cc";ctx.fillRect(rx,PERIOD_Y+PERIOD_H-2,rw,2);
       if(rw>28){
         ctx.save();ctx.beginPath();ctx.rect(rx+2,PERIOD_Y,rw-4,PERIOD_H);ctx.clip();
         const fs=rw>80?10:rw>45?9:8;
         ctx.font=`600 ${fs}px -apple-system,'Segoe UI',system-ui,sans-serif`;
-        ctx.fillStyle=ink(.78);ctx.textAlign="center";
+        ctx.fillStyle=ink(.5);ctx.textAlign="center";
         // Sticky : centré sur la portion réellement visible, pas sur la bande entière.
         const visCenterX=(Math.max(rx,0)+Math.min(rx+rw,W))/2;
         ctx.fillText(per.label,visCenterX,PERIOD_Y+PERIOD_H/2+fs*0.38);
         ctx.restore();
       }
-    }
+    });
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -465,6 +469,14 @@ export function drawAll(canvas, miniCanvas, params) {
           ctx.fillStyle=isHov||isSel?INK_STRONG:imp===1?ink(.86):ink(.62);
           ctx.textAlign="center";ctx.fillText(l,x,startY+i*lh+fs);
         });
+        // Date en petit texte discret sous le nom, au survol/sélection —
+        // même appariement "nom + période" que les nœuds de l'arbre de vie.
+        if((isHov||isSel)&&ev.date_label){
+          const dfs=Math.max(9,fs*0.76);
+          ctx.font=`500 ${Math.round(dfs)}px -apple-system,'Segoe UI',system-ui,sans-serif`;
+          ctx.fillStyle=ink(.4);ctx.textAlign="center";
+          ctx.fillText(ev.date_label,x,startY+lines.length*lh+dfs+1);
+        }
       }
       ctx.restore();
     }
