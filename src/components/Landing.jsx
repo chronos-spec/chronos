@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 // ── PAGE D'ACCUEIL ────────────────────────────────────────────────────────────
 // Direction claire & éditoriale, sur un fond d'univers : la page s'ouvre sur
 // le Big Bang, alors le décor est un ciel étoilé plutôt qu'une page blanche.
-export function Landing({ onStart }) {
+export function Landing({ onStart, onStart3D }) {
   const [in_, setIn] = useState(false);
   useEffect(() => { const t = setTimeout(() => setIn(true), 40); return () => clearTimeout(t); }, []);
 
@@ -102,7 +102,7 @@ export function Landing({ onStart }) {
           plongez dans l'arbre du vivant, synchronisé à chaque instant de l'histoire.
         </p>
 
-        <div className={`ld-in ${in_ ? "on" : ""}`} style={{ transitionDelay: ".2s", marginTop: 6 }}>
+        <div className={`ld-in ${in_ ? "on" : ""}`} style={{ transitionDelay: ".2s", marginTop: 6, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
           <button className="ld-cta" onClick={onStart} style={{
             fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif", fontSize: 15, letterSpacing: ".02em",
             padding: "16px 34px", borderRadius: 999, cursor: "pointer",
@@ -112,6 +112,16 @@ export function Landing({ onStart }) {
           }}>
             Commencer l'expérience →
           </button>
+          {onStart3D && (
+            <button className="ld-cta" onClick={onStart3D} title="La même frise, explorée en couloir temporel 3D" style={{
+              fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif", fontSize: 13, letterSpacing: ".02em",
+              padding: "10px 22px", borderRadius: 999, cursor: "pointer",
+              border: "1px solid rgba(200,180,255,.28)",
+              background: "rgba(255,255,255,.06)", color: "#e6def0",
+            }}>
+              🌌 Explorer en 3D →
+            </button>
+          )}
         </div>
       </div>
 

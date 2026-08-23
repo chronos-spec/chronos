@@ -13,7 +13,11 @@ import { ExploreCards } from "./components/ExploreCards.jsx";
 import { LifeTree } from "./components/LifeTree.jsx";
 import { Planisphere } from "./components/Planisphere.jsx";
 import { THEMES, flattenTree } from "./canvas/drawTimeline.js";
+import { lazy, Suspense } from "react";
 import { Landing } from "./components/Landing.jsx";
+// Chargée à la demande : évite d'alourdir le chargement initial de la frise
+// 2D avec three.js, qui ne sert qu'à la frise 3D.
+const Timeline3D = lazy(() => import("./components/Timeline3D.jsx").then(m => ({ default: m.Timeline3D })));
 import { EpochBubbles } from "./components/EpochBubbles.jsx";
 import { NarrativeBar } from "./components/NarrativeBar.jsx";
 import { STORIES, randomStory } from "./data/stories.js";
@@ -179,20 +183,37 @@ const RANGE_MIN_L=Math.log10(RANGE_MIN_YA), RANGE_MAX_L=Math.log10(RANGE_MAX_YA)
 const rangePToYa=(p)=>Math.pow(10,RANGE_MAX_L-p*(RANGE_MAX_L-RANGE_MIN_L));
 
 // ── RACINE : page d'accueil → expérience ─────────────────────────────────────
+// Trois écrans possibles : la couverture, la frise 2D habituelle, et la
+// frise 3D (même jeu de données, rejoué en couloir temporel WebGL).
 export default function Root() {
-  const [started, setStarted] = useState(() => {
-    try { return sessionStorage.getItem("chronos-started") === "1"; } catch (e) { return false; }
+  const [view, setView] = useState(() => {
+    try {
+      const v = sessionStorage.getItem("chronos-view");
+      if (v === "frise" || v === "frise3d") return v;
+    } catch (e) {}
+    return "landing";
   });
-  if (!started) {
-    return <Landing onStart={() => {
-      try { sessionStorage.setItem("chronos-started", "1"); } catch (e) {}
-      setStarted(true);
-    }} />;
+  const goto = useCallback((v) => {
+    try { sessionStorage.setItem("chronos-view", v); } catch (e) {}
+    setView(v);
+  }, []);
+
+  if (view === "landing") {
+    return <Landing onStart={() => goto("frise")} onStart3D={() => goto("frise3d")} />;
   }
-  return <Chronos onBackHome={() => {
-    try { sessionStorage.removeItem("chronos-started"); } catch (e) {}
-    setStarted(false);
-  }} />;
+  if (view === "frise3d") {
+    return (
+      <Suspense fallback={
+        <div style={{ position: "fixed", inset: 0, background: "#05060f", color: "rgba(242,238,230,.6)",
+          display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system,'Segoe UI',system-ui,sans-serif", fontSize: 13 }}>
+          Chargement de la frise 3D…
+        </div>
+      }>
+        <Timeline3D onBackHome={() => goto("landing")} onBack2D={() => goto("frise")} />
+      </Suspense>
+    );
+  }
+  return <Chronos onBackHome={() => goto("landing")} />;
 }
 
 function Chronos({ onBackHome }) {
