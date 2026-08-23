@@ -419,6 +419,24 @@ function Chronos() {
     scheduleRedraw();triggerFetch();
   },[scheduleRedraw,triggerFetch]);
 
+  // « Échelle réelle » doit montrer d'un coup tout le trajet Big Bang →
+  // aujourd'hui à l'échelle du temps réellement respectée (proportionnelle,
+  // pas logarithmique) — c'est justement en voyant l'histoire humaine se
+  // réduire à un pixel imperceptible qu'on prend conscience de la durée des
+  // grandes périodes. Sans ce recadrage, activer le mode ne fait que
+  // linéariser la petite fenêtre déjà affichée, ce qui rate l'effet.
+  const toggleLinearScale=useCallback(()=>{
+    setLinearScale(l=>{
+      const next=!l;
+      if(next){
+        const s=S.current;
+        s.vs=UA*1.04;s.ve=0;
+        scheduleRedraw();triggerFetch();
+      }
+      return next;
+    });
+  },[scheduleRedraw,triggerFetch]);
+
   // ── FETCH FICHE RICHE ─────────────────────────────────────────────────────
   const fetchRich=useCallback(async(ev)=>{
     const s=S.current;
@@ -1026,7 +1044,8 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                 {tourStep!==null?`🎯 Étape ${tourStep+1}/${TOUR_STEPS.length}`:"🎯 Visite guidée"}
               </button>
               {/* Échelle réelle */}
-              <button onClick={()=>{setLinearScale(l=>!l);}} aria-pressed={linearScale}
+              <button onClick={toggleLinearScale} aria-pressed={linearScale}
+                title="Vue globale Big Bang → aujourd'hui, avec la durée des périodes proportionnelle au temps réel"
                 style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:`1px solid ${linearScale?"#0369a1":"rgba(23,20,18,.15)"}`,background:linearScale?"rgba(3,105,161,.12)":"transparent",color:linearScale?"#0369a1":"rgba(23,20,18,.6)"}}>
                 {linearScale?"📏 Échelle réelle ✓":"📏 Échelle réelle"}
               </button>
