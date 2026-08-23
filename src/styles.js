@@ -1,11 +1,13 @@
-import { SURFACE, PANEL, INK, MUTED, LINE, GOLD, FONT_SANS } from "./theme.js";
+import { SURFACE, PANEL, INK, MUTED, LINE, GOLD, FONT_SANS,
+  BG, SURFACE2, SURFACE_SOFT, TEXT, TEXT_SECONDARY, TEXT_MUTED, BORDER, RADIUS_SM, FONT_UI } from "./theme.js";
 
 export const css = {
   app:{
     minHeight:"100vh",
     background:"#efede7",
     color:INK,
-    fontFamily:FONT_SANS,
+    fontFamily:FONT_UI,
+    WebkitFontSmoothing:"antialiased",
     overflow:"hidden"
   },
   shell:{
@@ -104,17 +106,53 @@ export const css = {
   },
 
   main:{display:"flex",flexDirection:"column",minWidth:0,padding:0,gap:0,background:"#efede7",overflowY:"auto"},
-  mainHeader:{
-    display:"flex",
-    alignItems:"center",
-    justifyContent:"space-between",
-    gap:18,
-    flexShrink:0,
-    padding:"14px 18px 2px",
+
+  // ── Phase 2 — nouvel en-tête minimal + barre de filtres ──────────────────
+  appHeader:{
+    height:64, flexShrink:0,
+    display:"flex", alignItems:"center", justifyContent:"space-between",
+    padding:"0 24px",
+    background:"rgba(255,255,255,.75)",
+    borderBottom:`1px solid ${BORDER}`,
+    backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)",
   },
-  eyebrow:{fontSize:11,letterSpacing:".16em",textTransform:"uppercase",color:"rgba(23,20,18,.45)",marginBottom:3},
-  pageTitle:{fontFamily:"'Fraunces',Georgia,serif",fontSize:"clamp(24px, 2.6vw, 36px)",lineHeight:1.04,fontWeight:600,margin:0,color:INK,letterSpacing:0,maxWidth:760},
-  pageSubtitle:{fontSize:12.5,lineHeight:1.5,color:MUTED,margin:"6px 0 0",maxWidth:620},
+  brandButton:{
+    display:"flex", alignItems:"center", gap:10,
+    background:"none", border:"none", padding:0, cursor:"pointer",
+    fontFamily:"inherit", textAlign:"left",
+  },
+  brandMark:{ fontSize:25, color:TEXT, lineHeight:1 },
+  brandName:{ fontSize:14, fontWeight:700, letterSpacing:".12em", color:TEXT },
+  brandSubtitle:{ marginTop:2, fontSize:11, color:TEXT_MUTED },
+  headerIcons:{ display:"flex", gap:6 },
+  iconButton:(active)=>({
+    width:36, height:36, border:"none", borderRadius:RADIUS_SM,
+    background:active?SURFACE_SOFT:"transparent",
+    color:active?TEXT:TEXT_SECONDARY,
+    cursor:"pointer", fontSize:16,
+    display:"flex", alignItems:"center", justifyContent:"center",
+  }),
+
+  filterBar:{
+    height:48, flexShrink:0,
+    display:"flex", alignItems:"center", gap:4,
+    padding:"0 20px",
+    overflowX:"auto",
+    borderBottom:`1px solid ${BORDER}`,
+    background:SURFACE2,
+  },
+  filterChip:(active)=>({
+    display:"flex", alignItems:"center", gap:7,
+    height:32, padding:"0 12px", flexShrink:0,
+    border:"none", borderRadius:RADIUS_SM,
+    background:active?"#efede8":"transparent",
+    color:active?TEXT:TEXT_SECONDARY,
+    fontSize:12, fontFamily:"inherit",
+    whiteSpace:"nowrap", cursor:"pointer",
+  }),
+  filterDot:(color)=>({ width:7, height:7, borderRadius:"50%", background:color, flexShrink:0 }),
+  filterCount:{ marginLeft:"auto", flexShrink:0, fontSize:11, color:TEXT_MUTED, fontWeight:500, whiteSpace:"nowrap" },
+
   headerActions:{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"},
   primaryAction:{
     height:36,

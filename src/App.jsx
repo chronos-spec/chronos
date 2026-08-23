@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { ALL_EVENTS, EPOCHS, PERIODS, PERIOD_DESCRIPTIONS, STATIC_CONTENT, UA, cc } from "./data/timelineData.js";
+import { ALL_EVENTS, EPOCHS, PERIODS, PERIOD_DESCRIPTIONS, STATIC_CONTENT, UA, cc, CAT_COL } from "./data/timelineData.js";
 import { buildPrompt, epochAt, fmt, L, makeCoord, zoomLvl } from "./utils/time.js";
 import { drawAll } from "./canvas/drawTimeline.js";
 import { css } from "./styles.js";
@@ -167,13 +167,14 @@ const TOUR_STEPS = [
 ];
 
 // ── CATÉGORIES POUR LES FILTRES ───────────────────────────────────────────────
+// Couleurs tirées de CAT_COL (source unique) plutôt que dupliquées ici.
 const CATS = [
-  { id:"cosmique",label:"Cosmique",   color:"#5a3db8" },
-  { id:"geologique",label:"Géologie", color:"#0868a8" },
-  { id:"biologique",label:"Biologie", color:"#0a7848" },
-  { id:"prehistoire",label:"Préhistoire",color:"#b03010" },
-  { id:"histoire",label:"Histoire",   color:"#8a6000" },
-  { id:"biblique",label:"Biblique",   color:"#8b5e34" },
+  { id:"cosmique",label:"Cosmique",   color:CAT_COL.cosmique },
+  { id:"geologique",label:"Géologie", color:CAT_COL.geologique },
+  { id:"biologique",label:"Biologie", color:CAT_COL.biologique },
+  { id:"prehistoire",label:"Préhistoire",color:CAT_COL.prehistoire },
+  { id:"histoire",label:"Histoire",   color:CAT_COL.histoire },
+  { id:"biblique",label:"Biblique",   color:CAT_COL.biblique },
 ];
 const ALL_CAT_IDS = CATS.map(c=>c.id);
 
@@ -236,6 +237,7 @@ function Chronos({ onBackHome }) {
   const [newTagInput,setNewTagInput]=useState("");
   const [isMobile,setIsMobile]=useState(()=>typeof window!=="undefined"&&window.innerWidth<760);
   const [sidebarOpen,setSidebarOpen]=useState(false);
+  const [settingsOpen,setSettingsOpen]=useState(false); // couches, vues, bible, tour, échelle, export — repliés par défaut
   const [linearScale,setLinearScale]=useState(false);
   const [expandedBands,setExpandedBands]=useState(new Set(["euca","vert"]));
   const [activeThemes,setActiveThemes]=useState(new Set()); // couches civ/sciences/etc
@@ -875,7 +877,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
 
   return (
     <div style={css.app}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap');
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap');
         .chronos-epochs button:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(28,25,23,.12)!important;border-color:rgba(28,25,23,.2)!important}
         @media (max-width:1024px){.chronos-epochs{grid-template-columns:repeat(3,1fr)!important}}
         @media (max-width:720px){.chronos-epochs{grid-template-columns:repeat(2,1fr)!important}}
@@ -891,6 +893,8 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
         .dual-range-thumb::-webkit-slider-runnable-track{background:transparent;height:20px}
         .dual-range-thumb::-moz-range-track{background:transparent;height:20px}
         .srch-item:hover{background:#f5f0e8!important}
+        .icon-btn:hover{background:#faf9f6!important;color:#262522!important}
+        .filter-chip:hover{background:#faf9f6!important}
         button:active{opacity:.85}
         html{scroll-behavior:smooth}
         .chronos-explore button:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(23,20,18,.13)!important}
@@ -907,17 +911,6 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
         }`}
       </style>
 
-      {/* ── BOUTON SIDEBAR ── */}
-      <button onClick={()=>setSidebarOpen(o=>!o)} title={sidebarOpen?"Fermer":"Menu"}
-        style={{position:"fixed",left:sidebarOpen?284:12,top:14,zIndex:400,width:30,height:30,borderRadius:"50%",background:"#fbfaf7",border:"1px solid rgba(23,20,18,.14)",boxShadow:"0 2px 8px rgba(23,20,18,.12)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,color:"rgba(23,20,18,.6)",transition:"left .3s cubic-bezier(.16,1,.3,1)"}}>
-        {sidebarOpen?"←":"☰"}
-      </button>
-      {/* ── BOUTON RETOUR À L'ACCUEIL ── */}
-      <button onClick={onBackHome} title="Retour à l'accueil"
-        style={{position:"fixed",left:sidebarOpen?322:50,top:14,zIndex:400,width:30,height:30,borderRadius:"50%",background:"#fbfaf7",border:"1px solid rgba(23,20,18,.14)",boxShadow:"0 2px 8px rgba(23,20,18,.12)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"rgba(23,20,18,.6)",transition:"left .3s cubic-bezier(.16,1,.3,1)"}}>
-        🏠
-      </button>
-
       <div style={css.shell}>
         {/* Sidebar */}
         <div style={{position:"fixed",left:0,top:0,bottom:0,width:280,transform:sidebarOpen?"translateX(0)":"translateX(-280px)",transition:"transform .3s cubic-bezier(.16,1,.3,1)",zIndex:300,flexShrink:0}}>
@@ -927,22 +920,60 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
         {/* Main */}
         <main style={{...css.main,marginLeft:sidebarOpen?280:0,transition:"margin-left .3s cubic-bezier(.16,1,.3,1)",width:sidebarOpen?"calc(100% - 280px)":"100%",flex:1}}>
 
-          {/* ── HEADER — masqué en plein écran ── */}
-          {!fullscreen&&(
-            <header style={{...css.mainHeader,paddingLeft:sidebarOpen?18:54}}>
-              <div>
-                <div style={css.eyebrow}>Chronos · frise du vivant &amp; de l'univers</div>
-                <h1 style={css.pageTitle}>Explorez librement le temps.</h1>
-                <p style={css.pageSubtitle}>{ui.epochLabel}</p>
+          {/* ── EN-TÊTE — masqué en plein écran ── */}
+          {!fullscreen&&(<>
+            <header style={css.appHeader}>
+              <button type="button" style={css.brandButton} onClick={onBackHome} title="Retour à l'accueil">
+                <span style={css.brandMark}>◌</span>
+                <div>
+                  <div style={css.brandName}>CHRONOS</div>
+                  <div style={css.brandSubtitle}>{ui.epochLabel||"Histoire de l'univers"}</div>
+                </div>
+              </button>
+              <div style={css.headerIcons}>
+                <button className="icon-btn" type="button" style={css.iconButton(sidebarOpen)} aria-pressed={sidebarOpen}
+                  onClick={()=>setSidebarOpen(o=>!o)} title="Rechercher">⌕</button>
+                <button className="icon-btn" type="button" style={css.iconButton(settingsOpen)} aria-pressed={settingsOpen}
+                  onClick={()=>setSettingsOpen(o=>!o)} title="Réglages">⚙</button>
+                <button className="icon-btn" type="button" style={css.iconButton(fullscreen)} aria-pressed={fullscreen}
+                  onClick={()=>setFullscreen(f=>!f)} title="Plein écran">⛶</button>
               </div>
-              <div style={css.headerActions}>
+            </header>
+
+            <div style={{...css.headerActions,padding:"12px 18px 0"}}>
                 <button type="button" style={css.primaryAction} onClick={()=>setStoryMenu(m=>!m)}>✦ Parcours guidé</button>
                 <button type="button" style={css.secondaryAction} onClick={resetView}>Vue globale</button>
                 <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,legendOpen:!u.legendOpen,showBookmarksView:false}))}>Légende</button>
                 <button type="button" style={css.secondaryAction} onClick={()=>setUi(u=>({...u,showBookmarksView:!u.showBookmarksView,legendOpen:false}))}>Signets</button>
-              </div>
-            </header>
-          )}
+            </div>
+
+            {/* ── BARRE DE FILTRES — catégories, toujours visible ── */}
+            <nav style={css.filterBar} aria-label="Filtrer par catégorie">
+              {bibleMode?(
+                <span style={{fontSize:12,color:"#a19e97",fontStyle:"italic"}}>Filtres désactivés — mode biblique actif</span>
+              ):(<>
+                <button type="button" className="filter-chip" style={css.filterChip(activeCats.size===ALL_CAT_IDS.length)}
+                  onClick={()=>setActiveCats(new Set(ALL_CAT_IDS))}>
+                  Toutes
+                </button>
+                {CATS.map(c=>{
+                  const active=activeCats.has(c.id);
+                  return (
+                    <button key={c.id} type="button" className="filter-chip" style={css.filterChip(active)}
+                      role="checkbox" aria-checked={active}
+                      title={active?`Masquer ${c.label}`:`Afficher ${c.label}`}
+                      onClick={()=>setActiveCats(prev=>{const next=new Set(prev);active?next.delete(c.id):next.add(c.id);return next;})}>
+                      <span aria-hidden="true" style={css.filterDot(c.color)}/>
+                      {c.label}
+                    </button>
+                  );
+                })}
+                <span aria-live="polite" style={css.filterCount}>
+                  {filteredCount} évènement{filteredCount!==1?"s":""}
+                </span>
+              </>)}
+            </nav>
+          </>)}
 
           {/* ── MENU DES PARCOURS NARRATIFS ── */}
           {storyMenu&&!fullscreen&&(
@@ -978,7 +1009,8 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
             </>
           )}
 
-          {/* ── BARRE OUTILS FRISE ── */}
+          {/* ── RÉGLAGES AVANCÉS — repliés par défaut, ouverts via ⚙ dans l'en-tête ── */}
+          {settingsOpen&&(
           <div style={{display:"flex",alignItems:"center",gap:8,padding:"7px 18px",background:"#f5f0e6",borderTop:"1px solid rgba(28,25,23,.08)",borderBottom:"1px solid rgba(28,25,23,.08)",flexWrap:"wrap",flexShrink:0}}>
             {/* Thèmes civilisations */}
             <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
@@ -1009,40 +1041,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
               })}
             </div>
             <div style={{width:1,background:"rgba(28,25,23,.1)",alignSelf:"stretch",flexShrink:0}}/>
-            {/* Filtres catégories événements (multi-sélection) — désactivés en mode biblique */}
-            <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap",alignItems:"center",opacity:bibleMode?.4:1,pointerEvents:bibleMode?"none":"auto",transition:"opacity .2s"}}>
-              {bibleMode?(
-                <span style={{fontSize:10,color:"rgba(28,25,23,.5)",fontStyle:"italic"}}>Filtres désactivés — mode biblique actif</span>
-              ):(<>
-                <button onClick={()=>setActiveCats(new Set(ALL_CAT_IDS))}
-                  style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
-                    border:"1px solid rgba(28,25,23,.22)",background:activeCats.size===ALL_CAT_IDS.length?"#1f1c17":"transparent",
-                    color:activeCats.size===ALL_CAT_IDS.length?"#fff":"rgba(28,25,23,.55)",transition:"all .15s"}}>
-                  Tout
-                </button>
-                {CATS.map(c=>{
-                  const active=activeCats.has(c.id);
-                  return (
-                    <button key={c.id} onClick={()=>setActiveCats(prev=>{const next=new Set(prev);active?next.delete(c.id):next.add(c.id);return next;})}
-                      title={active?`Masquer ${c.label}`:`Afficher ${c.label}`} role="checkbox" aria-checked={active}
-                      style={{padding:"3px 10px 3px 7px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
-                        display:"inline-flex",alignItems:"center",gap:5,
-                        border:`1px solid ${c.color}${active?"":"66"}`,
-                        background:active?c.color:"transparent",
-                        color:active?"#fff":c.color,transition:"all .15s"}}>
-                      <span aria-hidden="true" style={{width:11,height:11,borderRadius:3,flexShrink:0,
-                        border:`1.5px solid ${active?"#fff":c.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,lineHeight:1,color:"#fff"}}>
-                        {active?"✓":""}
-                      </span>
-                      {c.label}
-                    </button>
-                  );
-                })}
-                <span aria-live="polite" style={{marginLeft:"auto",fontSize:10,color:"rgba(28,25,23,.5)",fontWeight:600,whiteSpace:"nowrap"}}>
-                  {filteredCount} événement{filteredCount!==1?"s":""} affiché{filteredCount!==1?"s":""}
-                </span>
-              </>)}
-            </div>
+            <div style={{flex:1}}/>
             {/* Actions droite */}
             <div style={{display:"flex",gap:6,flexShrink:0}}>
               {/* Vue : frise / pistes thématiques / frises parallèles */}
@@ -1078,11 +1077,6 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
                 style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:`1px solid ${linearScale?"#0369a1":"rgba(23,20,18,.15)"}`,background:linearScale?"rgba(3,105,161,.12)":"transparent",color:linearScale?"#0369a1":"rgba(23,20,18,.6)"}}>
                 {linearScale?"📏 Échelle réelle ✓":"📏 Échelle réelle"}
               </button>
-              {/* Plein écran */}
-              <button onClick={()=>setFullscreen(f=>!f)} aria-pressed={fullscreen}
-                style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:fullscreen?"#12100e":"transparent",color:fullscreen?"#fff":"rgba(23,20,18,.6)"}}>
-                {fullscreen?"⊡ Normal":"⊞ Plein écran"}
-              </button>
               {/* Export */}
               <button onClick={exportImage}
                 style={{padding:"3px 10px",borderRadius:999,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:"inherit",border:"1px solid rgba(23,20,18,.15)",background:"transparent",color:"rgba(23,20,18,.6)"}}>
@@ -1100,6 +1094,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
               <input ref={importInputRef} type="file" accept="application/json" onChange={handleImportFile} style={{display:"none"}}/>
             </div>
           </div>
+          )}
           {importMsg&&(
             <div role="status" aria-live="polite" style={{padding:"5px 18px",background:"#f5f0e6",borderBottom:"1px solid rgba(28,25,23,.08)",fontSize:11,color:"#6b4423",flexShrink:0}}>
               {importMsg}
@@ -1154,7 +1149,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           {showLegendBar&&!fullscreen&&(
             <div style={{display:"flex",alignItems:"center",gap:16,padding:"5px 18px",background:"#faf7f2",borderBottom:"1px solid rgba(23,20,18,.06)",flexShrink:0,flexWrap:"wrap"}}>
               <span style={{fontSize:9,letterSpacing:".12em",textTransform:"uppercase",color:"rgba(23,20,18,.35)",fontWeight:600}}>Légende :</span>
-              {Object.entries({cosmique:"#5a3db8",geologique:"#0868a8",biologique:"#0a7848",prehistoire:"#b03010",histoire:"#8a6000",biblique:"#8b5e34"}).map(([k,v])=>(
+              {Object.entries(CAT_COL).map(([k,v])=>(
                 <div key={k} style={{display:"flex",alignItems:"center",gap:4}}>
                   <div style={{width:8,height:8,borderRadius:"50%",background:v}}/>
                   <span style={{fontSize:10,color:"rgba(23,20,18,.55)",textTransform:"capitalize"}}>{k}</span>
