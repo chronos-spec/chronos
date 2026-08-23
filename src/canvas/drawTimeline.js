@@ -388,6 +388,42 @@ export function drawAll(canvas, miniCanvas, params) {
     const singles=clusters.filter(c=>c.items.length===1).map(c=>({x:c.cx,ev:c.items[0]}));
     const multiClusters=clusters.filter(c=>c.items.length>1);
 
+    // ── ÉTAGES (lanes) — empêche les noms de se chevaucher ──────────────────
+    // Détermine d'abord, avec les mêmes règles que l'affichage du texte plus
+    // bas, quels évènements montreront un nom à ce niveau de zoom, puis leur
+    // attribue un étage par lane-packing classique : trié par position x, on
+    // avance à l'étage suivant tant que l'écart avec le dernier élément de
+    // cet étage est plus petit que la largeur probable d'une étiquette. Les
+    // étages pairs/impairs alternent au-dessus/en-dessous de la ligne (comme
+    // avant) et s'éloignent d'elle par palier — donc même trois ou quatre
+    // évènements proches ne se superposent plus jamais.
+    const laneOf=new Map();
+    {
+      const labeled=[];
+      for(const {x,ev} of singles){
+        const imp=ev.importance||2;
+        const isHov=hoveredId===ev.id,isSel=selectedId===ev.id;
+        const isBiblical=ev.cat==="biblique";
+        const zThresh=imp===1?0:imp===2?1.5:2.5;
+        let sF=(isSel||isHov)?1:Math.min(1,0.35+Math.max(0,zl-zThresh)*0.35);
+        if(bibleMode&&isBiblical)sF=1;
+        const baseR=isSel?7.5:isHov?6.5:imp===1?5.5:imp===2?4:2.8;
+        const r=Math.max(baseR*sF,(isSel||isHov)?baseR:1.5);
+        const minR=imp===1?1.5:imp===2?2:2.8;
+        if(r>=minR||isHov||isSel||(bibleMode&&isBiblical)){
+          labeled.push({id:ev.id,x,w:imp===1?150:120});
+        }
+      }
+      labeled.sort((a,b)=>a.x-b.x);
+      const lastXByLane=[];
+      for(const it of labeled){
+        let lane=0;
+        while(lastXByLane[lane]!==undefined&&it.x-lastXByLane[lane]<it.w)lane++;
+        lastXByLane[lane]=it.x;
+        laneOf.set(it.id,lane);
+      }
+    }
+
     for(const {x,ev} of singles){
       const col=cc(ev.cat),imp=ev.importance||2;
       const isHov=hoveredId===ev.id,isSel=selectedId===ev.id;
@@ -395,14 +431,16 @@ export function drawAll(canvas, miniCanvas, params) {
       // Estompage : mode biblique (tout sauf la Bible) OU filtres actifs
       // (catégorie / plage temporelle) qui excluent cet événement.
       const smoked=(bibleMode?!isBiblical:!passesFilters(ev))||!inLifeline(ev);
-      const nearby=placed.filter(p=>Math.abs(p.x-x)<90);
-      const side=nearby.length>0&&nearby[nearby.length-1].side===1?-1:1;
+      const lane=laneOf.get(ev.id)??0;
+      const row=Math.floor(lane/2);
+      const side=lane%2===0?1:-1;
       placed.push({x,ev,side});
       const zThresh=imp===1?0:imp===2?1.5:2.5;
       let sF=(isSel||isHov)?1:Math.min(1,0.35+Math.max(0,zl-zThresh)*0.35);
       if(bibleMode&&isBiblical)sF=1; // toujours pleinement déployé, peu importe le zoom
       const maxStem=imp===1?EVT_H*0.75:imp===2?EVT_H*0.58:EVT_H*0.42;
-      const stemLen=(side===1?maxStem:maxStem*0.72)*sF;
+      const ROW_H=32; // distance supplémentaire entre deux étages du même côté
+      const stemLen=(side===1?maxStem:maxStem*0.72)*sF+row*ROW_H*sF;
       const endY=LINE_Y-side*stemLen;
 
       ctx.save();
