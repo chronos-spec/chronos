@@ -407,10 +407,12 @@ export function drawAll(canvas, miniCanvas, params) {
         const zThresh=imp===1?0:imp===2?1.5:2.5;
         let sF=(isSel||isHov)?1:Math.min(1,0.35+Math.max(0,zl-zThresh)*0.35);
         if(bibleMode&&isBiblical)sF=1;
-        const baseR=isSel?7.5:isHov?6.5:imp===1?5.5:imp===2?4:2.8;
-        const r=Math.max(baseR*sF,(isSel||isHov)?baseR:1.5);
-        const minR=imp===1?1.5:imp===2?2:2.8;
-        if(r>=minR||isHov||isSel||(bibleMode&&isBiblical)){
+        // Au repos, seuls les évènements majeurs gardent un nom affiché en
+        // permanence — les autres restent un simple point et ne révèlent
+        // leur nom qu'au survol/sélection (règle « jamais de mur de
+        // texte »). Un majeur pas encore assez "ouvert" par le zoom
+        // sémantique (sF trop faible) reste lui aussi juste un point.
+        if((imp===1&&sF>0.55)||isHov||isSel||(bibleMode&&isBiblical)){
           labeled.push({id:ev.id,x,w:imp===1?150:120});
         }
       }
@@ -478,15 +480,18 @@ export function drawAll(canvas, miniCanvas, params) {
       ctx.lineWidth=((isHov||isSel)?2:imp===1?1.6:imp===2?1.1:0.7)*sF;
       ctx.beginPath();ctx.moveTo(x,LINE_Y);ctx.lineTo(x,endY);ctx.stroke();
 
-      // Point — pastille colorée pleine (même langage que les nœuds de l'arbre de vie)
-      const baseR=isSel?7.5:isHov?6.5:imp===1?5.5:imp===2?4:2.8;
+      // Point — pastille colorée pleine (même langage que les nœuds de l'arbre de vie).
+      // Petits points (8-10px de diamètre), jamais d'énormes cercles.
+      const baseR=isSel?6:isHov?5.5:imp===1?5:imp===2?4:2.5;
       const r=Math.max(baseR*sF,(isSel||isHov)?baseR:1.5);
       ctx.beginPath();ctx.arc(x,LINE_Y,r,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
       if(isSel){ctx.beginPath();ctx.arc(x,LINE_Y,r+3.5,0,Math.PI*2);ctx.strokeStyle=col+"66";ctx.lineWidth=1.5;ctx.stroke();}
 
-      // Label — texte en encre foncée, jamais dans la couleur (règle de l'arbre de vie)
-      const minR=imp===1?1.5:imp===2?2:2.8;
-      if(r>=minR||isHov||isSel||(bibleMode&&isBiblical)){
+      // Label — texte en encre foncée, jamais dans la couleur (règle de l'arbre de vie).
+      // Permanent seulement pour les majeurs ; le reste ne se révèle qu'au
+      // survol/sélection, pour que la frise reste respirante même avec des
+      // centaines d'évènements.
+      if((imp===1&&sF>0.55)||isHov||isSel||(bibleMode&&isBiblical)){
         const fs=Math.max(9,(imp===1?13:imp===2?12:11)*sF);
         const maxLW=imp===1?130:110;
         ctx.font=`${imp===1?"600":"500"} ${Math.round(fs)}px -apple-system,'Segoe UI',system-ui,sans-serif`;

@@ -1200,10 +1200,11 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
               <canvas ref={canvasRef} style={css.cnv} tabIndex={0} role="application"
                 aria-label="Frise chronologique interactive. Flèches gauche et droite pour se déplacer dans le temps, flèches haut et bas pour zoomer, Entrée pour ouvrir la fiche de l'événement survolé, Échap pour la fermer."/>
               <Legend open={ui.legendOpen}/>
-              <ZoomControls onZoomIn={()=>zoomFromCenter(.72)} onZoomOut={()=>zoomFromCenter(1.38)}/>
+              <ZoomControls onZoomIn={()=>zoomFromCenter(.72)} onZoomOut={()=>zoomFromCenter(1.38)} zoomLabel={ui.range}/>
 
-              {/* Minimap cliquable — plus grande */}
-              <div style={{position:"absolute",bottom:10,right:10,width:200,height:40,background:"#eee8dc",border:"1px solid rgba(23,20,18,.12)",borderRadius:6,overflow:"hidden",zIndex:20,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,.1)"}}
+              {/* Minimap cliquable — plus grande. Coin bas-gauche : le coin bas-droit
+                  est réservé aux contrôles de zoom flottants. */}
+              <div style={{position:"absolute",bottom:10,left:10,width:200,height:40,background:"#eee8dc",border:"1px solid rgba(23,20,18,.12)",borderRadius:6,overflow:"hidden",zIndex:20,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,.1)"}}
                 onClick={onMinimapClick} title="Cliquer pour naviguer">
                 <canvas ref={miniRef} aria-hidden="true"/>
                 <div style={{position:"absolute",bottom:2,left:4,fontSize:7,color:"rgba(23,20,18,.4)",letterSpacing:".06em"}}>MINIMAP — cliquer pour naviguer</div>

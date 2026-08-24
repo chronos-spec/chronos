@@ -1,5 +1,5 @@
 import { SURFACE, PANEL, INK, MUTED, LINE, GOLD, FONT_SANS,
-  BG, SURFACE2, SURFACE_SOFT, TEXT, TEXT_SECONDARY, TEXT_MUTED, BORDER, RADIUS_SM, FONT_UI } from "./theme.js";
+  BG, SURFACE2, SURFACE_SOFT, TEXT, TEXT_SECONDARY, TEXT_MUTED, BORDER, RADIUS_SM, RADIUS_MD, SHADOW_SOFT, FONT_UI } from "./theme.js";
 
 export const css = {
   app:{
@@ -243,21 +243,26 @@ export const css = {
 
   wrap:{position:"absolute",inset:0,cursor:"grab",background:"#faf7f2",overflow:"hidden"},
   cnv:{position:"absolute",top:0,left:0},
-  zoomBtns:{position:"absolute",right:14,top:14,display:"flex",gap:6,zIndex:20},
+  // Bloc vertical flottant discret : + / niveau / − dans une même carte,
+  // plutôt que deux boutons ronds séparés.
+  zoomBtns:{position:"absolute",right:24,bottom:24,top:"auto",display:"flex",flexDirection:"column",
+    background:"rgba(255,255,255,.85)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",
+    border:`1px solid ${BORDER}`,borderRadius:RADIUS_MD,boxShadow:SHADOW_SOFT,overflow:"hidden",zIndex:20},
+  zoomReadout:{padding:"5px 0",fontSize:10.5,color:TEXT_SECONDARY,textAlign:"center",
+    borderTop:`1px solid ${BORDER}`,borderBottom:`1px solid ${BORDER}`,fontVariantNumeric:"tabular-nums"},
   zoomBtn:{
-    width:36,
-    height:36,
-    borderRadius:"50%",
-    background:PANEL,
-    border:`1px solid ${LINE}`,
+    width:40,
+    height:34,
+    borderRadius:0,
+    background:"transparent",
+    border:"none",
     cursor:"pointer",
     display:"flex",
     alignItems:"center",
     justifyContent:"center",
-    fontSize:18,
+    fontSize:16,
     fontWeight:500,
     color:INK,
-    boxShadow:"0 4px 14px rgba(23,20,18,.10)"
   },
   mini:{position:"absolute",bottom:14,right:14,width:176,height:34,background:"#eee8dc",border:`1px solid ${LINE}`,borderRadius:5,overflow:"hidden",zIndex:20},
   statusbar:{height:36,display:"flex",alignItems:"center",gap:14,flexShrink:0,color:MUTED},
