@@ -1,5 +1,5 @@
 import { EPOCHS, PERIODS, ALL_EVENTS, cc } from '../data/timelineData.js';
-import { L, fmt, makeCoord, zoomLvl } from '../utils/time.js';
+import { L, fmt, makeCoord, zoomLvl, epochAt } from '../utils/time.js';
 import { theme } from '../theme.js';
 
 // Encre claire sur fond sombre (canvas immersif) — remplace l'ancienne encre
@@ -7,6 +7,54 @@ import { theme } from '../theme.js';
 // (23,20,18 / 28,25,23 / 18,16,14).
 const inkL = (a) => theme.alpha(theme.text.light, a);
 const INK_L_STRONG = theme.text.light;
+
+// ── FORMES DE MARQUEUR PAR COUCHE (Étape 3) ───────────────────────────────
+// Les couches (civilisations, religions, sciences, guerres, arts,
+// personnages) ne se distinguent plus par la couleur mais par la forme de
+// leur marqueur ; la couleur de chaque évènement vient désormais de l'ère où
+// il se situe (theme.eraColorFor via epochAt), pas d'une teinte en dur.
+const SHAPES = {
+  civilisations: "circle",
+  religions:     "ring",
+  sciences:      "diamond",
+  guerres:       "triangle",
+  arts:          "square",
+  personnages:   "star",
+};
+
+function drawShape(ctx, shape, cx, cy, r, color) {
+  ctx.beginPath();
+  switch (shape) {
+    case "ring":
+      ctx.arc(cx, cy, r, 0, Math.PI*2);
+      ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.stroke();
+      return;
+    case "diamond":
+      ctx.moveTo(cx, cy-r); ctx.lineTo(cx+r, cy); ctx.lineTo(cx, cy+r); ctx.lineTo(cx-r, cy); ctx.closePath();
+      break;
+    case "triangle":
+      ctx.moveTo(cx, cy-r); ctx.lineTo(cx+r*0.87, cy+r*0.6); ctx.lineTo(cx-r*0.87, cy+r*0.6); ctx.closePath();
+      break;
+    case "square":
+      ctx.rect(cx-r*0.8, cy-r*0.8, r*1.6, r*1.6);
+      break;
+    case "star": {
+      const spikes=5, outerR=r*1.15, innerR=r*0.46;
+      for(let i=0;i<spikes*2;i++){
+        const rad=i%2===0?outerR:innerR;
+        const ang=(Math.PI/spikes)*i - Math.PI/2;
+        const x=cx+Math.cos(ang)*rad, y=cy+Math.sin(ang)*rad;
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.closePath();
+      break;
+    }
+    default: // circle
+      ctx.arc(cx, cy, r, 0, Math.PI*2);
+  }
+  ctx.fillStyle = color;
+  ctx.fill();
+}
 
 // ── THÈMES CIVILISATIONS — inline pour éviter les problèmes de chemin ─────────
 // Toutes les dates ci-dessous sont en "années avant aujourd'hui" (2025), comme
@@ -285,16 +333,17 @@ export function drawAll(canvas, miniCanvas, params) {
   let civRow=0;
   const themeBarRects=[]; // survol des personnages → surligne leur "ligne de vie"
   for(const themeKey of activeThemes){
-    const theme=THEMES[themeKey];if(!theme) continue;
+    const themeDef=THEMES[themeKey];if(!themeDef) continue;
+    const shape=SHAPES[themeKey]||"circle";
     const rowY=CIVILS_Y+civRow*18;
 
     // Label de la catégorie à gauche
-    ctx.fillStyle=theme.color+"cc";
+    ctx.fillStyle=themeDef.color+"cc";
     ctx.font="600 8px -apple-system,'Segoe UI',system-ui,sans-serif";
     ctx.textAlign="left";
-    ctx.fillText(theme.icon+" "+theme.label.split(" ")[0].toUpperCase(),4,rowY+12);
+    ctx.fillText(themeDef.icon+" "+themeDef.label.split(" ")[0].toUpperCase(),4,rowY+12);
 
-    for(const item of theme.items){
+    for(const item of themeDef.items){
       if(!item.to && item.to!==null) continue;
       const itemTo = item.to===null ? 0 : item.to;
       const x1=toX(item.from),x2=toX(Math.max(itemTo,0.1));
@@ -302,27 +351,31 @@ export function drawAll(canvas, miniCanvas, params) {
       const rx=Math.max(0,Math.min(x1,x2)),rw=Math.min(W,Math.abs(x2-x1));
       if(rw<1) continue;
 
+      // Couleur dérivée de l'ère où se situe l'évènement (plus de teinte en
+      // dur par item) — seule la forme du marqueur distingue encore la couche.
+      const eraColor=theme.eraColorFor(epochAt((item.from+itemTo)/2).label);
+
       const rh=14,ry=rowY+2;
       if(themeKey==="personnages")themeBarRects.push({rx,ry,rw,rh,label:item.label,from:item.from,to:item.to??0});
 
       // Barre plate teintée — même logique que les barres de l'arbre de vie
-      ctx.fillStyle=item.color+"22";
+      ctx.fillStyle=eraColor+"22";
       ctx.beginPath();
       if(ctx.roundRect)ctx.roundRect(rx,ry,rw,rh,3);
       else ctx.rect(rx,ry,rw,rh);
       ctx.fill();
 
       // Bordure
-      ctx.strokeStyle=item.color+"77";ctx.lineWidth=0.8;ctx.setLineDash([]);
+      ctx.strokeStyle=eraColor+"77";ctx.lineWidth=0.8;ctx.setLineDash([]);
       ctx.beginPath();
       if(ctx.roundRect)ctx.roundRect(rx,ry,rw,rh,3);
       else ctx.rect(rx,ry,rw,rh);
       ctx.stroke();
 
-      // Label si assez large — texte en encre claire, pastille = couleur
+      // Label si assez large — texte en encre claire, marqueur = forme de la couche
       if(rw>40){
         ctx.save();ctx.beginPath();ctx.rect(rx+3,ry,rw-6,rh);ctx.clip();
-        ctx.beginPath();ctx.arc(rx+7,ry+rh/2,2.5,0,Math.PI*2);ctx.fillStyle=item.color;ctx.fill();
+        drawShape(ctx,shape,rx+7,ry+rh/2,3,eraColor);
         ctx.font="500 9px -apple-system,'Segoe UI',system-ui,sans-serif";
         ctx.fillStyle=inkL(.8);ctx.textAlign="left";
         ctx.fillText(item.label,rx+12,ry+rh/2+3.5);
@@ -330,6 +383,24 @@ export function drawAll(canvas, miniCanvas, params) {
       }
     }
     civRow++;
+  }
+
+  // Légende discrète des formes (une fois, alignée à droite de la 1ère ligne)
+  if(activeThemes.size){
+    ctx.save();
+    ctx.font="7px -apple-system,'Segoe UI',system-ui,sans-serif";
+    ctx.textAlign="right";
+    const legendY=CIVILS_Y+9;
+    let lx=W-6;
+    for(const key of [...activeThemes].reverse()){
+      const label=THEMES[key]?.label.split(" ")[0]??key;
+      const tw=ctx.measureText(label).width;
+      drawShape(ctx,SHAPES[key]||"circle",lx-tw-8,legendY,2.8,inkL(.5));
+      ctx.fillStyle=inkL(.4);
+      ctx.fillText(label,lx,legendY+2.5);
+      lx-=tw+18;
+    }
+    ctx.restore();
   }
   ctx.restore(); // fin de l'atténuation du décor (bandeaux + périodes + civilisations)
 
@@ -621,26 +692,29 @@ export function drawAll(canvas, miniCanvas, params) {
       const midY=laneY+Math.max(laneH*0.62,28);
 
       if(lanesMode==="theme"){
+        const shape=SHAPES[lane.id]||"circle";
         for(const item of lane.items){
           const itemTo=item.to===null?0:item.to;
           const x1=toX(item.from),x2=toX(Math.max(itemTo,0.1));
           if(Math.min(x1,x2)>W||Math.max(x1,x2)<0)continue;
           const rx=Math.max(0,Math.min(x1,x2)),rw=Math.min(W,Math.abs(x2-x1));
           if(rw<1)continue;
+          const eraColor=theme.eraColorFor(epochAt((item.from+itemTo)/2).label);
           const barH=Math.min(16,laneH-28),barY=midY;
-          ctx.fillStyle=item.color+"33";
+          ctx.fillStyle=eraColor+"33";
           ctx.beginPath();
           if(ctx.roundRect)ctx.roundRect(rx,barY,Math.max(rw,2),barH,3);else ctx.rect(rx,barY,Math.max(rw,2),barH);
           ctx.fill();
-          ctx.strokeStyle=item.color+"88";ctx.lineWidth=0.8;
+          ctx.strokeStyle=eraColor+"88";ctx.lineWidth=0.8;
           ctx.beginPath();
           if(ctx.roundRect)ctx.roundRect(rx,barY,Math.max(rw,2),barH,3);else ctx.rect(rx,barY,Math.max(rw,2),barH);
           ctx.stroke();
           if(rw>34){
             ctx.save();ctx.beginPath();ctx.rect(rx+2,barY,rw-4,barH);ctx.clip();
+            drawShape(ctx,shape,rx+8,barY+barH/2,3,eraColor);
             ctx.font="500 9px -apple-system,'Segoe UI',system-ui,sans-serif";
             ctx.fillStyle=inkL(.75);ctx.textAlign="left";
-            ctx.fillText(item.label,rx+4,barY+barH/2+3);
+            ctx.fillText(item.label,rx+14,barY+barH/2+3);
             ctx.restore();
           }
           laneRects.push({rx,ry:barY,rw,rh:barH,label:item.label,
