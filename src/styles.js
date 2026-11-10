@@ -123,7 +123,7 @@ export const css = {
     background:"none", border:"none", padding:0, cursor:"pointer",
     fontFamily:"inherit", textAlign:"left",
   },
-  brandMark:{ fontSize:25, color:INK, lineHeight:1 },
+  brandMark:{ width:22, height:22, display:"block", flexShrink:0 },
   brandName:{ fontSize:14, fontWeight:700, letterSpacing:".12em", color:INK },
   brandSubtitle:{ marginTop:2, fontSize:11, color:theme.text.muted },
   headerIcons:{ display:"flex", gap:6 },

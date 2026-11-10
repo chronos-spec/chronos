@@ -924,7 +924,7 @@ En HTML simple (<p>,<h3>,<strong>,<em> uniquement). Structure :
           {!fullscreen&&(<>
             <header style={css.appHeader}>
               <button type="button" style={css.brandButton} onClick={onBackHome} title="Retour à l'accueil">
-                <span style={css.brandMark}>◌</span>
+                <img src="/logo.svg" alt="" style={css.brandMark}/>
                 <div>
                   <div style={css.brandName}>CHRONOS</div>
                   <div style={css.brandSubtitle}>{ui.epochLabel||"Histoire de l'univers"}</div>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Chronos">
+  <!-- Trait horizontal + graduations à espacement logarithmique, resserrées
+       vers la droite (passé lointain → présent) ; hauteur des graduations
+       décroissante dans le même sens, pour le même principe (profondeur = temps). -->
+  <g fill="none" stroke="#0E1116" stroke-width="1.5" stroke-linecap="round">
+    <line x1="2" y1="16" x2="29" y2="16"/>
+    <line x1="4"    y1="11.5" x2="4"    y2="20.5"/>
+    <line x1="11"   y1="12"   x2="11"   y2="20"/>
+    <line x1="15.5" y1="12.5" x2="15.5" y2="19.5"/>
+    <line x1="18.7" y1="13"   x2="18.7" y2="19"/>
+    <line x1="21.1" y1="13.5" x2="21.1" y2="18.5"/>
+    <line x1="23.1" y1="14"   x2="23.1" y2="18"/>
+  </g>
+</svg>
