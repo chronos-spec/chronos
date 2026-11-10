@@ -1,18 +1,26 @@
 // Auto-generated from App.jsx — data layer
 import { BIBLE_EVENTS, BIBLE_CONTENT } from "./bibleEvents.js";
+import { theme } from "../theme.js";
 
 export const UA = 13.8e9;
 
+// Accent de chaque grande ère dérivé de theme.eras (source unique) plutôt que
+// de 9 teintes indépendantes choisies à la main — fin du doublon relevé à
+// l'audit entre EPOCHS / PERIODS / CHRONO_RECTS (drawTimeline.js).
+function epoch(label, from, to, surface) {
+  const c = theme.eraColorFor(label);
+  return { label, from, to, bg:surface, stripe:c, text:theme.text.light, pillBg:theme.alpha(c,.14), pillText:c };
+}
 export const EPOCHS = [
-  { label:"Cosmique",      from:UA,    to:4.6e9,  bg:"#0a0520", stripe:"#7c5cf0", text:"#b090ff", pillBg:"rgba(124,92,240,.15)", pillText:"#7c5cf0" },
-  { label:"Hadéen",        from:4.6e9, to:4.0e9,  bg:"#1e0802", stripe:"#d43a0a", text:"#f07050", pillBg:"rgba(212,58,10,.12)",  pillText:"#d43a0a" },
-  { label:"Archéen",       from:4.0e9, to:2.5e9,  bg:"#020e1c", stripe:"#0878c8", text:"#50b0e8", pillBg:"rgba(8,120,200,.12)",  pillText:"#0878c8" },
-  { label:"Protérozoïque", from:2.5e9, to:541e6,  bg:"#02120a", stripe:"#18b050", text:"#50d880", pillBg:"rgba(24,176,80,.12)",  pillText:"#18b050" },
-  { label:"Paléozoïque",   from:541e6, to:252e6,  bg:"#0a1602", stripe:"#78b010", text:"#a0d040", pillBg:"rgba(120,176,16,.12)", pillText:"#78b010" },
-  { label:"Mésozoïque",    from:252e6, to:66e6,   bg:"#160a02", stripe:"#c86010", text:"#f09040", pillBg:"rgba(200,96,16,.12)",  pillText:"#c86010" },
-  { label:"Cénozoïque",    from:66e6,  to:2.6e6,  bg:"#100220", stripe:"#a028c8", text:"#d060f0", pillBg:"rgba(160,40,200,.12)", pillText:"#a028c8" },
-  { label:"Préhistoire",   from:2.6e6, to:12e3,   bg:"#160204", stripe:"#c02828", text:"#e06060", pillBg:"rgba(192,40,40,.12)",  pillText:"#c02828" },
-  { label:"Histoire",      from:12e3,  to:0,      bg:"#02081c", stripe:"#1850cc", text:"#6090f0", pillBg:"rgba(24,80,204,.12)",  pillText:"#1850cc" },
+  epoch("Cosmique",      UA,    4.6e9, theme.surfaces.canvasDeep),
+  epoch("Hadéen",        4.6e9, 4.0e9, theme.surfaces.canvasDeep),
+  epoch("Archéen",       4.0e9, 2.5e9, theme.surfaces.canvasDeep),
+  epoch("Protérozoïque", 2.5e9, 541e6, theme.surfaces.canvasMid),
+  epoch("Paléozoïque",   541e6, 252e6, theme.surfaces.canvasMid),
+  epoch("Mésozoïque",    252e6, 66e6,  theme.surfaces.canvasMid),
+  epoch("Cénozoïque",    66e6,  2.6e6, theme.surfaces.canvasRecent),
+  epoch("Préhistoire",   2.6e6, 12e3,  theme.surfaces.canvasRecent),
+  epoch("Histoire",      12e3,  0,     theme.surfaces.canvasRecent),
 ];
 
 export const CAT_COL = { cosmique:"#8878a8", geologique:"#7294a0", biologique:"#6f9478", prehistoire:"#b17763", histoire:"#9c8356", biblique:"#8b7355" };
@@ -74,23 +82,30 @@ export const PERIOD_DESCRIPTIONS = {
 
 
 
-// Geological periods (ICS color scheme) — shown as a sub-band on the timeline
+// Périodes géologiques. Couleur dérivée de l'ère parente (theme.eras) plutôt
+// que de la palette ICS saturée d'origine — fin du 2e doublon de l'audit.
+// La distinction entre périodes voisines d'une même ère vient déjà du
+// bandeau zébré (voir drawTimeline.js), pas d'un changement de teinte.
+function period(label, from, to, eraLabel) {
+  const c = theme.eraColorFor(eraLabel);
+  return { label, from, to, color:c, textColor:theme.text.light };
+}
 export const PERIODS = [
   // Paléozoïque
-  { label:"Cambrien",     from:541e6,  to:485.4e6, color:"#7fa056", textColor:"#fff" },
-  { label:"Ordovicien",   from:485.4e6,to:443.8e6, color:"#009270", textColor:"#fff" },
-  { label:"Silurien",     from:443.8e6,to:419.2e6, color:"#b3e1b6", textColor:"#333" },
-  { label:"Dévonien",     from:419.2e6,to:358.9e6, color:"#cb8c37", textColor:"#fff" },
-  { label:"Carbonifère",  from:358.9e6,to:298.9e6, color:"#67a599", textColor:"#fff" },
-  { label:"Permien",      from:298.9e6,to:251.9e6, color:"#f04028", textColor:"#fff" },
+  period("Cambrien",     541e6,  485.4e6, "Paléozoïque"),
+  period("Ordovicien",   485.4e6,443.8e6, "Paléozoïque"),
+  period("Silurien",     443.8e6,419.2e6, "Paléozoïque"),
+  period("Dévonien",     419.2e6,358.9e6, "Paléozoïque"),
+  period("Carbonifère",  358.9e6,298.9e6, "Paléozoïque"),
+  period("Permien",      298.9e6,251.9e6, "Paléozoïque"),
   // Mésozoïque
-  { label:"Trias",        from:251.9e6,to:201.4e6, color:"#812b92", textColor:"#fff" },
-  { label:"Jurassique",   from:201.4e6,to:145e6,   color:"#34b2c9", textColor:"#fff" },
-  { label:"Crétacé",      from:145e6,  to:66e6,    color:"#7fc64e", textColor:"#333" },
+  period("Trias",        251.9e6,201.4e6, "Mésozoïque"),
+  period("Jurassique",   201.4e6,145e6,   "Mésozoïque"),
+  period("Crétacé",      145e6,  66e6,    "Mésozoïque"),
   // Cénozoïque
-  { label:"Paléogène",    from:66e6,   to:23.03e6, color:"#fd9a52", textColor:"#333" },
-  { label:"Néogène",      from:23.03e6,to:2.58e6,  color:"#ffff00", textColor:"#333" },
-  { label:"Quaternaire",  from:2.58e6, to:0,       color:"#f9f97f", textColor:"#333" },
+  period("Paléogène",    66e6,   23.03e6, "Cénozoïque"),
+  period("Néogène",      23.03e6,2.58e6,  "Cénozoïque"),
+  period("Quaternaire",  2.58e6, 0,       "Cénozoïque"),
 ];
 
 

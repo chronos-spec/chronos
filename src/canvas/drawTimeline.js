@@ -1,6 +1,12 @@
 import { EPOCHS, PERIODS, ALL_EVENTS, cc } from '../data/timelineData.js';
 import { L, fmt, makeCoord, zoomLvl } from '../utils/time.js';
-import { PAPER_TOP, PAPER_BOTTOM, ink, INK_STRONG, ALIVE, alive } from '../theme.js';
+import { theme } from '../theme.js';
+
+// Encre claire sur fond sombre (canvas immersif) — remplace l'ancienne encre
+// foncée sur papier clair, et les bases RGB dupliquées relevées à l'audit
+// (23,20,18 / 28,25,23 / 18,16,14).
+const inkL = (a) => theme.alpha(theme.text.light, a);
+const INK_L_STRONG = theme.text.light;
 
 // ── THÈMES CIVILISATIONS — inline pour éviter les problèmes de chemin ─────────
 // Toutes les dates ci-dessous sont en "années avant aujourd'hui" (2025), comme
@@ -84,26 +90,33 @@ const PARALLEL_LANES = [
 export { PARALLEL_LANES };
 
 // ── RECTANGLES CHRONOZOOM ─────────────────────────────────────────────────────
-// Imbriqués : Universe → Ère → Sous-période
+// Imbriqués : Universe → Ère → Sous-période. Couleur dérivée de l'ère parente
+// (theme.eras) — 3e et dernier doublon de palette relevé à l'audit
+// (EPOCHS / PERIODS / CHRONO_RECTS pointaient chacun vers des teintes
+// différentes pour les mêmes ères).
+function chronoRect(id, label, from, to, depth, eraLabel) {
+  const c = theme.eraColorFor(eraLabel);
+  return { id, label, from, to, color:c, textColor:theme.text.light, depth };
+}
 const CHRONO_RECTS = [
-  { id:"univ",  label:"Univers",        from:13800e6, to:4600e6, color:"#312e81", textColor:"#a5b4fc", depth:0 },
-  { id:"hadeen",label:"Hadéen",         from:4600e6,  to:4000e6, color:"#7f1d1d", textColor:"#fca5a5", depth:1 },
-  { id:"archeen",label:"Archéen",       from:4000e6,  to:2500e6, color:"#1e3a5f", textColor:"#93c5fd", depth:1 },
-  { id:"protero",label:"Protérozoïque", from:2500e6,  to:541e6,  color:"#14532d", textColor:"#86efac", depth:1 },
-  { id:"paleo",  label:"Paléozoïque",   from:541e6,   to:252e6,  color:"#365314", textColor:"#bef264", depth:1 },
-  { id:"meso",   label:"Mésozoïque",    from:252e6,   to:66e6,   color:"#7c2d12", textColor:"#fdba74", depth:1 },
-  { id:"ceno",   label:"Cénozoïque",    from:66e6,    to:2.6e6,  color:"#4c1d95", textColor:"#c4b5fd", depth:1 },
-  { id:"quatern",label:"Quaternaire",   from:2.6e6,   to:0,      color:"#1e1b4b", textColor:"#a5b4fc", depth:1 },
+  chronoRect("univ",   "Univers",        13800e6, 4600e6, 0, "Cosmique"),
+  chronoRect("hadeen", "Hadéen",         4600e6,  4000e6, 1, "Hadéen"),
+  chronoRect("archeen","Archéen",        4000e6,  2500e6, 1, "Archéen"),
+  chronoRect("protero","Protérozoïque",  2500e6,  541e6,  1, "Protérozoïque"),
+  chronoRect("paleo",  "Paléozoïque",    541e6,   252e6,  1, "Paléozoïque"),
+  chronoRect("meso",   "Mésozoïque",     252e6,   66e6,   1, "Mésozoïque"),
+  chronoRect("ceno",   "Cénozoïque",     66e6,    2.6e6,  1, "Cénozoïque"),
+  chronoRect("quatern","Quaternaire",    2.6e6,   0,      1, "Quaternaire"),
   // Sous-périodes Mésozoïque
-  { id:"trias",  label:"Trias",         from:252e6,   to:201e6,  color:"#6b21a8", textColor:"#e9d5ff", depth:2 },
-  { id:"jura",   label:"Jurassique",    from:201e6,   to:145e6,  color:"#1e40af", textColor:"#bfdbfe", depth:2 },
-  { id:"creta",  label:"Crétacé",       from:145e6,   to:66e6,   color:"#065f46", textColor:"#a7f3d0", depth:2 },
+  chronoRect("trias",  "Trias",          252e6,   201e6,  2, "Mésozoïque"),
+  chronoRect("jura",   "Jurassique",     201e6,   145e6,  2, "Mésozoïque"),
+  chronoRect("creta",  "Crétacé",        145e6,   66e6,   2, "Mésozoïque"),
   // Sous-périodes Cénozoïque
-  { id:"paleo2", label:"Paléogène",     from:66e6,    to:23e6,   color:"#78350f", textColor:"#fde68a", depth:2 },
-  { id:"neo",    label:"Néogène",       from:23e6,    to:2.6e6,  color:"#7f1d1d", textColor:"#fecaca", depth:2 },
+  chronoRect("paleo2", "Paléogène",      66e6,    23e6,   2, "Cénozoïque"),
+  chronoRect("neo",    "Néogène",        23e6,    2.6e6,  2, "Cénozoïque"),
   // Humains
-  { id:"preh",   label:"Préhistoire",   from:300e3,   to:5200,   color:"#1c1917", textColor:"#d6d3d1", depth:2 },
-  { id:"hist",   label:"Histoire",      from:5200,    to:0,      color:"#0f172a", textColor:"#e2e8f0", depth:2 },
+  chronoRect("preh",   "Préhistoire",    300e3,   5200,   2, "Préhistoire"),
+  chronoRect("hist",   "Histoire",       5200,    0,      2, "Histoire"),
 ];
 
 // ── Aplatir l'arbre de vie ─────────────────────────────────────────────────────
@@ -160,11 +173,12 @@ export function drawAll(canvas, miniCanvas, params) {
   const EVT_H     = linearScale ? Math.round(H * 0.06) : Math.round(H * 0.40);
   const EVT_BOT   = H - 24;                  // bas réservé aux labels de dates
 
-  // ── FOND CLAIR ÉDITORIAL ──────────────────────────────────────────────────
-  // Papier chaud, très légèrement dégradé — direction claire & éditoriale.
+  // ── FOND SOMBRE IMMERSIF ──────────────────────────────────────────────────
+  // Canvas de la frise : dégradé sombre et froid (identité v2). Le texte et
+  // les lignes passent en encre claire (theme.text.light) — voir plus bas.
   const grd=ctx.createLinearGradient(0,0,0,H);
-  grd.addColorStop(0,PAPER_TOP);
-  grd.addColorStop(1,PAPER_BOTTOM);
+  grd.addColorStop(0,theme.surfaces.canvasDeep);
+  grd.addColorStop(1,theme.surfaces.canvasMid);
   ctx.fillStyle=grd;
   ctx.fillRect(0,0,W,H);
 
@@ -173,7 +187,7 @@ export function drawAll(canvas, miniCanvas, params) {
   const IVS=[1e10,5e9,2e9,1e9,5e8,2e8,1e8,5e7,1e7,5e6,1e6,5e5,1e5,1e4,1e3,500,100,50,10,5,2,1];
   let chosen=IVS[0];
   for(const iv of IVS){if(span/iv>=5&&span/iv<=16){chosen=iv;break;}}
-  ctx.strokeStyle=ink(.05);ctx.lineWidth=1;
+  ctx.strokeStyle=inkL(.07);ctx.lineWidth=1;
   for(let ya=Math.ceil(ve/chosen)*chosen;ya<=vs;ya+=chosen){
     if(ya<0.1)continue;const x=toX(ya);if(x<0||x>W)continue;
     ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
@@ -197,9 +211,10 @@ export function drawAll(canvas, miniCanvas, params) {
     const ry = depth===0 ? 0 : depth===1 ? 4 : 8;
     const rh = depth===0 ? CHRONO_H : depth===1 ? CHRONO_H-6 : CHRONO_H-12;
 
-    // Fond en teinte plate (pastille colorée, pas de bloc opaque) — même
-    // logique que les badges de l'arbre de vie : `${color}0e/16/22`.
-    ctx.fillStyle = rect.color + (depth===0?"22":depth===1?"18":"10");
+    // Fond en teinte plate (pastille colorée, pas de bloc opaque) — alphas
+    // relevés par rapport à l'ancienne version (sur papier clair) pour rester
+    // visibles sur le nouveau fond de canvas sombre.
+    ctx.fillStyle = rect.color + (depth===0?"30":depth===1?"24":"16");
     ctx.beginPath();
     if(ctx.roundRect) ctx.roundRect(rx+0.5,ry+0.5,rw-1,rh-1,depth===0?0:5);
     else ctx.rect(rx+0.5,ry+0.5,rw-1,rh-1);
@@ -214,7 +229,7 @@ export function drawAll(canvas, miniCanvas, params) {
 
     // Indicateur de clic (coin)
     if(depth<2&&rw>60){
-      ctx.fillStyle=ink(.28);
+      ctx.fillStyle=inkL(.28);
       ctx.font=`700 8px -apple-system`;ctx.textAlign="right";
       ctx.fillText("⤵",rx+rw-5,ry+13);
     }
@@ -228,7 +243,7 @@ export function drawAll(canvas, miniCanvas, params) {
       ctx.save();ctx.beginPath();ctx.rect(rx+4,ry+1,rw-8,rh-2);ctx.clip();
       const fs=Math.min(rh-4, rw>200?13:rw>80?11:rw>40?9:7);
       ctx.font=`600 ${fs}px -apple-system,'Segoe UI',system-ui,sans-serif`;
-      ctx.fillStyle=ink(.82);ctx.textAlign="left";
+      ctx.fillStyle=inkL(.82);ctx.textAlign="left";
       const labelX=Math.max(rx+6,6);
       ctx.fillText(rect.label, labelX, ry+rh/2+fs*0.38);
       ctx.restore();
@@ -246,16 +261,16 @@ export function drawAll(canvas, miniCanvas, params) {
       if(Math.min(x1,x2)>W||Math.max(x1,x2)<0) return;
       const rx=Math.max(0,Math.min(x1,x2)),rw=Math.min(W,Math.abs(x2-x1));
       if(rw<1) return;
-      ctx.fillStyle=i%2===0?ink(.028):ink(.05);
+      ctx.fillStyle=i%2===0?inkL(.028):inkL(.05);
       ctx.fillRect(rx,PERIOD_Y,rw,PERIOD_H);
-      ctx.strokeStyle=ink(.07);ctx.lineWidth=1;ctx.setLineDash([]);
+      ctx.strokeStyle=inkL(.07);ctx.lineWidth=1;ctx.setLineDash([]);
       ctx.beginPath();ctx.moveTo(rx+rw,PERIOD_Y);ctx.lineTo(rx+rw,PERIOD_Y+PERIOD_H);ctx.stroke();
       ctx.fillStyle=per.color+"cc";ctx.fillRect(rx,PERIOD_Y+PERIOD_H-2,rw,2);
       if(rw>28){
         ctx.save();ctx.beginPath();ctx.rect(rx+2,PERIOD_Y,rw-4,PERIOD_H);ctx.clip();
         const fs=rw>80?10:rw>45?9:8;
         ctx.font=`600 ${fs}px -apple-system,'Segoe UI',system-ui,sans-serif`;
-        ctx.fillStyle=ink(.5);ctx.textAlign="center";
+        ctx.fillStyle=inkL(.5);ctx.textAlign="center";
         // Sticky : centré sur la portion réellement visible, pas sur la bande entière.
         const visCenterX=(Math.max(rx,0)+Math.min(rx+rw,W))/2;
         ctx.fillText(per.label,visCenterX,PERIOD_Y+PERIOD_H/2+fs*0.38);
@@ -304,12 +319,12 @@ export function drawAll(canvas, miniCanvas, params) {
       else ctx.rect(rx,ry,rw,rh);
       ctx.stroke();
 
-      // Label si assez large — texte en encre foncée, pastille = couleur
+      // Label si assez large — texte en encre claire, pastille = couleur
       if(rw>40){
         ctx.save();ctx.beginPath();ctx.rect(rx+3,ry,rw-6,rh);ctx.clip();
         ctx.beginPath();ctx.arc(rx+7,ry+rh/2,2.5,0,Math.PI*2);ctx.fillStyle=item.color;ctx.fill();
         ctx.font="500 9px -apple-system,'Segoe UI',system-ui,sans-serif";
-        ctx.fillStyle=ink(.8);ctx.textAlign="left";
+        ctx.fillStyle=inkL(.8);ctx.textAlign="left";
         ctx.fillText(item.label,rx+12,ry+rh/2+3.5);
         ctx.restore();
       }
@@ -323,12 +338,12 @@ export function drawAll(canvas, miniCanvas, params) {
   for(let ya=Math.ceil(ve/chosen)*chosen;ya<=vs;ya+=chosen){
     if(ya<0.1)continue;const x=toX(ya);if(x<0||x>W)continue;
     const lbl=fmt(ya),tw=ctx.measureText(lbl).width;
-    ctx.fillStyle=ink(.06);
+    ctx.fillStyle=inkL(.06);
     ctx.beginPath();
     if(ctx.roundRect)ctx.roundRect(x-tw/2-5,EVT_BOT-1,tw+10,15,8);
     else ctx.rect(x-tw/2-5,EVT_BOT-1,tw+10,15);
     ctx.fill();
-    ctx.fillStyle=ink(.6);ctx.textAlign="center";
+    ctx.fillStyle=inkL(.6);ctx.textAlign="center";
     ctx.fillText(lbl,x,EVT_BOT+10);
   }
 
@@ -336,20 +351,20 @@ export function drawAll(canvas, miniCanvas, params) {
 
   if(!lanesMode){
   // ── LIGNE DE FRISE ────────────────────────────────────────────────────────
-  ctx.strokeStyle=ink(.32);ctx.lineWidth=1.4;ctx.setLineDash([]);
+  ctx.strokeStyle=inkL(.32);ctx.lineWidth=1.4;ctx.setLineDash([]);
   ctx.beginPath();ctx.moveTo(0,LINE_Y);ctx.lineTo(W,LINE_Y);ctx.stroke();
 
   // Lueur douce sur la ligne
   const lineGrd=ctx.createLinearGradient(0,LINE_Y-2,0,LINE_Y+2);
-  lineGrd.addColorStop(0,ink(.0));
-  lineGrd.addColorStop(0.5,ink(.10));
-  lineGrd.addColorStop(1,ink(.0));
+  lineGrd.addColorStop(0,inkL(.0));
+  lineGrd.addColorStop(0.5,inkL(.10));
+  lineGrd.addColorStop(1,inkL(.0));
   ctx.fillStyle=lineGrd;ctx.fillRect(0,LINE_Y-2,W,4);
 
   // ── TRAITS DE GRADUATION SUR LA LIGNE ──────────────────────────────────────
   for(let ya=Math.ceil(ve/chosen)*chosen;ya<=vs;ya+=chosen){
     if(ya<0.1)continue;const x=toX(ya);if(x<0||x>W)continue;
-    ctx.strokeStyle=ink(.18);ctx.lineWidth=1;
+    ctx.strokeStyle=inkL(.18);ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(x,LINE_Y-5);ctx.lineTo(x,LINE_Y+5);ctx.stroke();
   }
 
@@ -427,7 +442,9 @@ export function drawAll(canvas, miniCanvas, params) {
     }
 
     for(const {x,ev} of singles){
-      const col=cc(ev.cat),imp=ev.importance||2;
+      // Ambre réservé exclusivement aux extinctions (theme.extinction) — ne
+      // remplace la couleur de catégorie que pour ces évènements précis.
+      const col=/^extinction/i.test(ev.title)?theme.extinction:cc(ev.cat),imp=ev.importance||2;
       const isHov=hoveredId===ev.id,isSel=selectedId===ev.id;
       const isBiblical=ev.cat==="biblique";
       // Estompage : mode biblique (tout sauf la Bible) OU filtres actifs
@@ -487,7 +504,7 @@ export function drawAll(canvas, miniCanvas, params) {
       ctx.beginPath();ctx.arc(x,LINE_Y,r,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
       if(isSel){ctx.beginPath();ctx.arc(x,LINE_Y,r+3.5,0,Math.PI*2);ctx.strokeStyle=col+"66";ctx.lineWidth=1.5;ctx.stroke();}
 
-      // Label — texte en encre foncée, jamais dans la couleur (règle de l'arbre de vie).
+      // Label — texte en encre claire, jamais dans la couleur (règle de l'arbre de vie).
       // Permanent seulement pour les majeurs ; le reste ne se révèle qu'au
       // survol/sélection, pour que la frise reste respirante même avec des
       // centaines d'évènements.
@@ -509,7 +526,7 @@ export function drawAll(canvas, miniCanvas, params) {
             if(ctx.roundRect)ctx.roundRect(lx,ly,tw2+10,lh+2,5);else ctx.rect(lx,ly,tw2+10,lh+2);
             ctx.fill();
           }
-          ctx.fillStyle=isHov||isSel?INK_STRONG:imp===1?ink(.86):ink(.62);
+          ctx.fillStyle=isHov||isSel?INK_L_STRONG:imp===1?inkL(.86):inkL(.62);
           ctx.textAlign="center";ctx.fillText(l,x,startY+i*lh+fs);
         });
         // Date en petit texte discret sous le nom, au survol/sélection —
@@ -517,7 +534,7 @@ export function drawAll(canvas, miniCanvas, params) {
         if((isHov||isSel)&&ev.date_label){
           const dfs=Math.max(9,fs*0.76);
           ctx.font=`500 ${Math.round(dfs)}px -apple-system,'Segoe UI',system-ui,sans-serif`;
-          ctx.fillStyle=ink(.4);ctx.textAlign="center";
+          ctx.fillStyle=inkL(.4);ctx.textAlign="center";
           ctx.fillText(ev.date_label,x,startY+lines.length*lh+dfs+1);
         }
       }
@@ -536,10 +553,10 @@ export function drawAll(canvas, miniCanvas, params) {
       ctx.save();
       if(clusterSmoked)ctx.globalAlpha=1-fadeT*(1-DIM_ALPHA);
       ctx.beginPath();ctx.arc(x,LINE_Y,r,0,Math.PI*2);
-      ctx.fillStyle=ink(.85);ctx.fill();
-      ctx.strokeStyle="#fbf8f2";ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle=theme.surfaces.canvasRecent;ctx.fill();
+      ctx.strokeStyle=theme.text.light;ctx.lineWidth=1.5;ctx.stroke();
       ctx.font=`700 ${Math.round(Math.min(11,8+items.length*0.15))}px -apple-system,'Segoe UI',system-ui,sans-serif`;
-      ctx.fillStyle="#fbf8f2";ctx.textAlign="center";
+      ctx.fillStyle=theme.text.light;ctx.textAlign="center";
       ctx.fillText(`+${items.length}`,x,LINE_Y+4);
       ctx.restore();
     }
@@ -561,11 +578,11 @@ export function drawAll(canvas, miniCanvas, params) {
         if(x1==null||x1===x0)continue;
         const midX=(x0+x1)/2,arcTop=arcY-Math.min(120,40+Math.abs(x1-x0)*0.22);
         ctx.save();
-        ctx.strokeStyle=alive(.6);ctx.lineWidth=1.6;ctx.setLineDash([2,4]);
+        ctx.strokeStyle=theme.alpha(theme.today,.6);ctx.lineWidth=1.6;ctx.setLineDash([2,4]);
         ctx.beginPath();ctx.moveTo(x0,arcY-12);ctx.quadraticCurveTo(midX,arcTop,x1,arcY-12);ctx.stroke();
         ctx.setLineDash([]);
-        ctx.beginPath();ctx.arc(x1,arcY-12,3.5,0,Math.PI*2);ctx.fillStyle=ALIVE;ctx.fill();
-        ctx.beginPath();ctx.arc(x0,arcY-12,3.5,0,Math.PI*2);ctx.fillStyle=ALIVE;ctx.fill();
+        ctx.beginPath();ctx.arc(x1,arcY-12,3.5,0,Math.PI*2);ctx.fillStyle=theme.today;ctx.fill();
+        ctx.beginPath();ctx.arc(x0,arcY-12,3.5,0,Math.PI*2);ctx.fillStyle=theme.today;ctx.fill();
         ctx.restore();
       }
     }
@@ -586,9 +603,9 @@ export function drawAll(canvas, miniCanvas, params) {
 
     laneDefs.forEach((lane,li)=>{
       const laneY=LANES_Y+li*laneH;
-      ctx.fillStyle=li%2===0?ink(.025):ink(.045);
+      ctx.fillStyle=li%2===0?inkL(.025):inkL(.045);
       ctx.fillRect(0,laneY,W,laneH);
-      ctx.strokeStyle=ink(.06);ctx.lineWidth=1;
+      ctx.strokeStyle=inkL(.06);ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(0,laneY+laneH);ctx.lineTo(W,laneY+laneH);ctx.stroke();
 
       // Étiquette sticky
@@ -622,7 +639,7 @@ export function drawAll(canvas, miniCanvas, params) {
           if(rw>34){
             ctx.save();ctx.beginPath();ctx.rect(rx+2,barY,rw-4,barH);ctx.clip();
             ctx.font="500 9px -apple-system,'Segoe UI',system-ui,sans-serif";
-            ctx.fillStyle=ink(.75);ctx.textAlign="left";
+            ctx.fillStyle=inkL(.75);ctx.textAlign="left";
             ctx.fillText(item.label,rx+4,barY+barH/2+3);
             ctx.restore();
           }
@@ -650,17 +667,17 @@ export function drawAll(canvas, miniCanvas, params) {
             ctx.fillStyle=lane.color;ctx.fill();
             if(isSel||isHov){ctx.strokeStyle=lane.color+"66";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,dotY,9,0,Math.PI*2);ctx.stroke();}
             ctx.font="500 10px -apple-system,'Segoe UI',system-ui,sans-serif";
-            ctx.fillStyle=isHov||isSel?INK_STRONG:ink(.68);ctx.textAlign="center";
+            ctx.fillStyle=isHov||isSel?INK_L_STRONG:inkL(.68);ctx.textAlign="center";
             ctx.fillText(ev.title,x,dotY+18);
             ctx.restore();
             placed.push({x,y:dotY,ev,side:1});
           }else{
             const r=Math.min(8+c.items.length*0.9,16);
             ctx.beginPath();ctx.arc(x,dotY,r,0,Math.PI*2);
-            ctx.fillStyle=ink(.85);ctx.fill();
-            ctx.strokeStyle="#fbf8f2";ctx.lineWidth=1.2;ctx.stroke();
+            ctx.fillStyle=theme.surfaces.canvasRecent;ctx.fill();
+            ctx.strokeStyle=theme.text.light;ctx.lineWidth=1.2;ctx.stroke();
             ctx.font="700 9px -apple-system,'Segoe UI',system-ui,sans-serif";
-            ctx.fillStyle="#fbf8f2";ctx.textAlign="center";
+            ctx.fillStyle=theme.text.light;ctx.textAlign="center";
             ctx.fillText(`+${c.items.length}`,x,dotY+3);
             placed.push({x,y:dotY,ev:null,isCluster:true,ids:c.items.map(e=>e.id),count:c.items.length,
               fromYa:Math.min(...c.items.map(e=>e.yearsAgo)),toYa:Math.max(...c.items.map(e=>e.yearsAgo)),side:1});
@@ -675,10 +692,10 @@ export function drawAll(canvas, miniCanvas, params) {
   const nowX=toX(0.5);
   if(nowX>2&&nowX<W-2){
     const todayTop=lanesMode?TOP_STRUCT:LINE_Y-40;
-    ctx.strokeStyle=alive(.4);ctx.lineWidth=1.2;ctx.setLineDash([4,4]);
+    ctx.strokeStyle=theme.alpha(theme.today,.4);ctx.lineWidth=1.2;ctx.setLineDash([4,4]);
     ctx.beginPath();ctx.moveTo(nowX,todayTop);ctx.lineTo(nowX,H);ctx.stroke();
     ctx.setLineDash([]);
-    ctx.font="600 8px -apple-system,'Segoe UI',system-ui,sans-serif";ctx.fillStyle=ALIVE;ctx.textAlign="center";
+    ctx.font="600 8px -apple-system,'Segoe UI',system-ui,sans-serif";ctx.fillStyle=theme.today;ctx.textAlign="center";
     ctx.fillText("AUJOURD'HUI",nowX,todayTop-3);
   }
 
@@ -689,7 +706,7 @@ export function drawAll(canvas, miniCanvas, params) {
     const mw=miniCanvas.width,mh=miniCanvas.height,mctx=miniCanvas.getContext("2d");
     mctx.clearRect(0,0,mw,mh);
     const mgrd=mctx.createLinearGradient(0,0,mw,0);
-    mgrd.addColorStop(0,"#efe7d6");mgrd.addColorStop(1,"#e6dcc6");
+    mgrd.addColorStop(0,theme.surfaces.canvasDeep);mgrd.addColorStop(1,theme.surfaces.canvasMid);
     mctx.fillStyle=mgrd;mctx.fillRect(0,0,mw,mh);
     const tls=Math.log10(13.8e9),tle=0,tR=tls-tle;
     for(const rect of CHRONO_RECTS.filter(r=>r.depth===1)){
@@ -703,8 +720,8 @@ export function drawAll(canvas, miniCanvas, params) {
     }
     const vls=L(vs),vle=L(Math.max(ve,0.1));
     const vx1=(tls-vls)/tR*mw,vx2=(tls-vle)/tR*mw;
-    mctx.fillStyle=ink(.10);mctx.fillRect(Math.max(0,vx1),0,vx2-vx1,mh);
-    mctx.strokeStyle=ink(.55);mctx.lineWidth=1.5;
+    mctx.fillStyle=inkL(.10);mctx.fillRect(Math.max(0,vx1),0,vx2-vx1,mh);
+    mctx.strokeStyle=inkL(.55);mctx.lineWidth=1.5;
     mctx.strokeRect(Math.max(0,vx1),0,vx2-vx1,mh);
   }
 

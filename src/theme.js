@@ -9,6 +9,18 @@
 // via `eras.byEpoch`), du plus froid (cosmos, violet) au plus chaud
 // (histoire humaine, crème claire).
 
+// rgba() à partir d'un hex — module-scope pour pouvoir précalculer les
+// variantes de texte/bordure ci-dessous ET rester accessible comme méthode
+// publique (`theme.alpha`) pour composer des alphas depuis l'extérieur.
+function rgbaFromHex(hex, a) {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.length===3?h[0]+h[0]:h.substring(0,2), 16);
+  const g = parseInt(h.length===3?h[1]+h[1]:h.substring(2,4), 16);
+  const b = parseInt(h.length===3?h[2]+h[2]:h.substring(4,6), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+const TEXT_DARK = "#0E1116", TEXT_LIGHT = "#F4EFE6";
+
 export const theme = {
   // Fond du canvas, du plus ancien au plus récent, + panneau (arbre du vivant).
   surfaces: {
@@ -16,12 +28,20 @@ export const theme = {
     canvasMid:    "#0B1024", // vie ancienne, Mésozoïque
     canvasRecent: "#121A33", // Cénozoïque, histoire humaine
     panel:        "#FFFFFF",
+    panelSoft:    "#FAFAFA", // fond très légèrement teinté du panneau (zébrures, survol) — neutre, pas chaud
   },
 
   // Texte : foncé sur fond clair (panneau), clair sur fond sombre (canvas).
+  // `muted`/`faint` sont les mêmes teintes atténuées (remplace les bases RGB
+  // multiples "23,20,18 / 28,25,23 / 18,16,14" relevées à l'audit par UNE
+  // seule base par rôle, à l'alpha près).
   text: {
-    dark:  "#0E1116",
-    light: "#F4EFE6", // aussi la teinte de l'ère "histoire humaine" (voir eras)
+    dark:  TEXT_DARK,
+    light: TEXT_LIGHT, // aussi la teinte de l'ère "histoire humaine" (voir eras)
+    muted: rgbaFromHex(TEXT_DARK, .58),
+    faint: rgbaFromHex(TEXT_DARK, .38),
+    mutedOnDark: rgbaFromHex(TEXT_LIGHT, .6),
+    faintOnDark: rgbaFromHex(TEXT_LIGHT, .4),
   },
 
   // Teinte d'accent par grande ère. Désaturée, jamais un aplat criard.
@@ -47,6 +67,7 @@ export const theme = {
       "Cénozoïque":    "cenozoique",
       "Préhistoire":   "histoireHumaine",
       "Histoire":      "histoireHumaine",
+      "Quaternaire":   "histoireHumaine", // alias : Préhistoire+Histoire réunies (bandes imbriquées)
     },
   },
 
@@ -57,11 +78,22 @@ export const theme = {
   // confondue avec un marqueur d'extinction).
   extinction: "#B9822F",
 
+  // Accent de marque générique (spinner de recherche, badge IA, signet actif
+  // par défaut…) — distinct de l'ambre d'extinction. Reprend `eras.cosmos`
+  // (Chronos commence au cosmos) plutôt que d'introduire une 7e couleur.
+  accent: "#6C63FF",
+
+  // Marqueur "aujourd'hui" sur la frise — vert distinct des teintes d'ère,
+  // éclairci par rapport à l'ancien #0A7848 pour rester lisible (8,6:1) sur
+  // le nouveau fond de canvas sombre (l'ancien ne passait qu'à 3,65:1).
+  today: "#3FBE8E",
+
   border: {
-    onLight: "rgba(14,17,22,.12)",
-    onLightStrong: "rgba(14,17,22,.22)",
-    onDark: "rgba(244,239,230,.16)",
-    onDarkStrong: "rgba(244,239,230,.28)",
+    onLight: rgbaFromHex(TEXT_DARK, .12),
+    onLightHairline: rgbaFromHex(TEXT_DARK, .10),
+    onLightStrong: rgbaFromHex(TEXT_DARK, .22),
+    onDark: rgbaFromHex(TEXT_LIGHT, .16),
+    onDarkStrong: rgbaFromHex(TEXT_LIGHT, .28),
   },
 
   font: {
@@ -87,13 +119,7 @@ export const theme = {
   // rgba() à partir d'un hex du thème — pour composer des alphas côté canvas
   // sans dupliquer de triplet RGB en dur (c'était la source du doublon
   // "23,20,18 / 28,25,23 / 18,16,14" relevé à l'audit).
-  alpha(hex, a) {
-    const h = hex.replace("#", "");
-    const r = parseInt(h.length===3?h[0]+h[0]:h.substring(0,2), 16);
-    const g = parseInt(h.length===3?h[1]+h[1]:h.substring(2,4), 16);
-    const b = parseInt(h.length===3?h[2]+h[2]:h.substring(4,6), 16);
-    return `rgba(${r},${g},${b},${a})`;
-  },
+  alpha(hex, a) { return rgbaFromHex(hex, a); },
 
   // Teinte d'ère pour un label EPOCHS donné (ex. "Mésozoïque" → "#7DB55A").
   eraColorFor(epochLabel) {
